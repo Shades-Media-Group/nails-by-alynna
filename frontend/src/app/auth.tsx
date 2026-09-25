@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ApiError, hasSessionHint, onSessionExpired } from '@/services/api/client';
 import { authApi } from '@/services/api/endpoints';
 import type { Role, User } from '@/types/api';
@@ -25,6 +25,8 @@ interface AuthContextValue {
   user: User | null;
   status: 'loading' | 'authenticated' | 'anonymous' | 'error';
   isStaff: boolean;
+  /** The visitor just signed out on purpose (not an expired session): no "come back to" link. */
+  signedOut: boolean;
   setUser: (user: User | null) => void;
   logout: () => Promise<void>;
   retry: () => void;
@@ -37,8 +39,15 @@ export const STAFF_ROLES: Role[] = ['admin', 'administrator'];
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const me = useQuery({ queryKey: ME_KEY, queryFn: fetchMe, staleTime: 5 * 60_000, retry: 1 });
+  const [signedOut, setSignedOut] = useState(false);
 
-  const setUser = useCallback((user: User | null) => queryClient.setQueryData(ME_KEY, user), [queryClient]);
+  const setUser = useCallback(
+    (user: User | null) => {
+      if (user) setSignedOut(false);
+      queryClient.setQueryData(ME_KEY, user);
+    },
+    [queryClient],
+  );
 
   useEffect(
     () =>
@@ -52,9 +61,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await authApi.logout();
     } finally {
-      // Drop every cached private response before anything else renders.
-      queryClient.removeQueries({ predicate: (q) => q.queryKey[0] !== 'config' && q.queryKey[0] !== 'catalog' });
+      // Signed out first, on the live query the app is watching (removing it instead would leave
+      // the screen on the old user, and the login page would bounce straight back home)...
+      setSignedOut(true);
       queryClient.setQueryData(ME_KEY, null);
+      // ...then every other cached private response goes.
+      const shared = new Set(['config', 'catalog', ME_KEY[0]]);
+      queryClient.removeQueries({ predicate: (q) => !shared.has(String(q.queryKey[0])) });
     }
   }, [queryClient]);
 
@@ -71,11 +84,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       status,
       isStaff: Boolean(user && STAFF_ROLES.includes(user.role)),
+      signedOut,
       setUser,
       logout,
       retry: () => void me.refetch(),
     };
-  }, [me, setUser, logout]);
+  }, [me, signedOut, setUser, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

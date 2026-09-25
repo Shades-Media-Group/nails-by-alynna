@@ -7,10 +7,12 @@ import { homePathFor, useAuth } from './auth';
 
 /** Signed-in only; remembers where the visitor wanted to go. */
 export function RequireAuth({ children }: { children?: ReactNode }) {
-  const { user } = useAuth();
+  const { user, signedOut } = useAuth();
   const { lp } = useLocale();
   const location = useLocation();
   if (!user) {
+    // After "Log out" the welcome screen starts fresh; an expired session comes back here.
+    if (signedOut) return <Navigate to={lp('/login')} replace />;
     const next = encodeURIComponent(splitLocale(location.pathname).rest + location.search);
     return <Navigate to={`${lp('/login')}?next=${next}`} replace />;
   }
