@@ -62,6 +62,8 @@ export function publicRoutes(deps: AppDeps) {
         viber: s.viber,
         telegram: s.telegram,
         instagram: s.instagram,
+        legalName: s.legalName,
+        legalId: s.legalId,
         email: s.email,
         timezone: s.timezone,
         currency: s.currency,

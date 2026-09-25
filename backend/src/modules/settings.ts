@@ -7,6 +7,8 @@ import type { StudioSettings } from '../db/types';
  */
 export const DEFAULT_SETTINGS: StudioSettings = {
   name: 'Nails by Alynna',
+  legalName: '',
+  legalId: '',
   tagline: {
     ro: 'Unghiile tale. Regulile tale.',
     ru: 'Твои ногти. Твои правила.',

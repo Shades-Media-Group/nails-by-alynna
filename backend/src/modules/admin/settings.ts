@@ -21,6 +21,8 @@ const optionalUrl = z
 const settingsSchema = z
   .object({
     name: z.string().trim().min(1, 'required').max(60, 'too_long'),
+    legalName: z.string().trim().max(120, 'too_long'),
+    legalId: z.string().trim().regex(/^(\d{13})?$/, 'invalid_idno'),
     tagline: i18nTextSchema(80),
     about: i18nOptionalTextSchema(600),
     address: z.string().trim().max(160, 'too_long'),

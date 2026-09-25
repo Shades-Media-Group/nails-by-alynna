@@ -213,6 +213,9 @@ export interface AppointmentDoc {
 
 export interface StudioSettings {
   name: string;
+  /** Registered business name and IDNO (fiscal code), shown in Terms and Privacy. */
+  legalName: string;
+  legalId: string;
   tagline: I18nText;
   about: I18nText;
   address: string;

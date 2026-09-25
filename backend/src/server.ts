@@ -43,14 +43,14 @@ async function main() {
     },
   });
 
-  await mongo.client.connect();
-  await migrate(deps);
-
+  // Listen first: while the database is unreachable the API still answers (health says 503),
+  // instead of the process crashing and the host restarting it in a loop.
   const app = createApp(deps);
   const hostname = process.env.HOST || '127.0.0.1';
   const server = serve({ fetch: app.fetch, port: config.port, hostname }, (info) => {
     console.info(`[api] ${config.env} server on http://${hostname}:${info.port} (db: ${config.mongo.dbName})`);
   });
+  void prepareDatabase(() => mongo.client.connect().then(() => migrate(deps)));
 
   const shutdown = async (signal: string) => {
     console.info(`[api] ${signal} received, shutting down`);
@@ -60,6 +60,20 @@ async function main() {
   };
   process.on('SIGINT', () => void shutdown('SIGINT'));
   process.on('SIGTERM', () => void shutdown('SIGTERM'));
+}
+
+/** Connects and applies indexes and defaults, retrying with backoff (2 s doubling to 60 s). */
+async function prepareDatabase(prepare: () => Promise<void>): Promise<void> {
+  for (let delay = 2_000; ; delay = Math.min(delay * 2, 60_000)) {
+    try {
+      await prepare();
+      console.info('[api] database ready');
+      return;
+    } catch (error) {
+      console.error(`[api] database not ready (${(error as Error).message}); retrying in ${delay / 1000} s`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
 }
 
 main().catch((error) => {
