@@ -24,7 +24,12 @@ export function calendarEventFor(
   };
 }
 
-/** Service ids of a past visit, for "Book again". */
+/**
+ * "Book again": the same services with the same master, straight to picking a time (as in
+ * Fresha or Booksy). Back walks to the master and services steps, already filled in.
+ */
 export function rebookQuery(appointment: Appointment): string {
-  return `?services=${appointment.services.map((s) => s.id).join(',')}`;
+  const params = new URLSearchParams({ services: appointment.services.map((s) => s.id).join(','), step: 'time' });
+  if (appointment.staff) params.set('staff', appointment.staff.id);
+  return `?${params.toString()}`;
 }

@@ -3,6 +3,7 @@ import { Outlet, ScrollRestoration, useLocation } from 'react-router';
 import { ConsentBanner } from '@/components/common/ConsentBanner';
 import { DelayedSpinner } from '@/components/common/DelayedSpinner';
 import { NavigationProgress } from '@/components/common/NavigationProgress';
+import { PageScrollbar } from '@/components/common/PageScrollbar';
 import { SplashDone } from '@/components/common/SplashDone';
 import { UpdatePrompt } from '@/components/common/UpdatePrompt';
 import { i18n } from '@/i18n';
@@ -51,6 +52,7 @@ export function LocaleLayout({ locale }: { locale: Locale }) {
       <Outlet />
       {/* A new page opens at the top; Back returns to where you were. */}
       <ScrollRestoration />
+      <PageScrollbar />
       <SplashDone />
       <ConsentBanner />
       <UpdatePrompt />

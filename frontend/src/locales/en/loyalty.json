@@ -12,6 +12,7 @@
   "qr": {
     "title": "Show this at the desk",
     "text": "Staff scan it to find your card and add the stamp.",
+    "member": "Member",
     "label": "Your loyalty card QR code",
     "code": "Card code"
   },

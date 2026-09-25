@@ -35,6 +35,7 @@
     "clear": "Golește"
   },
   "flow": {
+    "rebookDropped": "Unele servicii din acea vizită nu mai sunt oferite, așa că le-am scos.",
     "title": "Programare nouă",
     "rescheduleTitle": "Schimbă ora",
     "stepServices": "Servicii",

@@ -12,6 +12,7 @@
   "qr": {
     "title": "Arată codul la recepție",
     "text": "Echipa îl scanează ca să găsească cardul și să pună ștampila.",
+    "member": "Membru",
     "label": "Codul QR al cardului tău de fidelitate",
     "code": "Codul cardului"
   },

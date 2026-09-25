@@ -17,13 +17,18 @@ export function StepProgress({ steps, current }: { steps: string[]; current: num
           return (
             <li key={label} aria-current={state === 'current' ? 'step' : undefined} className="flex">
               <span className="sr-only">{label}</span>
-              <svg viewBox="0 0 16 25" className={cx('h-6 w-4 transition-transform duration-300', state === 'current' && '-translate-y-0.5')} aria-hidden="true">
+              <svg
+                viewBox="0 0 16 25"
+                className={cx('h-6 w-4 origin-bottom transition-transform duration-300', state === 'current' && '-translate-y-1 scale-110')}
+                aria-hidden="true"
+              >
                 <path
                   d={TIP}
                   className={cx(
                     'transition-colors duration-300',
-                    state === 'done' && 'fill-rose-500',
-                    state === 'current' && 'fill-rose-400',
+                    // The nail being painted now is the deepest shade; finished ones stay a lighter pink.
+                    state === 'done' && 'fill-rose-400',
+                    state === 'current' && 'fill-rose-700',
                     state === 'todo' && 'fill-ink-100',
                   )}
                 />

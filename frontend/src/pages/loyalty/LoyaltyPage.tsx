@@ -2,13 +2,14 @@ import { useQuery } from '@tanstack/react-query';
 import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
+import { useAuth } from '@/app/auth';
 import { Alert } from '@/components/common/Alert';
 import { QrCode } from '@/components/common/QrCode';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StampCard } from '@/components/loyalty/StampCard';
 import { useNextRewardText } from '@/components/loyalty/useNextRewardText';
 import { Button, Skeleton } from '@/components/ui';
-import { CheckIcon, LoyaltyIcon, RedeemIcon, ReplayIcon } from '@/components/ui/icons';
+import { CheckIcon, RedeemIcon, ReplayIcon } from '@/components/ui/icons';
 import { useStudio } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
 import { errorMessage } from '@/lib/errors';
@@ -23,6 +24,7 @@ export default function LoyaltyPage() {
   const { t } = useTranslation(['loyalty', 'common']);
   const { locale, lp } = useLocale();
   const { currency, timeZone } = useStudio();
+  const { user } = useAuth();
   const card = useQuery(loyaltyQueries.mine());
   const nextText = useNextRewardText();
 
@@ -61,22 +63,26 @@ export default function LoyaltyPage() {
       <PageHeader title={t('title')} subtitle={t('subtitle')} back backTo={lp('/home')} />
 
       <div className="gutter-x mt-5 grid gap-5 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:items-start lg:px-0">
+        {/* A pass, like the ones in Wallet: the code big on its own white tile (dark on light is what
+            desk scanners read reliably), then who it belongs to. */}
         <section aria-labelledby="qr-title" className="stagger rounded-2xl bg-ink-900 p-5 text-white shadow-raised" style={order(0)}>
-          <div className="flex items-center justify-between">
-            <span className="caps text-white/70">Nails by Alynna</span>
-            <LoyaltyIcon fontSize="inherit" className="text-xl text-rose-200" />
-          </div>
-          <div className="mx-auto mt-4 w-fit rounded-2xl bg-white p-3">
-            <QrCode value={member.url} label={t('qr.label')} className="size-52 rounded-none sm:size-56" />
-          </div>
-          <h2 id="qr-title" className="mt-4 text-center text-h3 font-extrabold">
+          <h2 id="qr-title" className="text-h3 font-extrabold">
             {t('qr.title')}
           </h2>
-          <p className="mx-auto mt-1 max-w-72 text-center text-sm text-white/70">{t('qr.text')}</p>
-          <p className="mt-4 text-center">
-            <span className="sr-only">{t('qr.code')}: </span>
-            <span className="tabular rounded-pill bg-white/10 px-4 py-1.5 font-mono text-base font-semibold tracking-[0.18em]">{code}</span>
-          </p>
+          <p className="mt-1 text-sm text-white/70">{t('qr.text')}</p>
+          <div className="mx-auto mt-4 w-fit rounded-2xl bg-white p-3">
+            <QrCode value={member.url} label={t('qr.label')} className="size-52 rounded-none" />
+          </div>
+          <dl className="mt-4 flex items-end justify-between gap-4 border-t border-white/15 pt-4">
+            <div className="min-w-0">
+              <dt className="text-xs text-white/60">{t('qr.member')}</dt>
+              <dd className="truncate font-bold">{user ? `${user.name} ${user.surname}` : ''}</dd>
+            </div>
+            <div className="shrink-0 text-right">
+              <dt className="text-xs text-white/60">{t('qr.code')}</dt>
+              <dd className="tabular font-bold">{code}</dd>
+            </div>
+          </dl>
         </section>
 
         <div className="flex flex-col gap-5">

@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router';
 import { useAuth } from '@/app/auth';
+import { Alert } from '@/components/common/Alert';
 import { ConfirmStep } from '@/components/booking/ConfirmStep';
 import { DoneStep } from '@/components/booking/DoneStep';
 import { MasterStep } from '@/components/booking/MasterStep';
@@ -44,15 +45,20 @@ export default function BookingPage() {
   const rescheduleId = params.get('reschedule');
   const original = useQuery({ ...queries.appointment(rescheduleId ?? ''), enabled: Boolean(rescheduleId) });
 
-  const selectedFromUrl = (params.get('services') ?? '').split(',').filter((id) => catalog.byId.has(id));
+  const requestedServices = (params.get('services') ?? '').split(',').filter(Boolean);
+  const selectedFromUrl = requestedServices.filter((id) => catalog.byId.has(id));
+  // "Book again" with a service the studio no longer offers: say so on the time step.
+  const droppedServices = catalog.isSuccess && selectedFromUrl.length < requestedServices.length;
   const serviceIds = rescheduleId ? (original.data?.services.map((s) => s.id) ?? []) : selectedFromUrl;
   const services = serviceIds.map((id) => catalog.byId.get(id)).filter((s): s is Service => Boolean(s));
 
-  const { eligible } = useEligibleMasters(serviceIds);
+  const { eligible, isPending: mastersLoading } = useEligibleMasters(serviceIds);
   const showMasters = !rescheduleId && (config?.booking.mastersCount ?? 1) > 1 && eligible.length > 1;
   const steps: Step[] = rescheduleId ? ['time', 'confirm'] : ['services', ...(showMasters ? (['master'] as const) : []), 'time', 'confirm'];
 
-  const [staffId, setStaffId] = useState<string | null>(null);
+  // "Book again" brings the master of that visit; they count only while they still do these services.
+  const [pickedStaff, setStaffId] = useState<string | null>(() => params.get('staff'));
+  const staffId = pickedStaff && (mastersLoading || eligible.some((m) => m.id === pickedStaff)) ? pickedStaff : null;
   const [date, setDate] = useState<string | null>(null);
   const [slot, setSlot] = useState<Slot | null>(null);
   const [notes, setNotes] = useState('');
@@ -179,6 +185,12 @@ export default function BookingPage() {
       <div key={step} className="gutter-x mx-auto max-w-2xl pt-5 animate-page">
         <h1 className="text-h1 font-extrabold">{heading[step].title}</h1>
         {heading[step].text ? <p className="mt-1.5 text-[0.9375rem] text-ink-600">{heading[step].text}</p> : null}
+
+        {step === 'time' && droppedServices ? (
+          <Alert tone="info" className="mt-4">
+            {t('flow.rebookDropped')}
+          </Alert>
+        ) : null}
 
         <div className="mt-5">
           {loading ? (

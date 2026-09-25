@@ -272,15 +272,18 @@
     outline-offset: 2px;
   }
   /*
-   * Scrollbars (mouse and trackpad only): a light rounded rail the full height of the window
-   * with a slightly darker rounded thumb inside it — drag it, or use the wheel. Chrome, Edge and
-   * Safari get the shaped version; Firefox only supports colours. Touch screens keep their
-   * native overlay bars, so phone scrolling is untouched.
+   * Scrollbars inside panels and lists (mouse and trackpad only): a light rounded rail with a
+   * slightly darker rounded thumb. Chrome, Edge and Safari get the shaped version; Firefox only
+   * supports colours. Touch screens keep their native overlay bars there.
    */
+  /* The page's own bar is drawn by PageScrollbar (always visible while the page scrolls). */
+  html {
+    scrollbar-width: none;
+  }
+  html::-webkit-scrollbar {
+    display: none;
+  }
   @media (hover: hover) and (pointer: fine) {
-    html {
-      scrollbar-gutter: stable;
-    }
     ::-webkit-scrollbar {
       width: 14px;
       height: 14px;

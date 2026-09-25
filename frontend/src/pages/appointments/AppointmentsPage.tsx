@@ -67,7 +67,7 @@ export default function AppointmentsPage() {
             <ul className="flex flex-col gap-2">
               {list.data.map((appointment, index) => (
                 <li key={appointment.id} className="stagger" style={{ ['--i' as string]: Math.min(index, 8) }}>
-                  <AppointmentCard appointment={appointment} />
+                  <AppointmentCard appointment={appointment} rebook={tab === 'past'} />
                 </li>
               ))}
             </ul>

@@ -34,6 +34,7 @@
     "clear": "Clear"
   },
   "flow": {
+    "rebookDropped": "Some services from that visit aren't offered anymore, so they were left out.",
     "title": "New booking",
     "rescheduleTitle": "Change the time",
     "stepServices": "Services",
