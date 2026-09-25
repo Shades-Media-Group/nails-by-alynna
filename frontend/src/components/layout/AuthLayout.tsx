@@ -27,11 +27,8 @@ export function AuthLayout({ children, footer, back }: AuthLayoutProps) {
   return (
     <div className="min-h-dvh bg-white lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
       <aside className="relative hidden overflow-hidden bg-blush-100 lg:flex lg:flex-col lg:items-center lg:justify-center lg:px-12">
+        {/* The logo alone: the tagline already leads the form column. */}
         <Logo className="w-[min(22rem,70%)]" />
-        <p className="mt-10 text-center text-h1 font-extrabold uppercase">
-          <span className="block text-ink-900">{t('brand.tagline1')}</span>
-          <span className="block text-rose-500">{t('brand.tagline2')}</span>
-        </p>
         <NailArt art="gel" color="blush" className="pointer-events-none absolute -bottom-6 -left-10 w-72 opacity-90" />
         <NailArt art="french" color="lilac" className="pointer-events-none absolute -right-8 top-10 w-56 rotate-12 opacity-80" />
       </aside>

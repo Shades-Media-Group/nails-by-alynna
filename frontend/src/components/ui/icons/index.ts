@@ -3,6 +3,7 @@
  * (not from @mui/icons-material directly) so the set stays consistent and tree-shaken.
  */
 export { default as AddIcon } from '@mui/icons-material/AddRounded';
+export { default as AddBoxIcon } from '@mui/icons-material/AddBoxOutlined';
 export { default as AdminIcon } from '@mui/icons-material/AdminPanelSettingsRounded';
 export { default as ArrowBackIcon } from '@mui/icons-material/ArrowBackRounded';
 export { default as ArrowForwardIcon } from '@mui/icons-material/ArrowForwardRounded';
@@ -42,6 +43,7 @@ export { default as InstagramIcon } from '@mui/icons-material/Instagram';
 export { default as InstallIcon } from '@mui/icons-material/InstallMobileRounded';
 export { default as IosShareIcon } from '@mui/icons-material/IosShareRounded';
 export { default as KeyIcon } from '@mui/icons-material/KeyRounded';
+export { default as LaptopIcon } from '@mui/icons-material/LaptopMacRounded';
 export { default as LanguageIcon } from '@mui/icons-material/LanguageRounded';
 export { default as LocationIcon } from '@mui/icons-material/PlaceRounded';
 export { default as LockIcon } from '@mui/icons-material/LockRounded';

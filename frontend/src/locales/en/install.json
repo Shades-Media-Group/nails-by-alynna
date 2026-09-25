@@ -1,0 +1,37 @@
+{
+  "title": "Put us on your home screen",
+  "subtitle": "The app opens full screen with one tap, like any app. No store, nothing to download, always up to date.",
+  "perks": [
+    "Opens in one tap",
+    "Full screen, no browser bars",
+    "Updates by itself"
+  ],
+  "device": "Your device",
+  "iphone": "iPhone",
+  "android": "Android",
+  "computer": "Computer",
+  "installButton": "Install the app",
+  "installedToast": "Installed. You'll find it on your home screen.",
+  "installed": "You're in the app",
+  "installedText": "All set. Open it any time from your home screen.",
+  "toHome": "Go to the app",
+  "steps": "How to add it",
+  "ios": [
+    "Tap Share at the bottom of Safari (top right on iPad).",
+    "Scroll the menu and tap “Add to Home Screen”.",
+    "Tap “Add”. The icon appears on your home screen."
+  ],
+  "iosChrome": "In Chrome on iPhone: tap Share in the address bar, then “Add to Home Screen”.",
+  "androidManual": [
+    "Open the browser menu (⋮ at the top or ☰ at the bottom).",
+    "Tap “Install app” or “Add to Home screen”.",
+    "Confirm with “Install”."
+  ],
+  "inApp": "You're inside {{app}}'s built-in browser, which can't add apps. Open this page in Safari or Chrome: tap ⋯ and choose “Open in browser”, or copy the link.",
+  "copyLink": "Copy link",
+  "copied": "Link copied",
+  "qrTitle": "Scan with your phone",
+  "qrText": "Point your phone's camera at the code to open this page there, then follow the steps.",
+  "desktopInstall": "Install on this computer",
+  "desktopManual": "In Chrome or Edge, click the install icon at the right of the address bar."
+}

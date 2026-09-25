@@ -1,0 +1,37 @@
+{
+  "title": "Pune-ne pe ecranul principal",
+  "subtitle": "Aplicația se deschide pe tot ecranul dintr-o atingere, ca orice aplicație. Fără magazin, fără descărcări, mereu la zi.",
+  "perks": [
+    "Se deschide dintr-o atingere",
+    "Pe tot ecranul, fără bara browserului",
+    "Se actualizează singură"
+  ],
+  "device": "Dispozitivul tău",
+  "iphone": "iPhone",
+  "android": "Android",
+  "computer": "Calculator",
+  "installButton": "Instalează aplicația",
+  "installedToast": "Instalată. O găsești pe ecranul principal.",
+  "installed": "Ești în aplicație",
+  "installedText": "Totul e gata. O deschizi oricând de pe ecranul principal.",
+  "toHome": "Mergi la aplicație",
+  "steps": "Cum o adaugi",
+  "ios": [
+    "Atinge Partajează jos în Safari (sus în dreapta pe iPad).",
+    "Derulează meniul și atinge „Adaugă pe ecranul principal”.",
+    "Atinge „Adaugă”. Pictograma apare pe ecranul principal."
+  ],
+  "iosChrome": "În Chrome pe iPhone: atinge Partajează în bara de adrese, apoi „Adaugă pe ecranul principal”.",
+  "androidManual": [
+    "Deschide meniul browserului (⋮ sus sau ☰ jos).",
+    "Atinge „Instalează aplicația” sau „Adaugă pe ecranul de pornire”.",
+    "Confirmă cu „Instalează”."
+  ],
+  "inApp": "Ești în browserul integrat din {{app}}, care nu poate adăuga aplicații. Deschide pagina în Safari sau Chrome: atinge ⋯ și alege „Deschide în browser” sau copiază linkul.",
+  "copyLink": "Copiază linkul",
+  "copied": "Link copiat",
+  "qrTitle": "Scanează cu telefonul",
+  "qrText": "Îndreaptă camera telefonului spre cod ca să deschizi pagina acolo, apoi urmează pașii.",
+  "desktopInstall": "Instalează pe acest calculator",
+  "desktopManual": "În Chrome sau Edge, apasă pictograma de instalare din dreapta barei de adrese."
+}
