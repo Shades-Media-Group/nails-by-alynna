@@ -86,13 +86,12 @@ function DevVersionWatch({ onReady }: { onReady: (update?: () => void) => void }
     const onVisible = () => {
       if (document.visibilityState === 'visible') void check();
     };
+    // Only when the app comes back to the screen: while it's open, hot reload keeps it current.
     document.addEventListener('visibilitychange', onVisible);
-    const timer = window.setInterval(() => void check(), 60_000);
     return () => {
       stopped = true;
       import.meta.hot?.off('vite:afterUpdate', afterHotUpdate);
       document.removeEventListener('visibilitychange', onVisible);
-      window.clearInterval(timer);
     };
   }, [onReady]);
   return null;

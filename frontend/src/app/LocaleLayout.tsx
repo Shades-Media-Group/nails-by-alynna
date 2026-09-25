@@ -21,6 +21,24 @@ export async function localeLoader(locale: Locale): Promise<null> {
 export function LocaleLayout({ locale }: { locale: Locale }) {
   const { pathname } = useLocation();
 
+  // iOS swipe-back (Safari and the Home Screen app) already animates the page change; our own
+  // fade on top of it would play the transition twice.
+  useEffect(() => {
+    const root = document.documentElement;
+    let timer: number | undefined;
+    const onPop = (event: PopStateEvent) => {
+      if (!(event as PopStateEvent & { hasUAVisualTransition?: boolean }).hasUAVisualTransition) return;
+      root.dataset.uaTransition = '';
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => delete root.dataset.uaTransition, 700);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      window.clearTimeout(timer);
+    };
+  }, []);
+
   useEffect(() => {
     document.documentElement.lang = locale;
     // The bare "/" only decides the language; any other page means the visitor chose it.

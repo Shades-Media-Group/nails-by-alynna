@@ -10,21 +10,9 @@ import { formatPrice } from '@/lib/format';
 import { ordinal } from '@/lib/ordinal';
 import { loyaltyQueries } from '@/services/api/loyalty';
 import { queries } from '@/services/queries';
-import type { AppointmentLoyalty, LoyaltyStatus } from '@/types/api';
+import type { AppointmentLoyalty } from '@/types/api';
 import { StampCard } from './StampCard';
-
-/** "Next visit: 15% off" / "15% off your 4th visit". */
-export function useNextRewardText() {
-  const { t } = useTranslation('loyalty');
-  const { locale } = useLocale();
-  return (status: LoyaltyStatus): string | null => {
-    const next = status.nextReward;
-    if (!status.enabled || !next) return null;
-    return next.inVisits === 1
-      ? t('next', { percent: next.percent })
-      : t('nextOn', { percent: next.percent, ordinal: ordinal(next.visit, locale) });
-  };
-}
+import { useNextRewardText } from './useNextRewardText';
 
 /** Home: the card at a glance, one tap to the full card and its QR code. */
 export function LoyaltyTile({ className, style }: { className?: string; style?: CSSProperties }) {

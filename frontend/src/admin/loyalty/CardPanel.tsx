@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { Alert } from '@/components/common/Alert';
 import { StampCard } from '@/components/loyalty/StampCard';
-import { useNextRewardText } from '@/components/loyalty/LoyaltyBits';
+import { useNextRewardText } from '@/components/loyalty/useNextRewardText';
 import { Avatar, Badge, Button, ButtonLink, Sheet, Textarea, toast } from '@/components/ui';
 import { AddIcon, CallIcon, ChevronRightIcon, PersonIcon, RemoveIcon } from '@/components/ui/icons';
 import { useI18nText, useStudio } from '@/hooks/useStudio';

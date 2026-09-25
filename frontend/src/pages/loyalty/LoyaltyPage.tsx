@@ -6,7 +6,7 @@ import { Alert } from '@/components/common/Alert';
 import { QrCode } from '@/components/common/QrCode';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StampCard } from '@/components/loyalty/StampCard';
-import { useNextRewardText } from '@/components/loyalty/LoyaltyBits';
+import { useNextRewardText } from '@/components/loyalty/useNextRewardText';
 import { Button, Skeleton } from '@/components/ui';
 import { CheckIcon, LoyaltyIcon, RedeemIcon, ReplayIcon } from '@/components/ui/icons';
 import { useStudio } from '@/hooks/useStudio';
