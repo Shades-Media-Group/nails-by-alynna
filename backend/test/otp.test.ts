@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { migrateNotifications } from '../src/db';
 import type { UserDoc } from '../src/db/types';
 import { sha256Hex } from '../src/lib/crypto';
+import { MailError, type Mailer } from '../src/lib/mailer';
 import { generateOtpCode, needsEmailVerification } from '../src/modules/auth/otp';
 import { createTestContext, latestCode, loginAs, registerClient, strongPassword, type TestContext } from './helpers';
 
@@ -145,6 +146,77 @@ describe('email codes', () => {
       const known = await ctx.client().post(path, knownBody);
       expect(known.status, path).toBe(unknown.status);
       expect(known.body, path).toEqual(unknown.body);
+    }
+  });
+});
+
+describe('when the email with the code cannot be sent', () => {
+  it('says so instead of "check your email", and works again once email does', async () => {
+    const original = ctx.deps.mailer;
+    let refusing = true;
+    // Like EmailJS with "API access from non-browser environments" switched off.
+    const refusingMailer: Mailer = {
+      enabled: true,
+      working: () => !refusing,
+      async send(message) {
+        if (refusing) throw new MailError('EmailJS', 403, 'API access from non-browser environments is currently disabled.');
+        ctx.sentMail.push(message);
+      },
+    };
+    ctx.deps.mailer = refusingMailer;
+    try {
+      const email = freshEmail();
+      const signup = await ctx.client().post('/api/auth/register', {
+        name: 'Olga',
+        surname: 'Ceban',
+        email,
+        phone: '069 222 333',
+        password: strongPassword,
+        acceptTerms: true,
+      });
+      expect(signup.status).toBe(201);
+      expect(signup.body.verification).toMatchObject({ email, sent: false });
+
+      // Logging in within the minute sends nothing new and does not pretend the first code arrived.
+      const login = await ctx.client().post('/api/auth/login', { email, password: strongPassword });
+      expect(login.status).toBe(503);
+      expect(login.body.error.code).toBe('EMAIL_NOT_SENT');
+
+      // Anonymous code requests answer the same for every address while email is down.
+      for (const address of [email, 'nobody@example.com']) {
+        for (const path of ['/api/auth/verify-email/resend', '/api/auth/forgot-password']) {
+          const res = await ctx.client().post(path, { email: address });
+          expect(res.status, `${path} ${address}`).toBe(503);
+          expect(res.body.error.code).toBe('EMAIL_NOT_SENT');
+        }
+      }
+
+      // Fixed in the provider's dashboard: the next code goes out and signs in.
+      refusing = false;
+      ctx.advance(60_000);
+      expect((await ctx.client().post('/api/auth/verify-email/resend', { email })).body).toEqual({ ok: true, resendAfterSec: 60 });
+      const code = await latestCode(ctx, email);
+      expect((await ctx.client().post('/api/auth/verify-email', { email, code })).status).toBe(200);
+    } finally {
+      ctx.deps.mailer = original;
+    }
+  });
+
+  it('turns down a new email address whose code could not be sent', async () => {
+    const { client } = await registerClient(ctx);
+    const original = ctx.deps.mailer;
+    ctx.deps.mailer = {
+      enabled: true,
+      async send() {
+        throw new MailError('EmailJS', 403, 'API access from non-browser environments is currently disabled.');
+      },
+    };
+    try {
+      const res = await client.post('/api/me/email', { email: freshEmail(), password: strongPassword });
+      expect(res.status).toBe(503);
+      expect(res.body.error.code).toBe('EMAIL_NOT_SENT');
+    } finally {
+      ctx.deps.mailer = original;
     }
   });
 });

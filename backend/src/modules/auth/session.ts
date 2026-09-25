@@ -162,6 +162,8 @@ export interface PublicUser {
   hasGoogle: boolean;
   bookingBlocked: boolean;
   isDemo: boolean;
+  /** Saw the first-run intro (clients; the demo account replays it on every sign-in). */
+  onboarded: boolean;
   createdAt: string;
 }
 
@@ -178,6 +180,7 @@ export function toPublicUser(user: UserDoc): PublicUser {
     hasGoogle: Boolean(user.googleId),
     bookingBlocked: user.bookingBlocked,
     isDemo: user.isDemo === true,
+    onboarded: Boolean(user.onboardedAt),
     createdAt: user.createdAt.toISOString(),
   };
 }

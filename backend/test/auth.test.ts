@@ -10,6 +10,16 @@ afterAll(async () => {
   await ctx.close();
 });
 
+describe('first-run intro', () => {
+  it('is remembered on the account once seen, on every device', async () => {
+    const { client } = await registerClient(ctx);
+    expect((await client.get('/api/auth/me')).body.user.onboarded).toBe(false);
+    expect((await client.post('/api/me/onboarded')).body).toEqual({ ok: true });
+    expect((await client.post('/api/me/onboarded')).status).toBe(200);
+    expect((await client.get('/api/auth/me')).body.user.onboarded).toBe(true);
+  });
+});
+
 describe('registration', () => {
   it('creates a client, signs them in for a year and hides secrets', async () => {
     const { client, user } = await registerClient(ctx, { email: 'Maria.Popa@Example.com' });
@@ -31,7 +41,7 @@ describe('registration', () => {
       acceptTerms: true,
     });
     expect(res.status).toBe(201);
-    expect(res.body).toEqual({ verification: { email: 'irina@example.com', expiresInSec: 600, resendAfterSec: 60 } });
+    expect(res.body).toEqual({ verification: { email: 'irina@example.com', sent: true, expiresInSec: 600, resendAfterSec: 60 } });
     expect(res.setCookies).toEqual([]);
     expect((await client.get('/api/auth/me')).status).toBe(401);
 

@@ -39,12 +39,14 @@ import { isPlaceholderEmail } from '../../lib/placeholder-email';
 import {
   OTP_RESEND_COOLDOWN_MS,
   OTP_TTL_MS,
-  issueAndEmailCode,
   issueOtp,
   needsEmailVerification,
   otpCodeSchema,
   revokeOtps,
   sendEmailCode,
+  type CodeDelivery,
+  emailNotSent,
+  mailWorking,
   verifyOtp,
 } from './otp';
 import {
@@ -55,12 +57,13 @@ import {
   toPublicUser,
 } from './session';
 import { getSettings } from '../settings';
+import { notifyWelcome } from '../notifications';
 
 const RESET_TTL_MS = 30 * 60_000;
 
-/** What the app needs to show the "enter the code" screen. */
-const pendingVerification = (email: string) => ({
-  verification: { email, expiresInSec: OTP_TTL_MS / 1000, resendAfterSec: OTP_RESEND_COOLDOWN_MS / 1000 },
+/** What the app needs to show the "enter the code" screen (or "the email did not go out"). */
+const pendingVerification = (email: string, delivery: CodeDelivery) => ({
+  verification: { email, sent: delivery !== 'failed', expiresInSec: OTP_TTL_MS / 1000, resendAfterSec: OTP_RESEND_COOLDOWN_MS / 1000 },
 });
 
 const codeInvalid = () => new AppError(400, 'CODE_INVALID', 'The code is wrong or has expired', { fields: { code: 'invalid_code' } });
@@ -151,8 +154,9 @@ export function authRoutes(deps: AppDeps) {
     }
 
     await audit(deps, { actorId: user._id, action: 'user.register', targetType: 'user', targetId: user._id });
-    await sendEmailCode(deps, { user, purpose: 'verify_email', email: user.email, locale: input.locale });
-    return c.json(pendingVerification(user.email), 201);
+    // The account exists either way; the app offers to send the code again if it did not go out.
+    const delivery = await sendEmailCode(deps, { user, purpose: 'verify_email', email: user.email, locale: input.locale });
+    return c.json(pendingVerification(user.email, delivery), 201);
   });
 
   /** Sign-up through an invite: the walk-in record becomes the account, bookings included. */
@@ -186,8 +190,8 @@ export function authRoutes(deps: AppDeps) {
     }
     const user: UserDoc = { ...invited, ...set };
     await audit(deps, { actorId: user._id, action: 'user.claim_invite', targetType: 'user', targetId: user._id });
-    await sendEmailCode(deps, { user, purpose: 'verify_email', email: user.email, locale: input.locale });
-    return c.json(pendingVerification(user.email), 201);
+    const delivery = await sendEmailCode(deps, { user, purpose: 'verify_email', email: user.email, locale: input.locale });
+    return c.json(pendingVerification(user.email, delivery), 201);
   }
 
   /** What the sign-up screen shows for an invite link: who it is for and the next visit. */
@@ -254,7 +258,8 @@ export function authRoutes(deps: AppDeps) {
     if (needsEmailVerification(user)) {
       // No session until the inbox is proven: a fresh code is on its way (at most one a minute),
       // and POST /verify-email signs in.
-      await sendEmailCode(deps, { user, purpose: 'verify_email', email: user.email, locale: user.locale });
+      const delivery = await sendEmailCode(deps, { user, purpose: 'verify_email', email: user.email, locale: user.locale });
+      if (delivery === 'failed') throw emailNotSent();
       throw new AppError(403, 'EMAIL_NOT_VERIFIED', 'Confirm your email with the code we sent');
     }
 
@@ -287,16 +292,22 @@ export function authRoutes(deps: AppDeps) {
     if (!user.isActive) throw new AppError(403, 'ACCOUNT_DISABLED', 'Account disabled');
 
     const now = deps.now();
+    const firstConfirmation = !user.emailVerifiedAt;
     const set: Partial<UserDoc> = { emailVerifiedAt: user.emailVerifiedAt ?? now, lastLoginAt: now, updatedAt: now };
     await col.users.updateOne({ _id: user._id }, { $set: set, $unset: { emailGrandfathered: '' } });
     const verified: UserDoc = { ...user, ...set, emailGrandfathered: undefined };
     const tokens = await createSession(deps, verified, { remember: input.remember, ...meta(c, ip) });
     setSessionCookies(c, config, tokens);
     await audit(deps, { actorId: user._id, action: 'user.verify_email', targetType: 'user', targetId: user._id });
+    // A brand-new account is ready: say hello (once, in the background).
+    if (firstConfirmation) deps.defer(notifyWelcome(deps, verified));
     return c.json({ user: toPublicUser(verified) });
   });
 
-  /** Sends a new code. Answers the same whether or not such an account is waiting for one. */
+  /**
+   * Sends a new code. Answers the same whether or not such an account is waiting for one,
+   * including "email is not working right now" while the provider rejects messages.
+   */
   app.post('/verify-email/resend', async (c) => {
     const ip = c.get('ip');
     const input = await parseJson(c, z.object({ email: emailSchema, locale: localeSchema.optional() }));
@@ -304,12 +315,13 @@ export function authRoutes(deps: AppDeps) {
       { key: `otp:send:ip:${ip}`, limit: 20, windowSec: 3600 },
       { key: `otp:send:verify:${input.email}`, limit: 6, windowSec: 3600 },
     ]);
+    if (!mailWorking(deps)) throw emailNotSent();
     const user = await col.users.findOne({ email: input.email, isActive: true, deletedAt: null });
     if (user && needsEmailVerification(user)) {
       // After the response: its timing must not tell whether such an account is waiting.
       deps.defer(
-        issueAndEmailCode(deps, { user, purpose: 'verify_email', email: user.email, locale: input.locale ?? user.locale }).catch(
-          (error: unknown) => console.error(`[mail] verify_email code email failed: ${(error as Error).message}`),
+        sendEmailCode(deps, { user, purpose: 'verify_email', email: user.email, locale: input.locale ?? user.locale }).catch(
+          (error: unknown) => console.error(`[mail] verify_email code failed: ${(error as Error).message}`),
         ),
       );
     }
@@ -416,6 +428,8 @@ export function authRoutes(deps: AppDeps) {
       { key: `forgot:acct:${input.email}`, limit: 5, windowSec: 3600 },
     ]);
 
+    // The same answer for every address while the provider rejects messages.
+    if (!mailWorking(deps)) throw emailNotSent();
     // Shared demo accounts never get mail (their password is public anyway).
     const user = await col.users.findOne({ email: input.email, isActive: true, deletedAt: null, isDemo: { $ne: true } });
     // Everything happens after the response, so its timing never tells whether the account exists.
@@ -637,6 +651,7 @@ export function authRoutes(deps: AppDeps) {
       );
       if (!result.ok) return fail(result.reason);
       const { user } = result;
+      if (result.created || claim) deps.defer(notifyWelcome(deps, user));
       const tokens = await createSession(deps, user, {
         remember: saved.remember !== false,
         ...meta(c, c.get('ip')),

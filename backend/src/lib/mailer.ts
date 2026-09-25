@@ -15,6 +15,11 @@ export interface MailMessage {
 export interface Mailer {
   readonly enabled: boolean;
   send(message: MailMessage): Promise<void>;
+  /**
+   * False for a few minutes after the provider rejected a message outright (wrong keys, API
+   * access switched off): retrying cannot help until the setup is fixed. Absent = assume yes.
+   */
+  working?(): boolean;
 }
 
 /** A provider refused or failed to take the message. Carries the provider's answer, never the email. */
@@ -39,6 +44,8 @@ export const EMAILJS_ENDPOINT = 'https://api.emailjs.com/api/v1.0/email/send';
 const TIMEOUT_MS = 10_000;
 /** EmailJS accepts one request per second; sends queue up behind each other. */
 const EMAILJS_GAP_MS = 1_100;
+/** How long a rejected setup counts as broken before the provider is tried blind again. */
+const REFUSED_PAUSE_MS = 3 * 60_000;
 
 /**
  * Addresses that can never receive mail: walk-in placeholders, anonymised accounts and the
@@ -63,10 +70,12 @@ export function createMailer(config: AppConfig): Mailer {
   if (!mail) {
     return {
       enabled: false,
+      // Production without a provider can never deliver: say so rather than pretend.
+      working: () => !config.isProd,
       async send(message) {
         if (config.isProd) {
           console.warn('[mail] no email provider configured (EMAILJS_* or RESEND_API_KEY/MAIL_FROM); email not sent');
-          return;
+          throw new MailError('Mail', 400, 'no email provider configured');
         }
         if (config.env !== 'test') {
           console.info(`[mail:dev] to=${message.to} subject="${message.subject}"\n${message.text}`);
@@ -77,8 +86,10 @@ export function createMailer(config: AppConfig): Mailer {
 
   const transport = mail.provider === 'emailjs' ? emailJsTransport(mail) : resendTransport(mail);
   const development = config.env === 'development';
+  let refusedUntil = 0;
   return {
     enabled: true,
+    working: () => Date.now() >= refusedUntil,
     async send(message) {
       if (isUndeliverableAddress(message.to)) {
         if (development) console.info(`[mail] skipped undeliverable address ${message.to}`);
@@ -86,7 +97,9 @@ export function createMailer(config: AppConfig): Mailer {
       }
       try {
         await transport(message);
+        refusedUntil = 0;
       } catch (error) {
+        if (error instanceof MailError && !error.transient) refusedUntil = Date.now() + REFUSED_PAUSE_MS;
         // Development only: show what would have gone out, so a provider still being set up
         // (e.g. EmailJS answering 403) never blocks signing up locally.
         if (development) {

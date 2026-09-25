@@ -19,7 +19,7 @@ import {
 } from '../../lib/validation';
 import { requireAuth } from '../../middleware/auth';
 import { clearSessionCookies } from '../auth/cookies';
-import { OTP_RESEND_COOLDOWN_MS, OTP_TTL_MS, otpCodeSchema, sendEmailCode, verifyOtp } from '../auth/otp';
+import { OTP_RESEND_COOLDOWN_MS, OTP_TTL_MS, emailNotSent, otpCodeSchema, sendEmailCode, verifyOtp } from '../auth/otp';
 import { revokeAllSessions, toPublicUser } from '../auth/session';
 import { publicPrefs, resolvePrefs } from '../notifications/prefs';
 import { getSettings } from '../settings';
@@ -49,6 +49,13 @@ export function meRoutes(deps: AppDeps) {
     };
     await deps.col.users.updateOne({ _id: user._id }, { $set: set });
     return c.json({ user: toPublicUser({ ...next, updatedAt: now }) });
+  });
+
+  /** The first-run intro was seen (finished or closed): it never shows again, on any device. */
+  app.post('/onboarded', async (c) => {
+    const user = c.get('user');
+    await deps.col.users.updateOne({ _id: user._id, onboardedAt: null }, { $set: { onboardedAt: deps.now() } });
+    return c.json({ ok: true });
   });
 
   const passwordChangeSchema = z.object({
@@ -110,7 +117,8 @@ export function meRoutes(deps: AppDeps) {
     const taken = await deps.col.users.findOne({ email: input.email, _id: { $ne: user._id } }, { projection: { _id: 1 } });
     if (taken) throw new AppError(409, 'EMAIL_TAKEN', 'Email already registered', { fields: { email: 'taken' } });
 
-    await sendEmailCode(deps, { user, purpose: 'change_email', email: input.email, locale: input.locale ?? user.locale });
+    const delivery = await sendEmailCode(deps, { user, purpose: 'change_email', email: input.email, locale: input.locale ?? user.locale });
+    if (delivery === 'failed') throw emailNotSent();
     return c.json({ verification: { email: input.email, expiresInSec: OTP_TTL_MS / 1000, resendAfterSec: OTP_RESEND_COOLDOWN_MS / 1000 } });
   });
 
@@ -125,7 +133,9 @@ export function meRoutes(deps: AppDeps) {
       email: input.email,
       createdAt: { $gt: new Date(deps.now().getTime() - OTP_TTL_MS) },
     });
-    if (pending) await sendEmailCode(deps, { user, purpose: 'change_email', email: input.email, locale: input.locale ?? user.locale });
+    if (pending && (await sendEmailCode(deps, { user, purpose: 'change_email', email: input.email, locale: input.locale ?? user.locale })) === 'failed') {
+      throw emailNotSent();
+    }
     return c.json({ ok: true, resendAfterSec: OTP_RESEND_COOLDOWN_MS / 1000 });
   });
 

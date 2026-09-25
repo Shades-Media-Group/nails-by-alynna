@@ -412,6 +412,11 @@ describe('email delivery', () => {
     const error = await mailer.send({ to: 'ana@gmail.com', subject: 's', html: 'h', text: 't' }).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(MailError);
     expect(error).toMatchObject({ status: 403, body: 'API calls are disabled for non-browser applications', transient: false });
+    // A rejected setup counts as broken (code requests say so) until a message goes through.
+    expect(mailer.working?.()).toBe(false);
+    vi.stubGlobal('fetch', async () => new Response('OK', { status: 200 }));
+    await mailer.send({ to: 'ana@gmail.com', subject: 's', html: 'h', text: 't' });
+    expect(mailer.working?.()).toBe(true);
   });
 
   it('refuses half an EmailJS setup and knows undeliverable addresses', () => {

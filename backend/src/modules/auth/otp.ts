@@ -5,6 +5,7 @@ import type { OtpCodeDoc, OtpPurpose, UserDoc } from '../../db/types';
 import { audit } from '../../lib/audit';
 import { timingSafeEqualStr } from '../../lib/crypto';
 import { verificationCodeEmail } from '../../lib/emails';
+import { AppError } from '../../lib/errors';
 import type { Locale } from '../../lib/validation';
 import { getSettings } from '../settings';
 
@@ -54,7 +55,10 @@ async function hashCode(deps: AppDeps, otp: Pick<OtpCodeDoc, 'purpose' | 'userId
   return [...mac].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-export type IssueResult = { status: 'issued'; code: string; expiresAt: Date } | { status: 'cooldown'; retryAfterSec: number };
+export type IssueResult =
+  | { status: 'issued'; id: ObjectId; code: string; expiresAt: Date }
+  /** `failed`: the email with the code sent under a minute ago did not go out. */
+  | { status: 'cooldown'; retryAfterSec: number; failed: boolean };
 
 /**
  * A fresh code for this purpose and address, unless one was sent there less than a minute
@@ -67,11 +71,15 @@ export async function issueOtp(
   const now = deps.now();
   const latest = await deps.col.otpCodes.findOne(
     { userId: opts.userId, purpose: opts.purpose, email: opts.email },
-    { sort: { createdAt: -1 }, projection: { createdAt: 1 } },
+    { sort: { createdAt: -1 }, projection: { createdAt: 1, deliveryFailedAt: 1 } },
   );
   const sinceLast = latest ? now.getTime() - latest.createdAt.getTime() : Infinity;
   if (sinceLast < OTP_RESEND_COOLDOWN_MS) {
-    return { status: 'cooldown', retryAfterSec: Math.ceil((OTP_RESEND_COOLDOWN_MS - sinceLast) / 1000) };
+    return {
+      status: 'cooldown',
+      retryAfterSec: Math.ceil((OTP_RESEND_COOLDOWN_MS - sinceLast) / 1000),
+      failed: Boolean(latest?.deliveryFailedAt),
+    };
   }
 
   // Only the newest code works.
@@ -91,7 +99,7 @@ export async function issueOtp(
   doc.codeHash = await hashCode(deps, doc, code);
   await deps.col.otpCodes.insertOne(doc);
   await audit(deps, { actorId: opts.userId, action: 'auth.code_sent', targetType: 'user', targetId: opts.userId, meta: { purpose: opts.purpose } });
-  return { status: 'issued', code, expiresAt: doc.expiresAt };
+  return { status: 'issued', id: doc._id, code, expiresAt: doc.expiresAt };
 }
 
 export type VerifyResult = { ok: true; otp: OtpCodeDoc } | { ok: false };
@@ -171,23 +179,28 @@ async function emailCode(deps: AppDeps, opts: EmailCodeOptions, code: string): P
   );
 }
 
+/** 'waiting': a code went out less than a minute ago, so no new one was sent. */
+export type CodeDelivery = 'sent' | 'waiting' | 'failed';
+
 /**
- * Issues a code that confirms `email` and emails it after the response (so response timing
- * never depends on the mail provider). Respects the one-minute cooldown silently.
+ * Issues a code that confirms `email` and emails it before answering, so the app never says
+ * "we sent you a code" when the provider refused the email. At most one code a minute per
+ * address; within that minute the answer is what became of the previous email.
  */
-export async function sendEmailCode(deps: AppDeps, opts: EmailCodeOptions): Promise<IssueResult> {
+export async function sendEmailCode(deps: AppDeps, opts: EmailCodeOptions): Promise<CodeDelivery> {
   const result = await issueOtp(deps, { userId: opts.user._id, purpose: opts.purpose, email: opts.email });
-  if (result.status !== 'issued') return result;
-  deps.defer(
-    emailCode(deps, opts, result.code).catch((error: unknown) =>
-      console.error(`[mail] ${opts.purpose} code email failed: ${(error as Error).message}`),
-    ),
-  );
-  return result;
+  if (result.status === 'cooldown') return result.failed ? 'failed' : 'waiting';
+  try {
+    await emailCode(deps, opts, result.code);
+    return 'sent';
+  } catch (error) {
+    console.error(`[mail] ${opts.purpose} code email failed: ${(error as Error).message}`);
+    await deps.col.otpCodes.updateOne({ _id: result.id }, { $set: { deliveryFailedAt: deps.now() } });
+    return 'failed';
+  }
 }
 
-/** The same, all in one go: for callers that already run it after the response. */
-export async function issueAndEmailCode(deps: AppDeps, opts: EmailCodeOptions): Promise<void> {
-  const result = await issueOtp(deps, { userId: opts.user._id, purpose: opts.purpose, email: opts.email });
-  if (result.status === 'issued') await emailCode(deps, opts, result.code);
-}
+/** False while the email provider is rejecting messages (see Mailer.working). */
+export const mailWorking = (deps: AppDeps): boolean => deps.mailer.working?.() ?? true;
+
+export const emailNotSent = () => new AppError(503, 'EMAIL_NOT_SENT', 'The email could not be sent. Try again in a few minutes');
