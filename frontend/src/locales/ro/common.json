@@ -108,7 +108,9 @@
       "NETWORK": "Nu există conexiune. Verifică internetul și încearcă din nou.",
       "DEMO_READ_ONLY": "Acesta este un cont demo, așa că modificările nu se salvează.",
       "ONE_PER_CATEGORY": "Alege o singură mărime pentru o vizită.",
-      "NOT_A_DEFAULT": "Acest serviciu nu face parte din lista de prețuri standard."
+      "NOT_A_DEFAULT": "Acest serviciu nu face parte din lista de prețuri standard.",
+      "INVITE_INVALID": "Invitația a expirat sau a fost deja folosită.",
+      "ALREADY_REGISTERED": "Acest client are deja cont."
     }
   },
   "validation": {

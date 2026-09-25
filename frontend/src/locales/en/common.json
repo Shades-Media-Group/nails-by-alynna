@@ -108,7 +108,9 @@
       "NETWORK": "No connection. Check your internet and try again.",
       "DEMO_READ_ONLY": "This is a demo account, so changes aren't saved.",
       "ONE_PER_CATEGORY": "Choose one size per visit.",
-      "NOT_A_DEFAULT": "This item isn't from the standard price list."
+      "NOT_A_DEFAULT": "This item isn't from the standard price list.",
+      "INVITE_INVALID": "This invitation has expired or was already used.",
+      "ALREADY_REGISTERED": "This client already has an account."
     }
   },
   "validation": {

@@ -15,6 +15,8 @@ import { isEmail, nameIssue, normalizePhone, passwordIssue } from '@/lib/validat
 import { ApiError } from '@/services/api/client';
 import { authApi } from '@/services/api/endpoints';
 import { queries } from '@/services/queries';
+import { useStudio } from '@/hooks/useStudio';
+import { formatDateTime } from '@/lib/format';
 
 type Field = 'name' | 'surname' | 'email' | 'phone' | 'password' | 'acceptTerms';
 
@@ -26,8 +28,29 @@ export default function SignupPage() {
   const { setUser } = useAuth();
   const next = safeNextPath(params.get('next'));
   const config = useQuery(queries.config());
+  const { timeZone } = useStudio();
+  const inviteToken = params.get('invite');
+  const invite = useQuery({
+    queryKey: ['invite', inviteToken],
+    queryFn: () => authApi.invite(inviteToken!),
+    enabled: Boolean(inviteToken),
+    retry: false,
+    staleTime: Infinity,
+  });
 
   const [form, setForm] = useState({ name: '', surname: '', email: '', phone: '', password: '' });
+  // Prefill once from the invite: the studio already knows the name and phone.
+  const [prefilled, setPrefilled] = useState(false);
+  if (invite.data && !prefilled) {
+    setPrefilled(true);
+    setForm((f) => ({
+      ...f,
+      name: f.name || invite.data.name,
+      surname: f.surname || invite.data.surname,
+      phone: f.phone || (invite.data.phone ?? ''),
+      email: f.email || (invite.data.email ?? ''),
+    }));
+  }
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [remember, setRemember] = useState(true);
   const [touched, setTouched] = useState(false);
@@ -72,6 +95,7 @@ export default function SignupPage() {
       locale,
       remember,
       acceptTerms: true,
+      ...(invite.data && inviteToken ? { invite: inviteToken } : {}),
     });
   };
 
@@ -91,12 +115,23 @@ export default function SignupPage() {
         </>
       }
     >
-      <h1 className="text-h1 font-extrabold">{t('signup.title')}</h1>
-      <p className="mt-2 text-ink-600">{t('signup.subtitle')}</p>
+      <h1 className="text-h1 font-extrabold">{invite.data ? t('signup.inviteTitle', { name: invite.data.name }) : t('signup.title')}</h1>
+      <p className="mt-2 text-ink-600">
+        {invite.data
+          ? invite.data.nextVisit
+            ? t('signup.inviteVisit', { date: formatDateTime(invite.data.nextVisit, locale, timeZone) })
+            : t('signup.inviteText')
+          : t('signup.subtitle')}
+      </p>
+      {inviteToken && invite.isError ? (
+        <Alert tone="warning" className="mt-4">
+          {t('signup.inviteInvalid')}
+        </Alert>
+      ) : null}
 
       {config.data?.auth.google ? (
         <div className="mt-6 flex flex-col gap-3">
-          <GoogleButton label={t('signup.google')} next={next} />
+          <GoogleButton label={t('signup.google')} next={next} invite={invite.data ? inviteToken : null} />
           <GoogleTerms />
           <OrDivider label={t('signup.or')} />
         </div>

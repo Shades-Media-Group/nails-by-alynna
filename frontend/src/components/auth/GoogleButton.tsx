@@ -11,7 +11,7 @@ import { authApi } from '@/services/api/endpoints';
  * Google sign-in and sign-up are one step: the API creates the account on first use. A plain
  * link, not a popup, so it works in installed apps and with strict popup blockers.
  */
-export function GoogleButton({ label, next, className }: { label: string; next?: string | null; className?: string }) {
+export function GoogleButton({ label, next, invite, className }: { label: string; next?: string | null; invite?: string | null; className?: string }) {
   const { locale } = useLocale();
   const [leaving, setLeaving] = useState(false);
 
@@ -24,7 +24,7 @@ export function GoogleButton({ label, next, className }: { label: string; next?:
 
   return (
     <a
-      href={authApi.googleStartUrl(locale, true, next ?? undefined)}
+      href={authApi.googleStartUrl(locale, true, next ?? undefined, invite ?? undefined)}
       onClick={() => setLeaving(true)}
       aria-busy={leaving || undefined}
       className={cx(

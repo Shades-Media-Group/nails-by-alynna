@@ -28,6 +28,17 @@ export interface RegisterInput {
   locale: Locale;
   remember: boolean;
   acceptTerms: true;
+  /** Token from a studio invite link: the account takes over the walk-in record. */
+  invite?: string;
+}
+
+export interface InviteInfo {
+  name: string;
+  surname: string;
+  phone: string | null;
+  email: string | null;
+  locale: Locale;
+  nextVisit: string | null;
 }
 
 export const authApi = {
@@ -42,8 +53,9 @@ export const authApi = {
   resetPassword: (token: string, password: string) => api.post<{ ok: true }>('/auth/reset-password', { token, password }),
   sessions: () => api.get<{ sessions: DeviceSession[] }>('/auth/sessions').then((r) => r.sessions),
   revokeSession: (id: string) => api.delete<{ ok: true }>(`/auth/sessions/${id}`),
-  googleStartUrl: (locale: Locale, remember: boolean, next?: string) =>
-    `/api/auth/google/start${query({ lang: locale, remember: remember ? '1' : '0', next })}`,
+  googleStartUrl: (locale: Locale, remember: boolean, next?: string, invite?: string) =>
+    `/api/auth/google/start${query({ lang: locale, remember: remember ? '1' : '0', next, invite })}`,
+  invite: (token: string) => api.get<{ invite: InviteInfo }>(`/auth/invite/${encodeURIComponent(token)}`).then((r) => r.invite),
 };
 
 export const meApi = {
