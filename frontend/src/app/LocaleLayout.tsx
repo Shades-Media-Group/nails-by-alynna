@@ -8,6 +8,7 @@ import { SplashDone } from '@/components/common/SplashDone';
 import { UpdatePrompt } from '@/components/common/UpdatePrompt';
 import { i18n } from '@/i18n';
 import type { Locale } from '@/i18n/config';
+import { closeKeyboard } from '@/lib/platform';
 import { storage, STORAGE_KEYS } from '@/lib/storage';
 
 /**
@@ -38,6 +39,14 @@ export function LocaleLayout({ locale }: { locale: Locale }) {
       window.removeEventListener('popstate', onPop);
       window.clearTimeout(timer);
     };
+  }, []);
+
+  // Sending a form closes the iPhone keyboard at once: a form that moves on (sign-in, sign-up,
+  // booking) would otherwise leave the keyboard's scroll offset on the next page, shifted up
+  // under the status bar.
+  useEffect(() => {
+    document.addEventListener('submit', closeKeyboard, true);
+    return () => document.removeEventListener('submit', closeKeyboard, true);
   }, []);
 
   useEffect(() => {

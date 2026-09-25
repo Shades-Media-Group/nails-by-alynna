@@ -102,3 +102,9 @@ export function markLandingSeen(): void {
 export function signedOutStart(): '/' | '/login' {
   return needsLanding() ? '/' : '/login';
 }
+
+/** Closes the on-screen keyboard (the focused field lets go). */
+export function closeKeyboard(): void {
+  const active = document.activeElement;
+  if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) active.blur();
+}

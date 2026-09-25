@@ -100,7 +100,12 @@ function OnboardingDialog({ onDone }: { onDone: () => void }) {
   useEffect(() => {
     const release = lockScroll();
     root.current?.focus({ preventScroll: true });
-    return release;
+    return () => {
+      release();
+      // It opens right after signing in, when an iPhone may still hold the keyboard's scroll
+      // offset behind it: Home starts at the top once the intro is gone.
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    };
   }, []);
 
   const onKeyDown = (event: React.KeyboardEvent) => {

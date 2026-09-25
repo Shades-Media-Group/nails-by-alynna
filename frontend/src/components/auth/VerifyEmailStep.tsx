@@ -5,6 +5,7 @@ import { Alert } from '@/components/common/Alert';
 import { Button } from '@/components/ui';
 import { EmailIcon, WarningIcon } from '@/components/ui/icons';
 import { cx } from '@/lib/cx';
+import { closeKeyboard } from '@/lib/platform';
 import { useLocale } from '@/i18n/useLocale';
 import { errorMessage } from '@/lib/errors';
 import { isApiError } from '@/services/api/client';
@@ -62,7 +63,9 @@ export function VerifyEmailStep({
   });
 
   const submit = (value: string) => {
-    if (value.length === 6 && !verify.isPending) verify.mutate(value);
+    if (value.length !== 6 || verify.isPending) return;
+    closeKeyboard();
+    verify.mutate(value);
   };
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
