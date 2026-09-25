@@ -9,7 +9,10 @@ import { DEFAULT_WEEKLY, SEED_CATALOG, SEED_MASTER } from './data';
 
 export interface SeedOptions {
   admin?: { email: string; password: string; name: string; surname: string; resetPassword?: boolean };
-  demo?: { password: string };
+  /** Shared read-only demo accounts (safe on production: they cannot change anything). */
+  demoUsers?: { password: string };
+  /** Sample clients and appointments so every screen has content (never on production). */
+  demoData?: boolean;
   log?: (message: string) => void;
 }
 
@@ -116,93 +119,153 @@ export async function runSeed(deps: AppDeps, options: SeedOptions = {}): Promise
     log(`✓ master ${master.name} created`);
   }
 
-  if (options.demo) await seedDemo(deps, options.demo.password, log);
+  if (options.demoUsers) await seedDemoUsers(deps, options.demoUsers.password, log);
+  if (options.demoData) await seedDemoData(deps, log);
 }
 
-async function seedDemo(deps: AppDeps, password: string, log: (m: string) => void) {
-  const { col } = deps;
+export const DEMO_ACCOUNTS = [
+  { email: 'client.demo@example.com', name: 'Daria', surname: 'Demo', role: 'client' as const, phone: '+37360000001' },
+  { email: 'admin.demo@example.com', name: 'Irina', surname: 'Demo', role: 'admin' as const, phone: null },
+  { email: 'owner.demo@example.com', name: 'Alina', surname: 'Demo', role: 'administrator' as const, phone: null },
+];
+
+async function seedDemoUsers(deps: AppDeps, password: string, log: (m: string) => void) {
   const now = deps.now();
-  const email = 'demo.client@example.com';
-  let client = await col.users.findOne({ email });
-  if (!client) {
-    client = {
+  const passwordHash = await deps.passwords.hash(password);
+  for (const account of DEMO_ACCOUNTS) {
+    const existing = await deps.col.users.findOne({ email: account.email });
+    if (existing) {
+      await deps.col.users.updateOne(
+        { _id: existing._id },
+        { $set: { isDemo: true, role: account.role, isActive: true, passwordHash, updatedAt: now } },
+      );
+      continue;
+    }
+    await deps.col.users.insertOne({
       _id: new ObjectId(),
-      email,
-      name: 'Daria',
-      surname: 'Demo',
-      phone: '+37360000001',
-      role: 'client',
+      email: account.email,
+      name: account.name,
+      surname: account.surname,
+      phone: account.phone,
+      role: account.role,
       locale: 'ro',
-      passwordHash: await deps.passwords.hash(password),
+      passwordHash,
       googleId: null,
       isActive: true,
       bookingBlocked: false,
+      isDemo: true,
       tokenVersion: 0,
       notes: '',
-      search: userSearch('Daria', 'Demo', email, '+37360000001'),
+      search: userSearch(account.name, account.surname, account.email, account.phone),
       lastLoginAt: null,
       createdAt: now,
       updatedAt: now,
       deletedAt: null,
-    };
-    await col.users.insertOne(client);
-    log(`✓ demo client ${email} created`);
+    });
   }
+  log(`✓ demo accounts ready (${DEMO_ACCOUNTS.map((a) => a.email).join(', ')})`);
+}
 
-  if ((await col.appointments.countDocuments({ clientId: client._id })) > 0) return;
+const SAMPLE_CLIENTS = [
+  { name: 'Maria', surname: 'Popescu', phone: '+37369111222' },
+  { name: 'Elena', surname: 'Rusu', phone: '+37378333444' },
+  { name: 'Olga', surname: 'Ceban', phone: '+37368555666' },
+  { name: 'Ana', surname: 'Munteanu', phone: '+37379777888' },
+];
+
+async function seedDemoData(deps: AppDeps, log: (m: string) => void) {
+  const { col } = deps;
+  const now = deps.now();
+  if ((await col.appointments.countDocuments({ source: 'staff', notes: 'sample' })) > 0) return;
 
   const master = await col.staff.findOne({}, { sort: { order: 1 } });
   const services = await col.services.find({ isActive: true }).toArray();
-  const pick = (key: string) => services.find((s) => s.slug === key) ?? services[0];
   if (!master || services.length === 0) return;
+  const pick = (slug: string) => services.find((s) => s.slug === slug) ?? services[0]!;
+
+  const clients: UserDoc[] = [];
+  for (const sample of SAMPLE_CLIENTS) {
+    const email = `${sample.name.toLowerCase()}.${sample.surname.toLowerCase()}@example.com`;
+    let client = await col.users.findOne({ email });
+    if (!client) {
+      client = {
+        _id: new ObjectId(),
+        email,
+        name: sample.name,
+        surname: sample.surname,
+        phone: sample.phone,
+        role: 'client',
+        locale: 'ro',
+        passwordHash: null,
+        googleId: null,
+        isActive: true,
+        bookingBlocked: false,
+        tokenVersion: 0,
+        notes: '',
+        search: userSearch(sample.name, sample.surname, email, sample.phone),
+        lastLoginAt: null,
+        createdAt: now,
+        updatedAt: now,
+        deletedAt: null,
+      };
+      await col.users.insertOne(client);
+    }
+    clients.push(client);
+  }
+  const demoClient = await col.users.findOne({ email: DEMO_ACCOUNTS[0]!.email });
+  if (demoClient) clients.push(demoClient);
 
   const settings = (await col.settings.findOne({ _id: 'studio' })) ?? DEFAULT_SETTINGS;
   const tz = settings.timezone;
   const today = todayIn(tz, now);
-  const plan: Array<{ day: number; time: string; slugs: string[]; status: AppointmentStatus }> = [
-    { day: -21, time: '11:00', slugs: ['manicure-gel'], status: 'completed' },
-    { day: -7, time: '15:30', slugs: ['pedicure-gel'], status: 'completed' },
-    { day: 2, time: '12:00', slugs: ['manicure-gel', 'art-simple'], status: 'confirmed' },
+  const plan: Array<{ day: number; time: string; slugs: string[]; status: AppointmentStatus; client: number }> = [
+    { day: -21, time: '11:00', slugs: ['manicure-gel'], status: 'completed', client: 4 },
+    { day: -14, time: '12:00', slugs: ['extensions-gel'], status: 'completed', client: 0 },
+    { day: -9, time: '15:00', slugs: ['pedicure-gel'], status: 'completed', client: 1 },
+    { day: -7, time: '15:30', slugs: ['pedicure-gel'], status: 'completed', client: 4 },
+    { day: -3, time: '10:00', slugs: ['manicure-classic'], status: 'no_show', client: 2 },
+    { day: 0, time: '10:00', slugs: ['manicure-gel', 'art-simple'], status: 'confirmed', client: 3 },
+    { day: 0, time: '13:30', slugs: ['extensions-refill'], status: 'confirmed', client: 0 },
+    { day: 0, time: '16:00', slugs: ['manicure-french'], status: 'pending', client: 1 },
+    { day: 1, time: '11:00', slugs: ['pedicure-classic'], status: 'confirmed', client: 2 },
+    { day: 2, time: '12:00', slugs: ['manicure-gel', 'art-simple'], status: 'confirmed', client: 4 },
+    { day: 3, time: '14:00', slugs: ['extensions-long'], status: 'pending', client: 3 },
   ];
 
-  const docs: AppointmentDoc[] = plan.map((p) => {
-    const chosen = p.slugs.map(pick).filter((s): s is ServiceDoc => Boolean(s));
+  const docs: AppointmentDoc[] = [];
+  for (const p of plan) {
+    const client = clients[p.client] ?? clients[0]!;
     let day = addDays(today, p.day);
-    // The default schedule is closed on Sundays; keep demo visits on working days.
+    // The default schedule is closed on Sundays; keep samples on working days.
     if (isoWeekday(day) === 7) day = addDays(day, p.day < 0 ? -1 : 1);
+    const chosen = p.slugs.map(pick);
     const start = zonedTimeToUtc(day, p.time, tz);
     const durationMin = chosen.reduce((sum, s) => sum + s.durationMin, 0);
-    return {
+    docs.push({
       _id: new ObjectId(),
       code: bookingCode(),
       clientId: client._id,
       client: { name: client.name, surname: client.surname, phone: client.phone, email: client.email },
       staffId: master._id,
-      services: chosen.map((s) => ({
-        serviceId: s._id,
-        name: s.name,
-        durationMin: s.durationMin,
-        price: s.price,
-        priceFrom: s.priceFrom,
-      })),
+      services: chosen.map((s) => ({ serviceId: s._id, name: s.name, durationMin: s.durationMin, price: s.price, priceFrom: s.priceFrom })),
       start,
       end: new Date(start.getTime() + durationMin * MINUTE),
       durationMin,
       totalPrice: chosen.reduce((sum, s) => sum + s.price, 0),
       priceFrom: chosen.some((s) => s.priceFrom),
       status: p.status,
-      notes: '',
+      notes: 'sample',
       staffNotes: '',
-      source: 'client',
+      source: 'staff',
       placedAt: now,
       cancelledAt: null,
       cancelledBy: null,
       cancelReason: '',
-      createdBy: client._id,
+      createdBy: master._id,
       createdAt: now,
       updatedAt: now,
-    };
-  });
+    });
+  }
   await col.appointments.insertMany(docs);
-  log(`✓ ${docs.length} demo appointments created`);
+  log(`✓ ${SAMPLE_CLIENTS.length} sample clients and ${docs.length} sample appointments`);
 }

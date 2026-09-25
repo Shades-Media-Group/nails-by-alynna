@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createTestContext, loginAs, registerClient, strongPassword, type TestContext } from './helpers';
+import { APP_ORIGIN, createTestContext, loginAs, registerClient, strongPassword, type TestContext } from './helpers';
 
 let ctx: TestContext;
 
@@ -164,7 +164,7 @@ describe('password reset', () => {
     const mail = ctx.sentMail.find((m) => m.to === 'forgot@example.com')!;
     expect(mail.subject).toContain('Сброс пароля');
     const token = decodeURIComponent(/token=([^\s"&]+)/.exec(mail.text)![1]!);
-    expect(mail.text).toContain('http://localhost:5173/ru/reset-password?token=');
+    expect(mail.text).toContain(`${APP_ORIGIN}/ru/reset-password?token=`);
 
     const newPassword = 'Fresh-Coat-2027!';
     expect((await ctx.client().post('/api/auth/reset-password', { token, password: newPassword })).status).toBe(200);

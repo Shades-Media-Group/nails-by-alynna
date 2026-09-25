@@ -202,8 +202,10 @@ export function authRoutes(deps: AppDeps) {
   // ── Devices ─────────────────────────────────────────────────────────────────
   app.get('/sessions', auth, async (c) => {
     const user = c.get('user');
+    // A shared demo account only ever sees its own device.
+    const scope = user.isDemo === true && ObjectId.isValid(c.get('sessionId')) ? { _id: new ObjectId(c.get('sessionId')) } : {};
     const sessions = await col.sessions
-      .find({ userId: user._id, revokedAt: null, expiresAt: { $gt: deps.now() } })
+      .find({ userId: user._id, revokedAt: null, expiresAt: { $gt: deps.now() }, ...scope })
       .sort({ lastUsedAt: -1 })
       .limit(20)
       .toArray();
@@ -230,6 +232,19 @@ export function authRoutes(deps: AppDeps) {
     );
     if (res.matchedCount === 0) throw new AppError(404, 'NOT_FOUND', 'Session not found');
     return c.json({ ok: true });
+  });
+
+  // ── Demo sign-in (one tap, read-only shared accounts; DEMO_LOGIN) ─────────────
+  app.post('/demo', async (c) => {
+    if (!config.demoLogin) throw new AppError(404, 'NOT_FOUND', 'Not found');
+    const ip = c.get('ip');
+    await enforceRateLimits(deps, [{ key: `demo:ip:${ip}`, limit: 30, windowSec: 900 }]);
+    const input = await parseJson(c, z.object({ role: z.enum(['client', 'admin', 'administrator']) }));
+    const user = await col.users.findOne({ isDemo: true, role: input.role, isActive: true, deletedAt: null });
+    if (!user) throw new AppError(404, 'NOT_FOUND', 'Demo account not available');
+    const tokens = await createSession(deps, user, { remember: false, ...meta(c, ip) });
+    setSessionCookies(c, config, tokens);
+    return c.json({ user: toPublicUser(user) });
   });
 
   // ── Password reset ──────────────────────────────────────────────────────────

@@ -33,6 +33,7 @@ export type ErrorCode =
   | 'SELF_ACTION'
   | 'IN_USE'
   | 'PAYLOAD_TOO_LARGE'
+  | 'DEMO_READ_ONLY'
   | 'RATE_LIMITED'
   | 'INTERNAL';
 

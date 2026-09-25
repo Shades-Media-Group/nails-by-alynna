@@ -161,6 +161,7 @@ export interface PublicUser {
   hasPassword: boolean;
   hasGoogle: boolean;
   bookingBlocked: boolean;
+  isDemo: boolean;
   createdAt: string;
 }
 
@@ -176,6 +177,7 @@ export function toPublicUser(user: UserDoc): PublicUser {
     hasPassword: Boolean(user.passwordHash),
     hasGoogle: Boolean(user.googleId),
     bookingBlocked: user.bookingBlocked,
+    isDemo: user.isDemo === true,
     createdAt: user.createdAt.toISOString(),
   };
 }

@@ -25,11 +25,18 @@ export function requireAuth(deps: AppDeps) {
       throw new AppError(401, 'SESSION_REVOKED', 'Session is no longer valid');
     }
 
+    // Shared demo accounts may look at everything but change nothing.
+    if (user.isDemo === true && UNSAFE_METHODS.has(c.req.method)) {
+      throw new AppError(403, 'DEMO_READ_ONLY', 'Demo accounts are read-only');
+    }
+
     c.set('user', user);
     c.set('sessionId', claims.sid);
     await next();
   });
 }
+
+const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 export function requireRole(...roles: Role[]) {
   const allowed = new Set(roles);

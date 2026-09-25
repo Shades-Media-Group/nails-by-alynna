@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { AppDeps, AppEnv } from '../../context';
 import { STAFF_ROLES, requireAuth, requireRole } from '../../middleware/auth';
+import { demoMask } from '../../middleware/demo-mask';
 import { adminAppointmentRoutes } from './appointments';
 import { adminCatalogRoutes } from './catalog';
 import { adminClientRoutes } from './clients';
@@ -15,7 +16,7 @@ import { adminAuditRoutes, adminUserRoutes } from './users';
  */
 export function adminRoutes(deps: AppDeps) {
   const app = new Hono<AppEnv>();
-  app.use('*', requireAuth(deps), requireRole(...STAFF_ROLES));
+  app.use('*', requireAuth(deps), requireRole(...STAFF_ROLES), demoMask);
 
   app.route('/stats', dashboardRoutes(deps));
   app.route('/appointments', adminAppointmentRoutes(deps));

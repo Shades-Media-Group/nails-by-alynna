@@ -32,6 +32,8 @@ const schema = z.object({
   /** Shared secret with the Cloudflare Worker proxy; when set, only proxied requests are served. */
   PROXY_SECRET: z.string().min(32, 'PROXY_SECRET must be at least 32 characters').optional(),
   RATE_LIMITS: z.enum(['on', 'off']).default('on'),
+  /** One-tap demo sign-in buttons (demo accounts are read-only either way). */
+  DEMO_LOGIN: z.enum(['on', 'off']).optional(),
   PORT: z.coerce.number().int().min(1).max(65535).default(8787),
 });
 
@@ -58,6 +60,7 @@ export interface AppConfig {
   trustProxy: boolean;
   proxySecret?: string;
   rateLimits: boolean;
+  demoLogin: boolean;
   port: number;
 }
 
@@ -129,6 +132,8 @@ export function loadConfig(source: Record<string, unknown>): AppConfig {
     trustProxy: e.TRUST_PROXY,
     proxySecret: e.PROXY_SECRET,
     rateLimits: e.RATE_LIMITS === 'on',
+    // Off in production unless explicitly enabled.
+    demoLogin: e.DEMO_LOGIN ? e.DEMO_LOGIN === 'on' : !isProd,
     port: e.PORT,
   };
 }

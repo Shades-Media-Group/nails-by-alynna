@@ -32,6 +32,11 @@ export interface UserDoc {
   isActive: boolean;
   /** Blocks online booking without disabling the account (e.g. repeated no-shows). */
   bookingBlocked: boolean;
+  /**
+   * Shared demo account: can open every screen but every change is refused and staff views
+   * show masked personal data. Missing = false.
+   */
+  isDemo?: boolean;
   tokenVersion: number;
   /** Staff-only notes about a client. */
   notes: string;

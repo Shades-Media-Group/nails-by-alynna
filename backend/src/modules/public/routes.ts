@@ -41,10 +41,13 @@ export function publicRoutes(deps: AppDeps) {
 
   app.get('/config', async (c) => {
     const s = await getSettings(deps);
-    const bookable = await deps.col.staff.countDocuments({ isActive: true, isBookable: true });
+    const [bookable, demoRoles] = await Promise.all([
+      deps.col.staff.countDocuments({ isActive: true, isBookable: true }),
+      deps.config.demoLogin ? deps.col.users.distinct('role', { isDemo: true, isActive: true, deletedAt: null }) : [],
+    ]);
     c.header('Cache-Control', 'public, max-age=60');
     return c.json({
-      auth: { google: Boolean(deps.config.google) },
+      auth: { google: Boolean(deps.config.google), demo: demoRoles },
       studio: {
         name: s.name,
         tagline: s.tagline,

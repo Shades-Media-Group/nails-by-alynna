@@ -4,7 +4,9 @@ import { createDeps, createMongo, migrate } from '../runtime';
 import { runSeed } from './run';
 
 /**
- * yarn seed [--demo] [--reset-admin-password]
+ * yarn seed [--demo] [--demo-users] [--reset-admin-password]
+ *   --demo        demo accounts + sample clients/appointments (refused on production)
+ *   --demo-users  only the read-only demo accounts (fine on production)
  * Reads .env (or the real environment). Safe to run repeatedly; also works against Atlas:
  *   MONGODB_URI="mongodb+srv://…" SEED_ADMIN_EMAIL=… SEED_ADMIN_PASSWORD=… yarn seed
  */
@@ -17,11 +19,13 @@ const mongo = createMongo(config);
 const deps = createDeps(config, mongo, { clientIp: () => '127.0.0.1', defer: () => undefined });
 
 const env = process.env;
-const wantDemo = args.has('--demo') || env.SEED_DEMO === 'true';
-if (wantDemo && config.isProd) {
-  console.error('Refusing to create demo data when APP_ENV=production.');
+const wantDemoData = args.has('--demo') || env.SEED_DEMO === 'true';
+const wantDemoUsers = wantDemoData || args.has('--demo-users');
+if (wantDemoData && config.isProd) {
+  console.error('Refusing to create sample data when APP_ENV=production (use --demo-users for demo accounts).');
   process.exit(1);
 }
+const demoPassword = env.SEED_DEMO_PASSWORD || 'nails-demo-2026';
 
 const admin =
   env.SEED_ADMIN_EMAIL && env.SEED_ADMIN_PASSWORD
@@ -45,10 +49,12 @@ try {
   console.info(`Seeding ${config.mongo.dbName}…`);
   await runSeed(deps, {
     admin,
-    demo: wantDemo ? { password: env.SEED_DEMO_PASSWORD || 'demo-password-2026' } : undefined,
+    demoUsers: wantDemoUsers ? { password: demoPassword } : undefined,
+    demoData: wantDemoData,
     log: (message) => console.info(`  ${message}`),
   });
   if (!admin) console.info('  (no SEED_ADMIN_EMAIL/SEED_ADMIN_PASSWORD — administrator not created)');
+  if (wantDemoUsers) console.info(`  demo password: ${demoPassword}`);
   console.info('Done.');
 } catch (error) {
   console.error('Seed failed:', error);
