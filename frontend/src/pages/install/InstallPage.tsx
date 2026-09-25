@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router';
+import { Navigate, useNavigate } from 'react-router';
 import { useAuth } from '@/app/auth';
 import { Logo } from '@/components/brand/Logo';
 import { QrCode } from '@/components/common/QrCode';
@@ -56,7 +56,9 @@ export default function InstallPage() {
     }
   };
 
-  const inside = platform.standalone || installed;
+  // Opened from the Home Screen icon: this is already the app, so go straight in.
+  if (platform.standalone) return <Navigate to={home} replace />;
+  const inside = installed;
 
   return (
     <div className="min-h-dvh bg-white">

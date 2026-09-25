@@ -5,7 +5,7 @@ import { fileURLToPath, URL } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
-import { VitePWA } from 'vite-plugin-pwa';
+import { VitePWA, type ManifestOptions } from 'vite-plugin-pwa';
 import { BRAND_BACKGROUND, generateBrandAssets, splashLinkTags } from './scripts/brand-assets.mjs';
 
 const src = fileURLToPath(new URL('./src', import.meta.url));
@@ -67,6 +67,63 @@ function brandPlugin(): Plugin {
   };
 }
 
+/**
+ * The dev server (`yarn dev:lan`, opened on a phone) behaves like the real app too: it serves
+ * the manifest, so "Add to Home Screen" gives a full-screen app instead of a browser window,
+ * and a /version.json that changes whenever a source file is saved, so an app left open in
+ * the background offers "Update" when it comes back.
+ */
+const RETIRE_SERVICE_WORKER = `self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    for (const key of await caches.keys()) await caches.delete(key);
+    await self.registration.unregister();
+    for (const client of await self.clients.matchAll({ type: 'window' })) client.navigate(client.url);
+  })());
+});
+`;
+
+function devAppPlugin(): Plugin {
+  let version = `dev-${Date.now()}`;
+  return {
+    name: 'nba:dev-app',
+    apply: 'serve',
+    configureServer(server) {
+      server.watcher.on('change', () => {
+        version = `dev-${Date.now()}`;
+      });
+      server.middlewares.use((req, res, next) => {
+        const path = req.url?.split('?')[0];
+        if (path === '/manifest.webmanifest') {
+          res.setHeader('Content-Type', 'application/manifest+json');
+          res.setHeader('Cache-Control', 'no-cache');
+          res.end(JSON.stringify(MANIFEST));
+          return;
+        }
+        // A service worker left over from a production build (vite preview, or the live site on
+        // the same address) would keep serving that old build. The dev server answers its update
+        // check with one that removes itself, empties its caches and reloads the page.
+        if (path === '/sw.js') {
+          res.setHeader('Content-Type', 'text/javascript');
+          res.setHeader('Cache-Control', 'no-store');
+          res.end(RETIRE_SERVICE_WORKER);
+          return;
+        }
+        if (path === '/version.json') {
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Cache-Control', 'no-store');
+          res.end(JSON.stringify({ service: 'nails-by-alynna-web', version, dev: true }));
+          return;
+        }
+        next();
+      });
+    },
+    transformIndexHtml(html) {
+      return html.replace('</head>', '    <link rel="manifest" href="/manifest.webmanifest" />\n  </head>');
+    },
+  };
+}
+
 /** version.json: which build is live and what changed (deploy checks, /health, admin). */
 function versionPlugin(info: BuildInfo): Plugin {
   return {
@@ -81,6 +138,34 @@ function versionPlugin(info: BuildInfo): Plugin {
     },
   };
 }
+
+/** The installed app: name, icons, start page (the app decides where to go), standalone window. */
+const MANIFEST: Partial<ManifestOptions> = {
+  id: '/',
+  name: 'Nails by Alynna',
+  short_name: 'Nails Alynna',
+  description: 'Book your nails at Nails by Alynna, Chișinău: manicure, pedicure, extensions and nail art.',
+  lang: 'ro',
+  dir: 'ltr',
+  start_url: '/?source=pwa',
+  scope: '/',
+  display: 'standalone',
+  display_override: ['standalone', 'minimal-ui'],
+  orientation: 'portrait',
+  background_color: BRAND_BACKGROUND,
+  theme_color: '#FFFFFF',
+  categories: ['beauty', 'lifestyle'],
+  icons: [
+    { src: '/icons/pwa-64x64.png', sizes: '64x64', type: 'image/png' },
+    { src: '/icons/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+    { src: '/icons/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+    { src: '/icons/maskable-icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+  ],
+  shortcuts: [
+    { name: 'Programează-te', short_name: 'Book', url: '/book', icons: [{ src: '/icons/pwa-192x192.png', sizes: '192x192' }] },
+    { name: 'Programările mele', short_name: 'Bookings', url: '/bookings', icons: [{ src: '/icons/pwa-192x192.png', sizes: '192x192' }] },
+  ],
+};
 
 const ADMIN_MODULE = /[\\/]src[\\/](admin)[\\/]|[\\/]locales[\\/][a-z]{2}[\\/]admin\.json$/;
 
@@ -132,38 +217,14 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       brandPlugin(),
       versionPlugin(build),
+      devAppPlugin(),
       VitePWA({
         registerType: 'prompt',
         injectRegister: false,
         strategies: 'generateSW',
         manifestFilename: 'manifest.webmanifest',
         includeAssets: ['favicon.svg', 'favicon.ico', 'robots.txt', 'icons/apple-touch-icon-180x180.png'],
-        manifest: {
-          id: '/',
-          name: 'Nails by Alynna',
-          short_name: 'Nails Alynna',
-          description: 'Book your nails at Nails by Alynna, Chișinău: manicure, pedicure, extensions and nail art.',
-          lang: 'ro',
-          dir: 'ltr',
-          start_url: '/?source=pwa',
-          scope: '/',
-          display: 'standalone',
-          display_override: ['standalone', 'minimal-ui'],
-          orientation: 'portrait',
-          background_color: BRAND_BACKGROUND,
-          theme_color: '#FFFFFF',
-          categories: ['beauty', 'lifestyle'],
-          icons: [
-            { src: '/icons/pwa-64x64.png', sizes: '64x64', type: 'image/png' },
-            { src: '/icons/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-            { src: '/icons/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-            { src: '/icons/maskable-icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-          ],
-          shortcuts: [
-            { name: 'Programează-te', short_name: 'Book', url: '/book', icons: [{ src: '/icons/pwa-192x192.png', sizes: '192x192' }] },
-            { name: 'Programările mele', short_name: 'Bookings', url: '/bookings', icons: [{ src: '/icons/pwa-192x192.png', sizes: '192x192' }] },
-          ],
-        },
+        manifest: MANIFEST,
         workbox: {
           globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,webmanifest}'],
           // Admin code, launch screens and the version probe stay out of the install.

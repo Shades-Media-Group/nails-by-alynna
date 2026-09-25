@@ -9,6 +9,14 @@ import { splitLocale } from '@/i18n/routing';
 
 const { locale } = splitLocale(window.location.pathname);
 
+// The dev server never uses a service worker: drop any left over from a production build on
+// this address, so what's on screen is always the code being edited.
+if (import.meta.env.DEV && 'serviceWorker' in navigator) {
+  void navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) void registration.unregister();
+  });
+}
+
 initI18n(locale).then(() => {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
