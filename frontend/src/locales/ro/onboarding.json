@@ -1,0 +1,28 @@
+{
+  "label": "Bun venit la Nails by Alynna",
+  "skip": "Sari peste",
+  "next": "Continuă",
+  "start": "Să începem",
+  "step": "Pasul {{current}} din {{total}}",
+  "visit": "vizită",
+  "book": {
+    "title": "Te programezi într-un minut",
+    "text": "Alegi serviciile, ora potrivită și maestrul. Salonul vede programarea imediat."
+  },
+  "visits": {
+    "title": "Vizitele tale, în ordine",
+    "text": "Memento înainte de fiecare vizită, adăugare în calendar dintr-o atingere, iar mutarea sau anularea le faci din aplicație."
+  },
+  "loyalty": {
+    "title": "Fiecare vizită contează",
+    "text": "Fiecare vizită e o ștampilă pe cardul de fidelitate, iar unele vizite vin cu reducere."
+  },
+  "home": {
+    "title": "Mereu la o atingere",
+    "text": "Pune aplicația pe ecranul principal: se deschide pe tot ecranul și programările sunt mereu la îndemână."
+  },
+  "ready": {
+    "title": "Totul e gata",
+    "text": "Servicii, programări, cardul de fidelitate și contactele salonului, într-un singur loc."
+  }
+}

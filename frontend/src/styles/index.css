@@ -187,6 +187,15 @@
     from { stroke-dashoffset: var(--path-length, 60); }
     to { stroke-dashoffset: 0; }
   }
+  /* Onboarding screens slide in from the side they come from. */
+  @keyframes slide-in-right {
+    from { opacity: 0; transform: translate3d(24px, 0, 0); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes slide-in-left {
+    from { opacity: 0; transform: translate3d(-24px, 0, 0); }
+    to { opacity: 1; transform: none; }
+  }
   /* The sweep inside the QR scanner's aiming frame. */
   @keyframes scanline {
     0%, 100% { top: 18%; opacity: 0.25; }

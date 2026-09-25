@@ -54,6 +54,7 @@ export { default as MenuIcon } from '@mui/icons-material/MenuRounded';
 export { default as MoreHorizIcon } from '@mui/icons-material/MoreHorizRounded';
 export { default as MoreVertIcon } from '@mui/icons-material/MoreVertRounded';
 export { default as NotesIcon } from '@mui/icons-material/NotesRounded';
+export { default as NotificationsIcon } from '@mui/icons-material/NotificationsRounded';
 export { default as PaletteIcon } from '@mui/icons-material/PaletteRounded';
 export { default as PendingIcon } from '@mui/icons-material/PendingActionsRounded';
 export { default as PersonAddIcon } from '@mui/icons-material/PersonAddAlt1Rounded';

@@ -1,6 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation } from 'react-router';
+import { useAuth } from '@/app/auth';
 import { DemoRibbon } from '@/components/common/DemoRibbon';
+import { Onboarding } from '@/components/onboarding/Onboarding';
 import { TabBar } from './TabBar';
 import { TopNav } from './TopNav';
 
@@ -8,6 +10,7 @@ import { TopNav } from './TopNav';
 export function AppShell() {
   const { t } = useTranslation('common');
   const { pathname } = useLocation();
+  const { user } = useAuth();
 
   return (
     <div className="min-h-dvh bg-white">
@@ -26,6 +29,8 @@ export function AppShell() {
         </div>
       </main>
       <TabBar />
+      {/* First sign-in: a short intro to the app (clients only). */}
+      {user?.role === 'client' ? <Onboarding userId={user.id} demo={user.isDemo} /> : null}
     </div>
   );
 }
