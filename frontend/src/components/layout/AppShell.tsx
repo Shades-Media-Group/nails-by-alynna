@@ -25,8 +25,11 @@ export function AppShell() {
       </a>
       <DemoRibbon />
       <TopNav />
-      <main id="main" className="mx-auto w-full max-w-6xl pb-[calc(var(--safe-bottom)+7rem)] lg:px-8 lg:pb-16">
-        <Outlet />
+      <main id="main" className="mx-auto w-full max-w-6xl pb-[calc(var(--safe-bottom)+6.5rem)] lg:px-8 lg:pb-16">
+        {/* Each screen fades in; keyed so a new route never inherits the old one's state. */}
+        <div key={pathname} className="animate-page">
+          <Outlet />
+        </div>
       </main>
       <TabBar />
     </div>

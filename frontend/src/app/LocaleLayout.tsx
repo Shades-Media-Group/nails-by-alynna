@@ -2,6 +2,7 @@ import { Suspense, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { ConsentBanner } from '@/components/common/ConsentBanner';
 import { DelayedSpinner } from '@/components/common/DelayedSpinner';
+import { NavigationProgress } from '@/components/common/NavigationProgress';
 import { SplashDone } from '@/components/common/SplashDone';
 import { UpdatePrompt } from '@/components/common/UpdatePrompt';
 import { i18n } from '@/i18n';
@@ -28,6 +29,7 @@ export function LocaleLayout({ locale }: { locale: Locale }) {
 
   return (
     <Suspense fallback={<DelayedSpinner />}>
+      <NavigationProgress />
       <Outlet />
       <SplashDone />
       <ConsentBanner />
