@@ -106,7 +106,9 @@
       "CSRF_REJECTED": "Cerere blocată pentru siguranța ta. Reîncarcă pagina și încearcă din nou.",
       "VALIDATION_ERROR": "Verifică câmpurile marcate.",
       "NETWORK": "Nu există conexiune. Verifică internetul și încearcă din nou.",
-      "DEMO_READ_ONLY": "Acesta este un cont demo, așa că modificările nu se salvează."
+      "DEMO_READ_ONLY": "Acesta este un cont demo, așa că modificările nu se salvează.",
+      "ONE_PER_CATEGORY": "Alege o singură mărime pentru o vizită.",
+      "NOT_A_DEFAULT": "Acest serviciu nu face parte din lista de prețuri standard."
     }
   },
   "validation": {

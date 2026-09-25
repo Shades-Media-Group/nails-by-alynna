@@ -7,6 +7,7 @@ import { ServiceList } from '@/components/booking/ServiceList';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useCatalog, useStudio } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
+import { toggleService } from '@/lib/selection';
 import type { Service } from '@/types/api';
 
 /** Browse the menu and pick one or more services; the summary bar starts the booking. */
@@ -18,8 +19,7 @@ export default function ServicesPage() {
   const { currency } = useStudio();
   const [selected, setSelected] = useState<string[]>([]);
 
-  const toggle = (service: Service) =>
-    setSelected((ids) => (ids.includes(service.id) ? ids.filter((id) => id !== service.id) : [...ids, service.id]));
+  const toggle = (service: Service) => setSelected((ids) => toggleService(ids, service, catalog));
 
   const chosen = selected.map((id) => catalog.byId.get(id)).filter((s): s is Service => Boolean(s));
   const durationMin = chosen.reduce((sum, s) => sum + s.durationMin, 0);

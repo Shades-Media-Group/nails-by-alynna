@@ -57,6 +57,10 @@ export interface Category {
   id: string;
   slug: string;
   name: I18nText;
+  /** Shown under the heading, e.g. what "size" means. */
+  description: I18nText | null;
+  /** Options of one thing (lengths): a visit takes at most one of them. */
+  singleChoice: boolean;
   color: SwatchColor;
 }
 
