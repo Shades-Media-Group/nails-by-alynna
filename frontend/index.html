@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ro">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Nails by Alynna</title>
+    <meta name="description" content="Programări online la Nails by Alynna, Chișinău — manichiură, pedichiură, extensii și design." />
+    <meta name="theme-color" content="#FDE7FC" />
+    <meta name="color-scheme" content="light" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Nails Alynna" />
+    <meta name="application-name" content="Nails by Alynna" />
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180x180.png" />
+    <!--apple-splash-links-->
+    <style>
+      /* Splash (Figma "App Prototype _Start"): painted before any JS, removed by main.tsx. */
+      html { background: #fde7fc; }
+      body { margin: 0; }
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: grid;
+        place-items: center;
+        background: #fde7fc;
+        transition: opacity 480ms cubic-bezier(0.22, 1, 0.36, 1), visibility 0s linear 480ms;
+      }
+      #splash.is-leaving { opacity: 0; visibility: hidden; }
+      .splash__logo {
+        width: min(46vw, 240px, calc(30vh * 1.065));
+        height: auto;
+        animation: splash-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+      .splash__gloss {
+        transform: translateX(0) skewX(-18deg);
+        animation: splash-gloss 1200ms 450ms cubic-bezier(0.45, 0, 0.2, 1) both;
+      }
+      @keyframes splash-in {
+        from { opacity: 0; transform: translateY(6px) scale(0.96); }
+        to { opacity: 1; transform: none; }
+      }
+      @keyframes splash-gloss {
+        to { transform: translateX(1500px) skewX(-18deg); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .splash__logo, .splash__gloss { animation: none; }
+        .splash__gloss { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <!--
+      THESIS: The studio's own pocket salon: book a set in under a minute with one thumb. Refuses the marketplace grid of competing salons and stock photos.
+      OWN-WORLD: White ground; blush, cyan, peach, mint and lilac swatch fields; ink pill actions; hot-pink "nails" wordmark; floating ink tab bar with a blush active chip; Onest set heavy and tight with tracked small-caps meta; MUI Rounded icons; glossy almond-nail vectors.
+      STORY: Clients see the brand, pick services and a time, and leave with a confirmed visit and the app on their home screen; staff run the day from the same app.
+      FIRST VIEWPORT: Home: wordmark and avatar row; 40px two-tone greeting; next-visit card or a full-width "Book a visit" swatch with nail art; 2x2 swatch shortcuts; tab bar at thumb height.
+      FORM: Brief-pinned (Figma prototype + moodboard), position 1 of the ordered list, seed key 0fe908ce.
+      FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+    -->
+    <div id="splash" role="status" aria-label="Nails by Alynna"><!--splash-logo--></div>
+    <div id="root"></div>
+    <noscript>
+      <p style="font-family: system-ui, sans-serif; padding: 24px; text-align: center">
+        Nails by Alynna needs JavaScript. / Este nevoie de JavaScript. / Нужен JavaScript.
+      </p>
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

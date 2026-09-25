@@ -1,0 +1,3 @@
+# Nails by Alynna is a private booking app; nothing here needs indexing.
+User-agent: *
+Disallow: /

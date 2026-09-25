@@ -1,0 +1,196 @@
+/// <reference types="vitest/config" />
+import { execSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath, URL } from 'node:url';
+import tailwindcss from '@tailwindcss/vite';
+import react from '@vitejs/plugin-react';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
+import { VitePWA } from 'vite-plugin-pwa';
+import { BRAND_BACKGROUND, generateBrandAssets, splashLinkTags } from './scripts/brand-assets.mjs';
+
+const src = fileURLToPath(new URL('./src', import.meta.url));
+
+/** Build id: yyyymmddhhmm-<git sha>, overridable with APP_VERSION (the deploy script sets it). */
+function buildVersion(): string {
+  if (process.env.APP_VERSION) return process.env.APP_VERSION;
+  const stamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12);
+  let sha = 'local';
+  try {
+    sha = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+  } catch {
+    // Not a git checkout.
+  }
+  return `${stamp}-${sha}`;
+}
+
+/**
+ * Inline splash logo with a single gloss sweep (the brand's "fresh coat" moment). The
+ * highlight is clipped to the letterforms: each path gets an id and the clip-path <use>s
+ * them individually, as SVG only allows shapes (not groups) inside a clipPath.
+ */
+function splashSvg(): string {
+  const svg = readFileSync(`${src}/assets/brand/logo.svg`, 'utf8');
+  const viewBox = /viewBox="([^"]+)"/.exec(svg)?.[1] ?? '0 0 852 800';
+  const paths = [...svg.matchAll(/<path d="([^"]+)" fill="([^"]+)"\/>/g)];
+  const art = paths.map((m, i) => `<path id="sl${i}" d="${m[1]}" fill="${m[2]}"/>`).join('');
+  const clip = paths.map((_, i) => `<use href="#sl${i}"/>`).join('');
+  return (
+    `<svg class="splash__logo" viewBox="${viewBox}" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">` +
+    `<defs><clipPath id="splash-clip">${clip}</clipPath>` +
+    `<linearGradient id="splash-gloss-fill" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/>` +
+    `<stop offset="0.5" stop-color="#fff" stop-opacity="0.6"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>` +
+    `${art}<g clip-path="url(#splash-clip)"><rect class="splash__gloss" x="-420" y="-40" width="260" height="900" fill="url(#splash-gloss-fill)"/></g></svg>`
+  );
+}
+
+/** Icons, favicon and iOS launch screens from brand/logo.svg + the inline splash logo. */
+function brandPlugin(): Plugin {
+  return {
+    name: 'nba:brand',
+    async buildStart() {
+      await generateBrandAssets({ log: (m: string) => this.info(m) });
+    },
+    transformIndexHtml(html) {
+      return html.replace('<!--splash-logo-->', splashSvg()).replace('<!--apple-splash-links-->', splashLinkTags());
+    },
+  };
+}
+
+/** version.json lets the deploy script (and ops) confirm which build is live. */
+function versionPlugin(version: string): Plugin {
+  return {
+    name: 'nba:version',
+    apply: 'build',
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'version.json',
+        source: JSON.stringify({ version, builtAt: new Date().toISOString() }, null, 2),
+      });
+    },
+  };
+}
+
+const ADMIN_MODULE = /[\\/]src[\\/](admin)[\\/]|[\\/]locales[\\/][a-z]{2}[\\/]admin\.json$/;
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  const version = buildVersion();
+  const apiTarget = env.VITE_API_PROXY || 'http://127.0.0.1:8787';
+
+  return {
+    define: {
+      __APP_VERSION__: JSON.stringify(version),
+    },
+    resolve: {
+      alias: {
+        '@': src,
+        // MUI's free Rounded icons without the MUI/emotion runtime: icons only need
+        // createSvgIcon, which our 1 kB shim provides (see src/components/ui/icons/SvgIcon.tsx).
+        '@mui/material/SvgIcon': `${src}/components/ui/icons/SvgIcon.tsx`,
+      },
+    },
+    server: {
+      port: 5173,
+      strictPort: true,
+      proxy: { '/api': { target: apiTarget, changeOrigin: false } },
+    },
+    preview: {
+      port: 4173,
+      proxy: { '/api': { target: apiTarget, changeOrigin: false } },
+    },
+    build: {
+      sourcemap: 'hidden',
+      reportCompressedSize: false,
+      chunkSizeWarningLimit: 400,
+      rolldownOptions: {
+        output: {
+          // Everything only the dashboard needs lives under assets/admin/ so the installed
+          // client app never precaches or downloads it.
+          chunkFileNames: (chunk) =>
+            chunk.moduleIds.some((id) => ADMIN_MODULE.test(id))
+              ? 'assets/admin/[name]-[hash].js'
+              : 'assets/[name]-[hash].js',
+        },
+      },
+    },
+    plugins: [
+      react(),
+      tailwindcss(),
+      brandPlugin(),
+      versionPlugin(version),
+      VitePWA({
+        registerType: 'prompt',
+        injectRegister: false,
+        strategies: 'generateSW',
+        manifestFilename: 'manifest.webmanifest',
+        includeAssets: ['favicon.svg', 'favicon.ico', 'robots.txt', 'icons/apple-touch-icon-180x180.png'],
+        manifest: {
+          id: '/',
+          name: 'Nails by Alynna',
+          short_name: 'Nails Alynna',
+          description: 'Book your nails at Nails by Alynna, Chișinău — manicure, pedicure, extensions and nail art.',
+          lang: 'ro',
+          dir: 'ltr',
+          start_url: '/?source=pwa',
+          scope: '/',
+          display: 'standalone',
+          display_override: ['standalone', 'minimal-ui'],
+          orientation: 'portrait',
+          background_color: BRAND_BACKGROUND,
+          theme_color: '#FFFFFF',
+          categories: ['beauty', 'lifestyle'],
+          icons: [
+            { src: '/icons/pwa-64x64.png', sizes: '64x64', type: 'image/png' },
+            { src: '/icons/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+            { src: '/icons/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+            { src: '/icons/maskable-icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          ],
+          shortcuts: [
+            { name: 'Programează-te', short_name: 'Book', url: '/book', icons: [{ src: '/icons/pwa-192x192.png', sizes: '192x192' }] },
+            { name: 'Programările mele', short_name: 'Bookings', url: '/bookings', icons: [{ src: '/icons/pwa-192x192.png', sizes: '192x192' }] },
+          ],
+        },
+        workbox: {
+          globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,webmanifest}'],
+          // Admin code, launch screens and the version probe stay out of the install.
+          globIgnores: [
+            '**/assets/admin/**',
+            '**/splash/**',
+            'version.json',
+            // Onest subsets the app never renders (ro/ru/en need latin, latin-ext, cyrillic).
+            '**/onest-{math,symbols,vietnamese}-*.woff2',
+          ],
+          navigateFallback: '/index.html',
+          navigateFallbackDenylist: [/^\/api\//, /^\/version\.json$/],
+          cleanupOutdatedCaches: true,
+          clientsClaim: true,
+          maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+          runtimeCaching: [
+            {
+              urlPattern: ({ url }) => url.pathname.startsWith('/assets/admin/'),
+              handler: 'CacheFirst',
+              options: { cacheName: 'nba-admin', expiration: { maxEntries: 80, maxAgeSeconds: 30 * 86_400 } },
+            },
+            {
+              urlPattern: ({ url }) => ['/api/config', '/api/catalog', '/api/staff'].includes(url.pathname),
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'nba-public-api',
+                networkTimeoutSeconds: 4,
+                expiration: { maxEntries: 10, maxAgeSeconds: 7 * 86_400 },
+              },
+            },
+          ],
+        },
+        devOptions: { enabled: false },
+      }),
+    ],
+    test: {
+      environment: 'jsdom',
+      include: ['src/**/*.test.{ts,tsx}'],
+      setupFiles: ['./src/test/setup.ts'],
+      css: false,
+    },
+  };
+});
