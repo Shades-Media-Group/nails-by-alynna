@@ -18,8 +18,12 @@
     // API_NOT_CONFIGURED (never point this at a domain you do not own: logins pass through it).
     // Or leave it empty and add the "services" binding below to run the API on Cloudflare.
     "API_ORIGIN": ""
-  }
+  },
+  // Every 5 minutes: POST <API_ORIGIN>/api/internal/tick sends the visit reminders that are due
+  // (worker/index.ts → scheduled). It authenticates with PROXY_SECRET, or CRON_SECRET if set.
+  "triggers": { "crons": ["*/5 * * * *"] }
   // Secret shared with the backend (PROXY_SECRET): wrangler secret put PROXY_SECRET
+  // Optional, only if backend/.env.production sets CRON_SECRET: wrangler secret put CRON_SECRET
   //
   // Alternative backend on Cloudflare Workers (backend/wrangler.jsonc):
   // "services": [{ "binding": "API", "service": "nails-by-alynna-api" }]

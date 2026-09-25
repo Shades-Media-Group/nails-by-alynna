@@ -3,6 +3,8 @@ import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { homePathFor, useAuth } from '@/app/auth';
+import { VerifyEmailStep } from '@/components/auth/VerifyEmailStep';
+import { clearPendingCode, readPendingCode, savePendingCode } from '@/components/auth/pendingCode';
 import { Alert } from '@/components/common/Alert';
 import { AuthLayout } from '@/components/layout/AuthLayout';
 import { Button, Checkbox, PasswordField, TextField } from '@/components/ui';
@@ -10,10 +12,12 @@ import { ArrowForwardIcon, EmailIcon, KeyIcon } from '@/components/ui/icons';
 import { safeNextPath } from '@/i18n/routing';
 import { useLocale } from '@/i18n/useLocale';
 import { errorMessage } from '@/lib/errors';
+import { resyncPush } from '@/lib/push';
 import { isEmail } from '@/lib/validation';
-import { ApiError } from '@/services/api/client';
+import { ApiError, isApiError } from '@/services/api/client';
 import { authApi } from '@/services/api/endpoints';
 import { queries } from '@/services/queries';
+import type { User } from '@/types/api';
 
 /** Figma "App Prototype _email login". Works with browser/iCloud password managers. */
 export default function LoginPage() {
@@ -25,16 +29,29 @@ export default function LoginPage() {
   const next = safeNextPath(params.get('next'));
   const config = useQuery(queries.config());
 
+  const [restored] = useState(() => readPendingCode('login'));
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [remember, setRemember] = useState(true);
+  const [remember, setRemember] = useState(restored?.remember ?? true);
   const [touched, setTouched] = useState(false);
+  // The address was never confirmed: the API emailed a code instead of signing in.
+  const [unverified, setUnverified] = useState<string | null>(restored?.email ?? null);
+
+  const signedIn = (user: User) => {
+    clearPendingCode();
+    setUser(user);
+    void resyncPush(user.id);
+    navigate(lp(next ?? homePathFor(user)), { replace: true });
+  };
 
   const login = useMutation({
     mutationFn: authApi.login,
-    onSuccess: (user) => {
-      setUser(user);
-      navigate(lp(next ?? homePathFor(user)), { replace: true });
+    onSuccess: signedIn,
+    onError: (error, input) => {
+      if (!isApiError(error, 'EMAIL_NOT_VERIFIED')) return;
+      const address = input.email.trim().toLowerCase();
+      savePendingCode({ flow: 'login', email: address, remember: input.remember });
+      setUnverified(address);
     },
   });
 
@@ -51,6 +68,25 @@ export default function LoginPage() {
   };
 
   const carry = next ? `?next=${encodeURIComponent(next)}` : '';
+
+  if (unverified) {
+    return (
+      <AuthLayout back={`${lp('/login')}${carry}`}>
+        <VerifyEmailStep
+          email={unverified}
+          remember={remember}
+          reason="login"
+          sentAt={restored?.email === unverified ? restored.at : undefined}
+          onVerified={signedIn}
+          onChangeEmail={() => {
+            clearPendingCode();
+            setUnverified(null);
+            login.reset();
+          }}
+        />
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout

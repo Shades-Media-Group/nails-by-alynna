@@ -226,6 +226,8 @@ export default defineConfig(({ mode }) => {
         includeAssets: ['favicon.svg', 'favicon.ico', 'robots.txt', 'icons/apple-touch-icon-180x180.png'],
         manifest: MANIFEST,
         workbox: {
+          // Web Push: push / notificationclick handlers (public/push-sw.js; production builds only).
+          importScripts: ['push-sw.js'],
           globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,webmanifest}'],
           // Admin code, launch screens and the version probe stay out of the install.
           globIgnores: [

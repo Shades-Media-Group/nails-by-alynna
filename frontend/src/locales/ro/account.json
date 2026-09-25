@@ -40,11 +40,26 @@
     "memberSince": "Cu noi din {{date}}",
     "details": "Date personale",
     "detailsText": "Nume și număr de telefon",
+    "notifications": "Notificări",
+    "notificationsText": "Mementouri și modificări ale programărilor",
     "name": "Prenume",
     "surname": "Nume",
     "phone": "Telefon",
     "email": "Email",
-    "emailHint": "Pentru a schimba emailul, scrie-i salonului.",
+    "emailHint": "Aici primești codurile de acces, mementourile și noutățile despre programări.",
+    "changeEmail": "Schimbă",
+    "emailChange": {
+      "title": "Schimbă emailul",
+      "text": "Îți trimitem un cod din 6 cifre pe noua adresă. Emailul se schimbă după ce îl introduci.",
+      "newEmail": "Emailul nou",
+      "password": "Parola actuală",
+      "send": "Trimite codul",
+      "codeTitle": "Introdu codul",
+      "codeText": "Ți-am trimis un cod din 6 cifre la <email>{{email}}</email>. Este valabil 10 minute.",
+      "confirm": "Confirmă noul email",
+      "changed": "Emailul tău este acum {{email}}.",
+      "back": "Înapoi"
+    },
     "save": "Salvează",
     "saved": "Salvat",
     "language": "Limba",
@@ -83,5 +98,74 @@
     "loggedOutAll": "Toate dispozitivele au fost deconectate.",
     "version": "Versiunea {{version}}",
     "credit": "Design și dezvoltare: SHADES Media Group"
+  },
+  "notifications": {
+    "title": "Notificări",
+    "subtitle": "Alege ce îți transmitem și cum.",
+    "saved": "Salvat",
+    "device": {
+      "titlePhone": "Notificări pe acest telefon",
+      "titleDevice": "Notificări pe acest dispozitiv",
+      "on": "Mementourile și noutățile ajung chiar și când aplicația e închisă.",
+      "off": "Pornește-le pentru mementouri și noutăți sub formă de notificări.",
+      "test": "Trimite un test",
+      "testSent": "Trimis. Ar trebui să apară în câteva secunde.",
+      "testNone": "Niciun dispozitiv nu l-a primit. Oprește și pornește din nou notificările.",
+      "enabled": "Notificările sunt pornite pe acest dispozitiv.",
+      "disabled": "Notificările sunt oprite pe acest dispozitiv.",
+      "dismissed": "Nicio problemă. Poți permite notificările oricând.",
+      "unavailable": "Notificările pe telefon nu sunt disponibile încă.",
+      "unsupported": "Acest browser nu poate afișa notificări. Deschide aplicația în Chrome, Safari sau Edge.",
+      "unsupportedIos": "Actualizează iPhone-ul la iOS 16.4 sau mai nou ca să primești notificări.",
+      "installTitle": "Adaugă aplicația pe ecranul principal",
+      "install": "Pe iPhone și iPad, notificările funcționează doar în aplicația adăugată pe ecranul principal (iOS 16.4 sau mai nou).",
+      "installAction": "Cum o adaug",
+      "deniedTitle": "Notificările sunt blocate",
+      "deniedIos": "Deschide Configurări → Notificări → {{app}} și pornește Permite notificările.",
+      "deniedAndroid": "Ține apăsat pe iconița aplicației → Informații aplicație → Notificări și permite-le. În browser: apasă iconița de lângă adresă → Notificări → Permite.",
+      "deniedDesktop": "Apasă iconița din stânga adresei → Notificări → Permite. Apoi alege Verifică din nou.",
+      "checkAgain": "Verifică din nou",
+      "preview": "Notificările funcționează în aplicația publicată, nu în această previzualizare.",
+      "notReady": "Notificările se pregătesc încă pe acest dispozitiv. Verifică din nou peste câteva clipe.",
+      "demo": "Acesta este un cont demo comun: notificările rămân oprite, iar modificările nu se salvează."
+    },
+    "channels": {
+      "label": "Trimite prin",
+      "email": "Email",
+      "push": "Aplicație"
+    },
+    "legend": {
+      "email": "Emailurile ajung la <email>{{email}}</email>.",
+      "pushOn": "Notificările din aplicație ajung pe dispozitivele unde le-ai pornit.",
+      "pushOff": "Pentru notificări din aplicație, pornește-le mai sus pe acest dispozitiv.",
+      "pushInstall": "Notificările din aplicație au nevoie de aplicația de pe ecranul principal.",
+      "pushBlocked": "Notificările din aplicație sunt blocate în setările acestui dispozitiv.",
+      "pushUnsupported": "Acest browser nu poate afișa notificări din aplicație."
+    },
+    "reminders": {
+      "title": "Mementouri pentru vizite",
+      "text": "Un memento înainte de fiecare vizită, la momentele alese de tine.",
+      "enabled": "Amintește-mi de vizite",
+      "when": "Cu cât timp înainte",
+      "lead": {
+        "60": "1 oră",
+        "120": "2 ore",
+        "1440": "1 zi"
+      },
+      "keepOne": "Păstrează cel puțin o variantă sau oprește mementourile."
+    },
+    "bookingUpdates": {
+      "title": "Modificări ale programărilor",
+      "text": "Când salonul confirmă, mută sau anulează o vizită."
+    },
+    "loyalty": {
+      "title": "Recompense de fidelitate",
+      "text": "Ștampile noi și recompense pe cardul de fidelitate."
+    },
+    "marketing": {
+      "title": "Noutăți și oferte",
+      "text": "Noutăți și oferte ocazionale de la salon. Doar dacă vrei; le poți opri oricând.",
+      "consent": "Te-ai abonat pe {{date}}"
+    }
   }
 }

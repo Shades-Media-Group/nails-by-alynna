@@ -110,7 +110,10 @@
       "ONE_PER_CATEGORY": "Alege o singură mărime pentru o vizită.",
       "NOT_A_DEFAULT": "Acest serviciu nu face parte din lista de prețuri standard.",
       "INVITE_INVALID": "Invitația a expirat sau a fost deja folosită.",
-      "ALREADY_REGISTERED": "Acest client are deja cont."
+      "ALREADY_REGISTERED": "Acest client are deja cont.",
+      "EMAIL_NOT_VERIFIED": "Confirmă mai întâi emailul: ți-am trimis un cod.",
+      "CODE_INVALID": "Codul este greșit sau a expirat. Verifică-l sau cere unul nou.",
+      "PUSH_UNAVAILABLE": "Notificările pe telefon nu sunt disponibile încă."
     }
   },
   "validation": {
@@ -127,7 +130,9 @@
     "wrong": "Parolă incorectă",
     "password_rules": "Cel puțin 8 caractere",
     "passwords_mismatch": "Parolele nu coincid",
-    "invalid": "Valoare nevalidă"
+    "invalid": "Valoare nevalidă",
+    "invalid_code": "Introdu codul din 6 cifre",
+    "same_email": "Acesta este deja emailul tău"
   },
   "offline": "Ești offline. Îți arătăm ce am salvat.",
   "update": {
@@ -137,7 +142,7 @@
   },
   "consent": {
     "title": "Pe scurt despre confidențialitate",
-    "text": "Folosim cookie-uri esențiale ca să rămâi conectată. Cu acordul tău, ținem minte mici preferințe și numărăm anonim vizitele.",
+    "text": "Folosim cookie-uri esențiale ca să rămâi în cont. Cu acordul tău, ținem minte mici preferințe și numărăm anonim vizitele.",
     "acceptAll": "Accept tot",
     "minimal": "Minim",
     "custom": "Personalizat",
@@ -185,5 +190,8 @@
   "demo": {
     "badge": "Demo",
     "text": "Cont demo · nimic nu se salvează"
+  },
+  "otp": {
+    "digit": "Cifra {{n}} din {{total}}"
   }
 }

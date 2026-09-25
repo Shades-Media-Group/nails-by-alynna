@@ -14,6 +14,15 @@ interface Fetcher {
   fetch(input: Request | string, init?: RequestInit): Promise<Response>;
 }
 
+/** The parts of the Workers runtime types the cron trigger uses (no workers-types here). */
+interface ScheduledController {
+  readonly cron: string;
+  readonly scheduledTime: number;
+}
+interface ExecutionContext {
+  waitUntil(promise: Promise<unknown>): void;
+}
+
 interface Env {
   ASSETS: Fetcher;
   /** Optional service binding to the API Worker (backend/wrangler.jsonc). */
@@ -22,6 +31,8 @@ interface Env {
   API_ORIGIN?: string;
   /** Shared secret expected by the backend (PROXY_SECRET there). Set with `wrangler secret put`. */
   PROXY_SECRET?: string;
+  /** Optional: the backend's CRON_SECRET, if set there; otherwise PROXY_SECRET is sent. */
+  CRON_SECRET?: string;
 }
 
 /** Headers that would reveal the backend's software or location. */
@@ -40,7 +51,7 @@ const HIDDEN_RESPONSE_HEADERS = [
 ];
 
 /** Hop-by-hop and client-supplied headers never forwarded upstream. */
-const STRIPPED_REQUEST_HEADERS = ['x-nba-proxy-key', 'x-nba-client-ip', 'x-forwarded-for', 'x-real-ip', 'forwarded'];
+const STRIPPED_REQUEST_HEADERS = ['x-nba-proxy-key', 'x-nba-cron-key', 'x-nba-client-ip', 'x-forwarded-for', 'x-real-ip', 'forwarded'];
 
 function jsonError(status: number, code: string, message: string): Response {
   return new Response(JSON.stringify({ error: { code, message } }), {
@@ -51,6 +62,8 @@ function jsonError(status: number, code: string, message: string): Response {
 
 async function proxyApi(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
+  // Machine-to-machine endpoints are never reachable from the public app address.
+  if (url.pathname.startsWith('/api/internal/')) return jsonError(404, 'NOT_FOUND', 'Not found');
   const headers = new Headers(request.headers);
   for (const name of STRIPPED_REQUEST_HEADERS) headers.delete(name);
 
@@ -117,11 +130,48 @@ async function health(request: Request, env: Env): Promise<Response> {
   });
 }
 
+/**
+ * Cron trigger (wrangler.jsonc, every 5 minutes): asks the API to send the visit reminders
+ * that are due. The API also checks every minute by itself; this covers the times the host
+ * has put an idle Node.js app to sleep (the request wakes it). Each reminder still goes out
+ * only once, however many of these runs overlap.
+ */
+async function runDueReminders(env: Env): Promise<void> {
+  if (!env.API_ORIGIN) {
+    console.info('[cron] API_ORIGIN is empty; reminders are sent by the API itself');
+    return;
+  }
+  const secret = env.CRON_SECRET || env.PROXY_SECRET;
+  if (!secret) {
+    console.warn('[cron] neither CRON_SECRET nor PROXY_SECRET is set; skipping');
+    return;
+  }
+  const headers = new Headers({ 'x-nba-cron-key': secret, 'content-type': 'application/json' });
+  if (env.PROXY_SECRET) headers.set('x-nba-proxy-key', env.PROXY_SECRET);
+  try {
+    const response = await fetch(new URL('/api/internal/tick', env.API_ORIGIN), {
+      method: 'POST',
+      headers,
+      body: '{}',
+      signal: AbortSignal.timeout(25_000),
+    });
+    const body = await response.text();
+    if (!response.ok) console.error(`[cron] tick answered ${response.status}: ${body.slice(0, 200)}`);
+    else console.info(`[cron] tick ${body.slice(0, 200)}`);
+  } catch (error) {
+    console.error('[cron] tick failed', error);
+  }
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const { pathname } = new URL(request.url);
     if (pathname === '/health') return health(request, env);
     if (pathname === '/api' || pathname.startsWith('/api/')) return proxyApi(request, env);
     return env.ASSETS.fetch(request);
+  },
+
+  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(runDueReminders(env));
   },
 };

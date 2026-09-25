@@ -4,6 +4,8 @@ import { Trans, useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { homePathFor, useAuth } from '@/app/auth';
 import { GoogleButton, GoogleTerms, OrDivider } from '@/components/auth/GoogleButton';
+import { VerifyEmailStep } from '@/components/auth/VerifyEmailStep';
+import { clearPendingCode, readPendingCode, savePendingCode } from '@/components/auth/pendingCode';
 import { Alert } from '@/components/common/Alert';
 import { AuthLayout } from '@/components/layout/AuthLayout';
 import { LegalLink } from '@/components/legal/LegalLink';
@@ -13,11 +15,12 @@ import { safeNextPath } from '@/i18n/routing';
 import { useLocale } from '@/i18n/useLocale';
 import { errorMessage, fieldErrors } from '@/lib/errors';
 import { isEmail, nameIssue, normalizePhone, passwordIssue } from '@/lib/validation';
-import { ApiError } from '@/services/api/client';
-import { authApi } from '@/services/api/endpoints';
+import { ApiError, isApiError } from '@/services/api/client';
+import { authApi, type PendingVerification } from '@/services/api/endpoints';
 import { queries } from '@/services/queries';
 import { useStudio } from '@/hooks/useStudio';
 import { formatDateTime } from '@/lib/format';
+import type { User } from '@/types/api';
 
 type Field = 'name' | 'surname' | 'email' | 'phone' | 'password' | 'acceptTerms';
 
@@ -53,17 +56,39 @@ export default function SignupPage() {
     }));
   }
   const [acceptTerms, setAcceptTerms] = useState(false);
-  const [remember, setRemember] = useState(true);
+  const [restored] = useState(() => readPendingCode('signup'));
+  const [remember, setRemember] = useState(restored?.remember ?? true);
   const [touched, setTouched] = useState(false);
+  // After the form: the emailed code confirms the address and opens the session.
+  const [pending, setPending] = useState<Pick<PendingVerification, 'email' | 'resendAfterSec'> | null>(
+    restored ? { email: restored.email, resendAfterSec: restored.resendAfterSec ?? 60 } : null,
+  );
+
+  // The address this tab just signed up with: submitting it again means "back to my code".
+  const [registered, setRegistered] = useState<string | null>(restored?.email ?? null);
+  const showCodeStep = (email: string, resendAfterSec = 60) => {
+    setPending({ email, resendAfterSec });
+    savePendingCode({ flow: 'signup', email, remember, resendAfterSec });
+    window.scrollTo({ top: 0 });
+  };
 
   const register = useMutation({
     mutationFn: authApi.register,
-    onSuccess: (user) => {
-      setUser(user);
-      toast.success(t('signup.welcomeToast', { name: user.name }));
-      navigate(lp(next ?? homePathFor(user)), { replace: true });
+    onSuccess: (verification) => {
+      setRegistered(verification.email);
+      showCodeStep(verification.email, verification.resendAfterSec);
+    },
+    onError: (error, input) => {
+      if (isApiError(error, 'EMAIL_TAKEN') && registered === input.email.trim().toLowerCase()) showCodeStep(registered);
     },
   });
+
+  const onVerified = (user: User) => {
+    clearPendingCode();
+    setUser(user);
+    toast.success(t('signup.welcomeToast', { name: user.name }));
+    navigate(lp(next ?? homePathFor(user)), { replace: true });
+  };
 
   const clientErrors: Partial<Record<Field, string>> = {};
   const nameCode = nameIssue(form.name);
@@ -103,6 +128,26 @@ export default function SignupPage() {
   const showGlobalError =
     register.isError && !(register.error instanceof ApiError && Object.keys(register.error.fields).length > 0 && register.error.code === 'VALIDATION_ERROR');
   const carry = next ? `?next=${encodeURIComponent(next)}` : '';
+
+  if (pending) {
+    return (
+      <AuthLayout back={`${lp('/login')}${carry}`}>
+        <VerifyEmailStep
+          email={pending.email}
+          remember={remember}
+          reason="signup"
+          resendAfterSec={pending.resendAfterSec}
+          sentAt={restored?.email === pending.email ? restored.at : undefined}
+          onVerified={onVerified}
+          onChangeEmail={() => {
+            clearPendingCode();
+            setPending(null);
+            register.reset();
+          }}
+        />
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout

@@ -110,7 +110,10 @@
       "ONE_PER_CATEGORY": "Choose one size per visit.",
       "NOT_A_DEFAULT": "This item isn't from the standard price list.",
       "INVITE_INVALID": "This invitation has expired or was already used.",
-      "ALREADY_REGISTERED": "This client already has an account."
+      "ALREADY_REGISTERED": "This client already has an account.",
+      "EMAIL_NOT_VERIFIED": "Confirm your email first: we sent you a code.",
+      "CODE_INVALID": "The code is wrong or has expired. Check it or send a new one.",
+      "PUSH_UNAVAILABLE": "Notifications on the phone aren't available yet."
     }
   },
   "validation": {
@@ -127,7 +130,9 @@
     "wrong": "Incorrect password",
     "password_rules": "At least 8 characters",
     "passwords_mismatch": "Passwords don't match",
-    "invalid": "Invalid value"
+    "invalid": "Invalid value",
+    "invalid_code": "Enter the 6-digit code",
+    "same_email": "This is already your email"
   },
   "offline": "You're offline. Showing what we saved.",
   "update": {
@@ -185,5 +190,8 @@
   "demo": {
     "badge": "Demo",
     "text": "Demo account · nothing is saved"
+  },
+  "otp": {
+    "digit": "Digit {{n}} of {{total}}"
   }
 }

@@ -45,7 +45,13 @@ export const authApi = {
   me: () => api.get<{ user: User }>('/auth/me').then((r) => r.user),
   login: (input: { email: string; password: string; remember: boolean }) =>
     api.post<{ user: User }>('/auth/login', input).then((r) => r.user),
-  register: (input: RegisterInput) => api.post<{ user: User }>('/auth/register', input).then((r) => r.user),
+  /** Creates the account and emails a 6-digit code; `verifyEmail` then signs in. */
+  register: (input: RegisterInput) => api.post<{ verification: PendingVerification }>('/auth/register', input).then((r) => r.verification),
+  verifyEmail: (input: { email: string; code: string; remember: boolean }) =>
+    api.post<{ user: User }>('/auth/verify-email', input).then((r) => r.user),
+  resendVerification: (email: string, locale: Locale) => api.post<{ ok: true }>('/auth/verify-email/resend', { email, locale }),
+  resetPasswordWithCode: (input: { email: string; code: string; password: string }) =>
+    api.post<{ ok: true }>('/auth/reset-password/code', input),
   logout: () => api.post<{ ok: true }>('/auth/logout'),
   demo: (role: 'client' | 'admin' | 'administrator') => api.post<{ user: User }>('/auth/demo', { role }).then((r) => r.user),
   logoutAll: () => api.post<{ ok: true }>('/auth/logout-all'),
@@ -64,6 +70,54 @@ export const meApi = {
   changePassword: (input: { currentPassword?: string; newPassword: string }) => api.post<{ ok: true }>('/me/password', input),
   deleteAccount: (password?: string) => api.delete<{ ok: true }>('/me', { password }),
   exportUrl: () => '/api/me/export',
+  /** Change email, step 1: a code goes to the new address (password when the account has one). */
+  startEmailChange: (input: { email: string; password?: string; locale: Locale }) =>
+    api.post<{ verification: PendingVerification }>('/me/email', input).then((r) => r.verification),
+  resendEmailChange: (email: string, locale: Locale) => api.post<{ ok: true }>('/me/email/resend', { email, locale }),
+  confirmEmailChange: (input: { email: string; code: string }) =>
+    api.post<{ user: User }>('/me/email/verify', input).then((r) => r.user),
+};
+
+/** What the "enter the code" screen needs after sign-up, login or an email change. */
+export interface PendingVerification {
+  email: string;
+  expiresInSec: number;
+  resendAfterSec: number;
+}
+
+export type ReminderLead = 60 | 120 | 1440;
+export interface ChannelPrefs {
+  email: boolean;
+  push: boolean;
+}
+export interface NotificationPrefs {
+  reminders: ChannelPrefs & { enabled: boolean; leadMinutes: ReminderLead[] };
+  bookingUpdates: ChannelPrefs;
+  loyalty: ChannelPrefs;
+  marketing: ChannelPrefs & { consentAt: string | null };
+}
+export type NotificationPrefsPatch = {
+  [K in keyof NotificationPrefs]?: Partial<Omit<NotificationPrefs[K], 'consentAt'>>;
+};
+export interface NotificationSettings {
+  prefs: NotificationPrefs;
+  email: { address: string; available: boolean };
+  push: { available: boolean; publicKey: string | null; devices: number };
+}
+export interface PushSubscriptionInput {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+  expirationTime?: number | null;
+}
+
+/** Profile → Notifications, and this device's Web Push subscription. */
+export const notificationsApi = {
+  get: () => api.get<NotificationSettings>('/notifications'),
+  update: (patch: NotificationPrefsPatch) => api.patch<{ prefs: NotificationPrefs }>('/notifications/prefs', patch).then((r) => r.prefs),
+  publicKey: () => api.get<{ publicKey: string | null }>('/notifications/push/key').then((r) => r.publicKey),
+  subscribe: (subscription: PushSubscriptionInput) => api.post<{ ok: true }>('/notifications/push/subscribe', subscription),
+  unsubscribe: (endpoint: string) => api.post<{ ok: true }>('/notifications/push/unsubscribe', { endpoint }),
+  test: () => api.post<{ sent: number; devices: number }>('/notifications/push/test'),
 };
 
 export const availabilityApi = {

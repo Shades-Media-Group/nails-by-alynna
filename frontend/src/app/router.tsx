@@ -87,6 +87,7 @@ function localeTree(locale: Locale): RouteObject {
               { path: 'bookings', lazy: page(() => import('@/pages/appointments/AppointmentsPage')) },
               { path: 'bookings/:id', lazy: page(() => import('@/pages/appointments/AppointmentDetailPage')) },
               { path: 'profile', lazy: page(() => import('@/pages/profile/ProfilePage')) },
+              { path: 'profile/notifications', lazy: page(() => import('@/pages/profile/NotificationsPage')) },
               { path: 'studio', lazy: page(() => import('@/pages/studio/StudioPage')) },
               { path: 'loyalty', lazy: page(() => import('@/pages/loyalty/LoyaltyPage')) },
             ],

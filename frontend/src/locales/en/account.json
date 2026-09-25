@@ -40,11 +40,26 @@
     "memberSince": "With us since {{date}}",
     "details": "Personal details",
     "detailsText": "Name and phone number",
+    "notifications": "Notifications",
+    "notificationsText": "Reminders and booking updates",
     "name": "First name",
     "surname": "Last name",
     "phone": "Phone",
     "email": "Email",
-    "emailHint": "To change your email, write to the studio.",
+    "emailHint": "Sign-in codes, reminders and booking updates go here.",
+    "changeEmail": "Change",
+    "emailChange": {
+      "title": "Change email",
+      "text": "We'll send a 6-digit code to the new address. Your email changes once you enter it.",
+      "newEmail": "New email",
+      "password": "Current password",
+      "send": "Send the code",
+      "codeTitle": "Enter the code",
+      "codeText": "We sent a 6-digit code to <email>{{email}}</email>. It's valid for 10 minutes.",
+      "confirm": "Confirm the new email",
+      "changed": "Your email is now {{email}}.",
+      "back": "Back"
+    },
     "save": "Save",
     "saved": "Saved",
     "language": "Language",
@@ -83,5 +98,74 @@
     "loggedOutAll": "You were signed out on all devices.",
     "version": "Version {{version}}",
     "credit": "Designed and built by SHADES Media Group"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "Choose what we tell you, and how.",
+    "saved": "Saved",
+    "device": {
+      "titlePhone": "Notifications on this phone",
+      "titleDevice": "Notifications on this device",
+      "on": "Reminders and updates arrive even when the app is closed.",
+      "off": "Turn on to get reminders and updates as notifications.",
+      "test": "Send a test",
+      "testSent": "Sent. It should appear in a few seconds.",
+      "testNone": "No device got it. Turn notifications off and on again.",
+      "enabled": "Notifications are on for this device.",
+      "disabled": "Notifications are off for this device.",
+      "dismissed": "No problem. You can allow notifications any time.",
+      "unavailable": "Notifications on the phone aren't available yet.",
+      "unsupported": "This browser can't show notifications. Open the app in Chrome, Safari or Edge.",
+      "unsupportedIos": "Update your iPhone to iOS 16.4 or later to get notifications.",
+      "installTitle": "Add the app to your Home Screen",
+      "install": "On iPhone and iPad, notifications only work in the app added to the Home Screen (iOS 16.4 or later).",
+      "installAction": "How to add it",
+      "deniedTitle": "Notifications are blocked",
+      "deniedIos": "Open Settings → Notifications → {{app}} and turn on Allow Notifications.",
+      "deniedAndroid": "Tap and hold the app icon → App info → Notifications, and allow them. In the browser: tap the icon next to the address → Notifications → Allow.",
+      "deniedDesktop": "Click the icon to the left of the address → Notifications → Allow. Then choose Check again.",
+      "checkAgain": "Check again",
+      "preview": "Notifications work in the published app, not in this preview.",
+      "notReady": "Notifications are still getting ready on this device. Check again in a moment.",
+      "demo": "This is a shared demo account: notifications stay off and changes aren't saved."
+    },
+    "channels": {
+      "label": "Send by",
+      "email": "Email",
+      "push": "App"
+    },
+    "legend": {
+      "email": "Emails go to <email>{{email}}</email>.",
+      "pushOn": "App notifications reach the devices where you turned them on.",
+      "pushOff": "For app notifications, turn them on for this device above.",
+      "pushInstall": "App notifications need the app on your Home Screen.",
+      "pushBlocked": "App notifications are blocked in this device's settings.",
+      "pushUnsupported": "This browser can't show app notifications."
+    },
+    "reminders": {
+      "title": "Visit reminders",
+      "text": "A reminder before each visit, at the times you choose.",
+      "enabled": "Remind me of my visits",
+      "when": "How long before",
+      "lead": {
+        "60": "1 hour",
+        "120": "2 hours",
+        "1440": "1 day"
+      },
+      "keepOne": "Keep at least one time, or turn reminders off."
+    },
+    "bookingUpdates": {
+      "title": "Booking updates",
+      "text": "When the studio confirms, moves or cancels a visit."
+    },
+    "loyalty": {
+      "title": "Loyalty rewards",
+      "text": "New stamps and rewards on your loyalty card."
+    },
+    "marketing": {
+      "title": "News and offers",
+      "text": "Occasional news and offers from the studio. Only if you want them; turn them off any time.",
+      "consent": "Subscribed on {{date}}"
+    }
   }
 }

@@ -1,9 +1,12 @@
+import NotificationsIcon from '@mui/icons-material/NotificationsRounded';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, type FormEvent } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useEffect, useId, useState, type FormEvent } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { useAuth } from '@/app/auth';
 import { BUILD } from '@/build-info';
+import { OtpInput } from '@/components/auth/OtpInput';
+import { ResendCodeButton } from '@/components/auth/ResendCodeButton';
 import { Alert } from '@/components/common/Alert';
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
 import { Avatar, Button, ListGroup, ListRow, PasswordField, Sheet, Skeleton, TextField, toast } from '@/components/ui';
@@ -12,6 +15,7 @@ import {
   DeleteIcon,
   DevicesIcon,
   DownloadIcon,
+  EditIcon,
   InstallIcon,
   KeyIcon,
   LanguageIcon,
@@ -24,24 +28,35 @@ import { useLocale } from '@/i18n/useLocale';
 import { openConsentSettings } from '@/lib/consent';
 import { errorMessage, fieldErrors } from '@/lib/errors';
 import { formatDateTime } from '@/lib/format';
-import { nameIssue, normalizePhone, passwordIssue } from '@/lib/validation';
+import { disablePush, resyncPush } from '@/lib/push';
+import { isEmail, nameIssue, normalizePhone, passwordIssue } from '@/lib/validation';
+import { isApiError } from '@/services/api/client';
 import { authApi, meApi } from '@/services/api/endpoints';
 import { useStudio } from '@/hooks/useStudio';
 
 type Panel = 'details' | 'password' | 'devices' | 'delete' | null;
 
 export default function ProfilePage() {
-  const { t } = useTranslation(['account', 'common']);
+  // 'auth' too: the change-email code step uses its strings, loaded before the sheet opens.
+  const { t } = useTranslation(['account', 'common', 'auth']);
   const { lp, locale } = useLocale();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [panel, setPanel] = useState<Panel>(null);
   const close = () => setPanel(null);
+  const userId = user?.id;
+
+  // Signed in again on this phone: its notifications (if this person had them on) resume.
+  useEffect(() => {
+    if (userId) void resyncPush(userId);
+  }, [userId]);
 
   if (!user) return null;
   const memberSince = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(new Date(user.createdAt));
 
   const signOut = async () => {
+    // The next person using this phone must not get this account's notifications.
+    await disablePush().catch(() => undefined);
     await logout().catch(() => undefined);
     navigate(lp('/login'), { replace: true });
   };
@@ -63,6 +78,12 @@ export default function ProfilePage() {
         <div className="flex flex-col gap-6">
           <ListGroup title={t('profile.title')}>
             <ListRow icon={PersonOutlineIcon} label={t('profile.details')} description={t('profile.detailsText')} onClick={() => setPanel('details')} />
+            <ListRow
+              icon={NotificationsIcon}
+              label={t('profile.notifications')}
+              description={t('profile.notificationsText')}
+              to={lp('/profile/notifications')}
+            />
             <ListRow icon={LanguageIcon} label={t('profile.language')} trailing={<LanguageSwitcher compact />} />
           </ListGroup>
 
@@ -108,10 +129,209 @@ export default function ProfilePage() {
   );
 }
 
+type DetailsView = { step: 'details'; changedTo?: string } | { step: 'email' } | { step: 'code'; email: string; resendAfterSec: number };
+type DetailsFields = { name: string; surname: string; phone: string };
+
 function DetailsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useTranslation(['account', 'common']);
+  const { user } = useAuth();
+  const [view, setView] = useState<DetailsView>({ step: 'details' });
+  // Kept here, so a detour through "Change email" never loses what was typed.
+  const [form, setForm] = useState<DetailsFields>({ name: user?.name ?? '', surname: user?.surname ?? '', phone: user?.phone ?? '' });
+  const close = () => {
+    onClose();
+    setView({ step: 'details' });
+  };
+  const title =
+    view.step === 'details' ? t('profile.details') : view.step === 'email' ? t('profile.emailChange.title') : t('profile.emailChange.codeTitle');
+
+  return (
+    <Sheet open={open} onClose={close} title={title}>
+      {view.step === 'details' ? (
+        <DetailsForm
+          form={form}
+          onForm={setForm}
+          changedTo={view.changedTo}
+          onDone={close}
+          onChangeEmail={() => setView({ step: 'email' })}
+        />
+      ) : view.step === 'email' ? (
+        <EmailChangeForm
+          onBack={() => setView({ step: 'details' })}
+          onSent={(email, resendAfterSec) => setView({ step: 'code', email, resendAfterSec })}
+        />
+      ) : (
+        <EmailCodeForm
+          email={view.email}
+          resendAfterSec={view.resendAfterSec}
+          onBack={() => setView({ step: 'email' })}
+          onChanged={(email) => setView({ step: 'details', changedTo: email })}
+        />
+      )}
+    </Sheet>
+  );
+}
+
+/** Change email, step 1: the new address (and the password, when the account has one). */
+function EmailChangeForm({ onBack, onSent }: { onBack: () => void; onSent: (email: string, resendAfterSec: number) => void }) {
+  const { t } = useTranslation(['account', 'common']);
+  const { locale } = useLocale();
+  const { user } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [touched, setTouched] = useState(false);
+  const start = useMutation({
+    mutationFn: () => meApi.startEmailChange({ email: email.trim().toLowerCase(), ...(user?.hasPassword ? { password } : {}), locale }),
+    onSuccess: (verification) => onSent(verification.email, verification.resendAfterSec),
+  });
+  const server = fieldErrors(t, start.error);
+  const emailError = touched && !isEmail(email) ? t('common:validation.invalid_email') : server.email;
+  const passwordError = touched && user?.hasPassword && !password ? t('common:validation.required') : server.password;
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    setTouched(true);
+    if (!isEmail(email) || (user?.hasPassword && !password)) return;
+    start.mutate();
+  };
+
+  return (
+    <form className="flex flex-col gap-4 py-2" onSubmit={submit} noValidate>
+      <p className="text-[0.9375rem] text-ink-600">{t('profile.emailChange.text')}</p>
+      <TextField
+        label={t('profile.emailChange.newEmail')}
+        type="email"
+        inputMode="email"
+        autoComplete="email"
+        autoCapitalize="none"
+        spellCheck={false}
+        autoFocus
+        value={email}
+        onChange={(e) => {
+          setEmail(e.target.value);
+          if (start.isError) start.reset();
+        }}
+        error={emailError}
+      />
+      {user?.hasPassword ? (
+        <PasswordField
+          label={t('profile.emailChange.password')}
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          error={passwordError}
+        />
+      ) : null}
+      {start.isError && Object.keys(server).length === 0 ? <Alert>{errorMessage(t, start.error)}</Alert> : null}
+      <Button type="submit" size="lg" fullWidth loading={start.isPending}>
+        {t('profile.emailChange.send')}
+      </Button>
+      <Button variant="ghost" size="md" fullWidth onClick={onBack}>
+        {t('profile.emailChange.back')}
+      </Button>
+    </form>
+  );
+}
+
+/** Change email, step 2: the code that went to the new address. */
+function EmailCodeForm({
+  email,
+  resendAfterSec,
+  onBack,
+  onChanged,
+}: {
+  email: string;
+  resendAfterSec: number;
+  onBack: () => void;
+  onChanged: (email: string) => void;
+}) {
+  const { t } = useTranslation(['account', 'auth', 'common']);
+  const { locale } = useLocale();
+  const { setUser } = useAuth();
+  const errorId = useId();
+  const [code, setCode] = useState('');
+  const [errorKey, setErrorKey] = useState(0);
+  const confirm = useMutation({
+    mutationFn: (value: string) => meApi.confirmEmailChange({ email, code: value }),
+    onSuccess: (updated) => {
+      setUser(updated);
+      onChanged(updated.email);
+    },
+    onError: (error) => {
+      // A wrong code starts over; a network hiccup keeps what was typed.
+      if (isApiError(error, 'CODE_INVALID')) {
+        setCode('');
+        setErrorKey((k) => k + 1);
+      }
+    },
+  });
+  const submit = (value: string) => {
+    if (value.length === 6 && !confirm.isPending) confirm.mutate(value);
+  };
+
+  return (
+    <form
+      className="flex flex-col gap-5 py-2"
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault();
+        submit(code);
+      }}
+    >
+      <div className="flex flex-col gap-2">
+        <p className="text-[0.9375rem] text-ink-600">
+          <Trans t={t} i18nKey="profile.emailChange.codeText" values={{ email }} components={{ email: <strong className="break-all font-semibold text-ink-900" /> }} />
+        </p>
+        <p className="text-sm text-ink-600">{t('auth:verify.spam')}</p>
+      </div>
+      {confirm.isError ? (
+        <Alert>
+          <span id={errorId}>{errorMessage(t, confirm.error)}</span>
+        </Alert>
+      ) : null}
+      <OtpInput
+        label={t('auth:verify.codeLabel')}
+        value={code}
+        onChange={(value) => {
+          setCode(value);
+          if (confirm.isError) confirm.reset();
+        }}
+        onComplete={submit}
+        invalid={isApiError(confirm.error, 'CODE_INVALID')}
+        errorKey={errorKey}
+        describedBy={confirm.isError ? errorId : undefined}
+        busy={confirm.isPending}
+        autoFocus
+      />
+      <Button type="submit" size="lg" fullWidth loading={confirm.isPending} disabled={code.length < 6}>
+        {t('profile.emailChange.confirm')}
+      </Button>
+      <div className="-mt-2 flex flex-col">
+        <ResendCodeButton seconds={resendAfterSec} onResend={() => meApi.resendEmailChange(email, locale)} />
+        <Button variant="ghost" size="md" fullWidth onClick={onBack}>
+          {t('auth:verify.otherEmail')}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function DetailsForm({
+  form,
+  onForm,
+  changedTo,
+  onDone,
+  onChangeEmail,
+}: {
+  form: DetailsFields;
+  onForm: (form: DetailsFields) => void;
+  /** Set right after an email change: said here, since a toast would sit behind the sheet. */
+  changedTo?: string;
+  onDone: () => void;
+  onChangeEmail: () => void;
+}) {
+  const { t } = useTranslation(['account', 'common']);
   const { user, setUser } = useAuth();
-  const [form, setForm] = useState({ name: user?.name ?? '', surname: user?.surname ?? '', phone: user?.phone ?? '' });
   const [touched, setTouched] = useState(false);
   const save = useMutation({
     mutationFn: () =>
@@ -119,7 +339,7 @@ function DetailsSheet({ open, onClose }: { open: boolean; onClose: () => void })
     onSuccess: (updated) => {
       setUser(updated);
       toast.success(t('profile.saved'));
-      onClose();
+      onDone();
     },
   });
 
@@ -141,20 +361,31 @@ function DetailsSheet({ open, onClose }: { open: boolean; onClose: () => void })
   };
 
   return (
-    <Sheet open={open} onClose={onClose} title={t('profile.details')}>
-      <form id="details-form" className="flex flex-col gap-4 py-2" onSubmit={submit} noValidate>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <TextField label={t('profile.name')} autoComplete="given-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} error={errors.name ?? server.name} />
-          <TextField label={t('profile.surname')} autoComplete="family-name" value={form.surname} onChange={(e) => setForm({ ...form, surname: e.target.value })} error={errors.surname ?? server.surname} />
+    <form id="details-form" className="flex flex-col gap-4 py-2" onSubmit={submit} noValidate>
+      {changedTo ? <Alert tone="success">{t('profile.emailChange.changed', { email: changedTo })}</Alert> : null}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <TextField label={t('profile.name')} autoComplete="given-name" value={form.name} onChange={(e) => onForm({ ...form, name: e.target.value })} error={errors.name ?? server.name} />
+        <TextField label={t('profile.surname')} autoComplete="family-name" value={form.surname} onChange={(e) => onForm({ ...form, surname: e.target.value })} error={errors.surname ?? server.surname} />
+      </div>
+      <TextField label={t('profile.phone')} type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={(e) => onForm({ ...form, phone: e.target.value })} error={errors.phone ?? server.phone} />
+      {/* The address is not typed here: a static row, changed through its own confirmed flow. */}
+      <div className="flex items-center gap-3 rounded-xl bg-ink-50 px-4 py-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-ink-700">{t('profile.email')}</p>
+          <p className="break-all text-[0.9375rem] font-semibold text-ink-900">{user?.email}</p>
+          <p className="mt-0.5 text-sm text-ink-600">{t('profile.emailHint')}</p>
         </div>
-        <TextField label={t('profile.phone')} type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} error={errors.phone ?? server.phone} />
-        <TextField label={t('profile.email')} value={user?.email ?? ''} readOnly hint={t('profile.emailHint')} />
-        {save.isError && Object.keys(server).length === 0 ? <Alert>{errorMessage(t, save.error)}</Alert> : null}
-        <Button type="submit" size="lg" fullWidth loading={save.isPending}>
-          {t('profile.save')}
-        </Button>
-      </form>
-    </Sheet>
+        {user?.isDemo ? null : (
+          <Button variant="outline" size="md" icon={EditIcon} onClick={onChangeEmail} className="shrink-0 bg-white" aria-label={t('profile.emailChange.title')}>
+            {t('profile.changeEmail')}
+          </Button>
+        )}
+      </div>
+      {save.isError && Object.keys(server).length === 0 ? <Alert>{errorMessage(t, save.error)}</Alert> : null}
+      <Button type="submit" size="lg" fullWidth loading={save.isPending}>
+        {t('profile.save')}
+      </Button>
+    </form>
   );
 }
 
@@ -295,6 +526,7 @@ function DeleteSheet({ open, onClose }: { open: boolean; onClose: () => void }) 
     mutationFn: () => meApi.deleteAccount(user?.hasPassword ? password : undefined),
     onSuccess: async () => {
       toast.success(t('profile.deleted'));
+      await disablePush().catch(() => undefined);
       await logout().catch(() => undefined);
       navigate(lp('/login'), { replace: true });
     },
