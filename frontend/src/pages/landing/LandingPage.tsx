@@ -44,10 +44,11 @@ export default function LandingPage() {
 
       <main id="main" className="gutter-x relative mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-8">
         <Logo className="mx-auto w-[min(58vw,14rem)]" />
-        <p className="mx-auto mt-8 max-w-[21rem] text-center text-[1.0625rem] leading-relaxed text-ink-800">
+        {/* Hidden for now at the studio's request; kept to bring back later. */}
+        <p className="mx-auto mt-8 hidden max-w-[21rem] text-center text-[1.0625rem] leading-relaxed text-ink-800">
           {t('landing.lead')}
         </p>
-        <ul className="mx-auto mt-6 flex flex-col gap-2 text-sm text-ink-800">
+        <ul className="mx-auto mt-6 hidden flex-col gap-2 text-sm text-ink-800">
           {[t('landing.why1'), t('landing.why2'), t('landing.why3')].map((line) => (
             <li key={line} className="flex items-center gap-2">
               <CheckIcon fontSize="inherit" className="text-base text-rose-600" />
