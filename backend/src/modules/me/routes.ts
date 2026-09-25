@@ -77,6 +77,40 @@ export function meRoutes(deps: AppDeps) {
     return c.json({ ok: true });
   });
 
+  /** GDPR data portability: everything we hold about the signed-in user, as a JSON download. */
+  app.get('/export', async (c) => {
+    const user = c.get('user');
+    const [appointments, sessions] = await Promise.all([
+      deps.col.appointments.find({ clientId: user._id }).sort({ start: -1 }).toArray(),
+      deps.col.sessions.find({ userId: user._id, revokedAt: null }).toArray(),
+    ]);
+    const now = deps.now();
+    const body = {
+      exportedAt: now.toISOString(),
+      controller: 'Nails by Alynna, Chișinău, Republic of Moldova',
+      profile: toPublicUser(user),
+      appointments: appointments.map((a) => ({
+        code: a.code,
+        status: a.status,
+        start: a.start.toISOString(),
+        end: a.end.toISOString(),
+        services: a.services.map((s) => ({ name: s.name, durationMin: s.durationMin, price: s.price })),
+        totalPrice: a.totalPrice,
+        notes: a.notes,
+        createdAt: a.createdAt.toISOString(),
+        cancelledAt: a.cancelledAt?.toISOString() ?? null,
+      })),
+      devices: sessions.map((s) => ({
+        userAgent: s.userAgent,
+        approximateIp: s.ip,
+        signedInAt: s.createdAt.toISOString(),
+        lastActiveAt: s.lastUsedAt.toISOString(),
+      })),
+    };
+    c.header('Content-Disposition', `attachment; filename="nails-by-alynna-data-${now.toISOString().slice(0, 10)}.json"`);
+    return c.json(body);
+  });
+
   /**
    * Account deletion keeps visit history for the studio's records but removes personal
    * data: contact details are anonymised and upcoming appointments are cancelled.

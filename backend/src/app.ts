@@ -1,7 +1,14 @@
 import { Hono } from 'hono';
 import type { AppDeps, AppEnv } from './context';
 import { AppError } from './lib/errors';
-import { apiSecurityHeaders, jsonBodyLimit, noStore, originGuard, requestContext } from './middleware/security';
+import {
+  apiSecurityHeaders,
+  jsonBodyLimit,
+  noStore,
+  originGuard,
+  proxyGuard,
+  requestContext,
+} from './middleware/security';
 import { adminRoutes } from './modules/admin';
 import { appointmentRoutes } from './modules/appointments/routes';
 import { authRoutes } from './modules/auth/routes';
@@ -12,7 +19,7 @@ import { publicRoutes } from './modules/public/routes';
 export function createApp(deps: AppDeps) {
   const app = new Hono<AppEnv>();
 
-  app.use('*', requestContext(deps));
+  app.use('*', proxyGuard(deps), requestContext(deps));
   app.use('/api/*', apiSecurityHeaders(deps), noStore, originGuard(deps), jsonBodyLimit);
 
   app.route('/api', publicRoutes(deps));

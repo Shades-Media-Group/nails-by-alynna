@@ -1,4 +1,5 @@
 import { loadConfig } from '../config';
+import { loadDotEnv } from '../lib/dotenv';
 import { createDeps, createMongo, migrate } from '../runtime';
 import { runSeed } from './run';
 
@@ -8,11 +9,7 @@ import { runSeed } from './run';
  *   MONGODB_URI="mongodb+srv://…" SEED_ADMIN_EMAIL=… SEED_ADMIN_PASSWORD=… yarn seed
  */
 
-try {
-  process.loadEnvFile('.env');
-} catch {
-  // Use the real environment.
-}
+loadDotEnv('.env');
 
 const args = new Set(process.argv.slice(2));
 const config = loadConfig(process.env);

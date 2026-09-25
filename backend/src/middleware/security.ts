@@ -2,6 +2,7 @@ import { bodyLimit } from 'hono/body-limit';
 import { createMiddleware } from 'hono/factory';
 import { secureHeaders } from 'hono/secure-headers';
 import type { AppDeps, AppEnv } from '../context';
+import { timingSafeEqualStr } from '../lib/crypto';
 import { AppError } from '../lib/errors';
 
 const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
@@ -14,6 +15,22 @@ export function requestContext(deps: AppDeps) {
     c.set('ip', deps.clientIp(c));
     await next();
     c.header('X-Request-Id', requestId);
+  });
+}
+
+/**
+ * When the API runs behind the Cloudflare Worker (host.md deployment) every legitimate request
+ * carries the shared proxy key. Anything else gets a bare 404, so the backend host reveals
+ * nothing about the app and cannot be used to bypass the Worker.
+ */
+export function proxyGuard(deps: AppDeps) {
+  const secret = deps.config.proxySecret;
+  return createMiddleware<AppEnv>(async (c, next) => {
+    if (secret) {
+      const key = c.req.header('x-nba-proxy-key') ?? '';
+      if (!timingSafeEqualStr(key, secret)) return c.text('Not Found', 404);
+    }
+    await next();
   });
 }
 

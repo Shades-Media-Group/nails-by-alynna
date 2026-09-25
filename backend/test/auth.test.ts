@@ -210,3 +210,21 @@ describe('rate limiting', () => {
     }
   });
 });
+
+describe('proxy guard (host.md behind the Cloudflare Worker)', () => {
+  it('serves only requests that carry the shared proxy key', async () => {
+    const secret = 'proxy-secret-'.padEnd(40, 'z');
+    const guarded = await createTestContext({ PROXY_SECRET: secret });
+    try {
+      const direct = await guarded.client().get('/api/config');
+      expect(direct.status).toBe(404);
+      expect(direct.body).toBe('Not Found');
+      const wrong = await guarded.client().request('GET', '/api/config', undefined, { 'x-nba-proxy-key': 'nope' });
+      expect(wrong.status).toBe(404);
+      const proxied = await guarded.client().request('GET', '/api/config', undefined, { 'x-nba-proxy-key': secret });
+      expect(proxied.status).toBe(200);
+    } finally {
+      await guarded.close();
+    }
+  });
+});

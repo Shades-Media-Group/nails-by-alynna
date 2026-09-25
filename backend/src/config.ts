@@ -29,6 +29,8 @@ const schema = z.object({
   RESEND_API_KEY: optionalString,
   MAIL_FROM: optionalString,
   TRUST_PROXY: z.stringbool().default(false),
+  /** Shared secret with the Cloudflare Worker proxy; when set, only proxied requests are served. */
+  PROXY_SECRET: z.string().min(32, 'PROXY_SECRET must be at least 32 characters').optional(),
   RATE_LIMITS: z.enum(['on', 'off']).default('on'),
   PORT: z.coerce.number().int().min(1).max(65535).default(8787),
 });
@@ -54,6 +56,7 @@ export interface AppConfig {
   mail?: { resendApiKey: string; from: string };
   cookieSecure: boolean;
   trustProxy: boolean;
+  proxySecret?: string;
   rateLimits: boolean;
   port: number;
 }
@@ -124,6 +127,7 @@ export function loadConfig(source: Record<string, unknown>): AppConfig {
     // Secure cookies need HTTPS; local http://localhost development cannot use them.
     cookieSecure: appUrl.startsWith('https://'),
     trustProxy: e.TRUST_PROXY,
+    proxySecret: e.PROXY_SECRET,
     rateLimits: e.RATE_LIMITS === 'on',
     port: e.PORT,
   };

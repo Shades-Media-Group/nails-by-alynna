@@ -18,7 +18,9 @@
     "seed": "tsx src/seed/cli.ts",
     "build": "wrangler deploy --dry-run --outdir .wrangler/build",
     "deploy": "wrangler deploy",
-    "deploy:verify": "tsx scripts/verify-deploy.ts"
+    "deploy:verify": "tsx scripts/verify-deploy.ts",
+    "build:node": "node scripts/build-node.mjs",
+    "start:node": "node dist/node/app.js"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",
@@ -30,6 +32,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^22.19.0",
+    "esbuild": "^0.28.2",
     "eslint": "^10.11.0",
     "globals": "^17.12.0",
     "mongodb-memory-server": "^11.3.0",

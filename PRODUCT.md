@@ -8,8 +8,8 @@ web
 
 ## Stack
 
-User-specified: two directories, `frontend/` (React + Vite + TypeScript, Yarn) and `backend/` (Node.js API, MongoDB), production on Cloudflare deployed with Wrangler.
-Delegated details: Hono API that runs on Node.js locally and on Cloudflare Workers in production (a Durable Object keeps the MongoDB connection warm), Tailwind CSS v4 design tokens, react-i18next, TanStack Query, vite-plugin-pwa. Icons: MUI free icons, Rounded variant (user-specified).
+User-specified: two directories, `frontend/` (React + Vite + TypeScript, Yarn) and `backend/` (Node.js API, MongoDB). The frontend is deployed to Cloudflare with Wrangler; the backend runs on host.md (Plesk, Node.js).
+Delegated details: Hono API bundled to a single Node.js file for Plesk/Passenger (it can also run on Cloudflare Workers with a Durable Object), MongoDB Atlas as the database, the Cloudflare Worker proxies `/api/*` to the backend so the app stays same-origin, Tailwind CSS v4 design tokens, react-i18next, TanStack Query, vite-plugin-pwa. Icons: MUI free icons, Rounded variant (user-specified).
 
 ## Users
 
@@ -46,7 +46,7 @@ Marketplaces (Fresha, Booksy, Treatwell) put the studio next to competitors and 
 
 ## Brand Commitments
 
-- Name: **Nails by Alynna** (logo wordmark "NAILS by alynna — NAIL ARTIST"). Repository name `nails-by-alynna`.
+- Name: **Nails by Alynna**. Logo (supplied, `frontend/brand/logo.svg`): hot-pink `#FD2578` "nails" wordmark with a polish brush and drop, "by alynna", "— NAIL SALON —". Repository name `nails-by-alynna`.
 - Tagline from the Figma prototype: "Your nails. Your rules." with "Consider this your personal space for beautiful nails and bold ideas."
 - Colors supplied by the user: primary `#F0AEF0`, secondary `#FDE7FC`, text `#252726`, cyan light `#EDFDFE`, cyan `#3DBFCC`, orange light `#FFF6E9`, orange `#FD9B1D`; more colors may be derived from these.
 - Figma prototype screens to follow: Start (splash on the soft pink field with the logo), Select login (logo, tagline, "Login With Email", "Continue with Google", sign-up footer), Email login, Home with a floating tab menu (to be made better).
@@ -56,7 +56,7 @@ Marketplaces (Fresha, Booksy, Treatwell) put the studio next to competitors and 
 ## Evidence on Hand
 
 - Figma prototype as a screenshot (4 screens). The Figma file itself is not readable by tools (no Dev Mode access yet).
-- Logo exists only as a low-resolution screenshot; the SVG in the app is a stand-in to be replaced with the official export.
+- Official logo SVG supplied by the studio (`frontend/brand/logo.svg`); favicon, app icons and iOS launch screens are generated from it on every build.
 - No photos of real work, reviews, testimonials, real prices or address yet. Nothing of that kind may be invented as fact; demo content is labeled and editable.
 
 ## Product Principles
