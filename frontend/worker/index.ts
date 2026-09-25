@@ -88,9 +88,39 @@ async function proxyApi(request: Request, env: Env): Promise<Response> {
   });
 }
 
+/**
+ * GET/HEAD /health — one URL for UptimeRobot & co. Combines the web build (version.json)
+ * with the API's own health; 200 + "status":"ok" only when both are fine, else 503.
+ */
+async function health(request: Request, env: Env): Promise<Response> {
+  const url = new URL(request.url);
+  const [webResult, apiResult] = await Promise.allSettled([
+    env.ASSETS.fetch(new Request(new URL('/version.json', url.origin))).then((r) => (r.ok ? r.json() : null)),
+    proxyApi(
+      new Request(new URL('/api/health', url.origin), { headers: request.headers, signal: AbortSignal.timeout(5000) }),
+      env,
+    ).then(async (r) => ({ httpStatus: r.status, body: (await r.json().catch(() => null)) as Record<string, unknown> | null })),
+  ]);
+  const web = webResult.status === 'fulfilled' ? webResult.value : null;
+  const api = apiResult.status === 'fulfilled' ? apiResult.value : null;
+  const apiOk = api?.httpStatus === 200 && api.body?.status === 'ok';
+  const ok = Boolean(web) && apiOk;
+  const body = {
+    status: ok ? 'ok' : 'down',
+    web: web ?? { status: 'unavailable' },
+    api: api?.body ?? { status: 'unreachable' },
+    time: new Date().toISOString(),
+  };
+  return new Response(request.method === 'HEAD' ? null : JSON.stringify(body, null, 2), {
+    status: ok ? 200 : 503,
+    headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
+  });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const { pathname } = new URL(request.url);
+    if (pathname === '/health') return health(request, env);
     if (pathname === '/api' || pathname.startsWith('/api/')) return proxyApi(request, env);
     return env.ASSETS.fetch(request);
   },

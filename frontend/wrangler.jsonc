@@ -10,7 +10,7 @@
     "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*"]
+    "run_worker_first": ["/api/*", "/health"]
   },
   "vars": {
     // Backend on host.md (Plesk Node.js app). Use a hostname you control, e.g. api.your-domain.md.

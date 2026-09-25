@@ -10,17 +10,28 @@ import { BRAND_BACKGROUND, generateBrandAssets, splashLinkTags } from './scripts
 
 const src = fileURLToPath(new URL('./src', import.meta.url));
 
-/** Build id: yyyymmddhhmm-<git sha>, overridable with APP_VERSION (the deploy script sets it). */
-function buildVersion(): string {
-  if (process.env.APP_VERSION) return process.env.APP_VERSION;
-  const stamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12);
-  let sha = 'local';
+function git(args: string): string {
   try {
-    sha = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    return execSync(`git ${args}`, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
   } catch {
-    // Not a git checkout.
+    return ''; // Not a git checkout.
   }
-  return `${stamp}-${sha}`;
+}
+
+interface BuildInfo {
+  version: string;
+  commit: string;
+  builtAt: string;
+  changes: string[];
+}
+
+/** Build id: yyyymmddhhmm-<git sha>, overridable with APP_VERSION (the deploy script sets it). */
+function buildInfo(): BuildInfo {
+  const commit = git('rev-parse --short HEAD') || 'local';
+  const builtAt = new Date().toISOString();
+  const version = process.env.APP_VERSION || `${builtAt.replace(/[-:T]/g, '').slice(0, 12)}-${commit}`;
+  const changes = git('log -10 --pretty=format:%h%x20%s').split('\n').filter(Boolean);
+  return { version, commit, builtAt, changes };
 }
 
 /**
@@ -56,8 +67,8 @@ function brandPlugin(): Plugin {
   };
 }
 
-/** version.json lets the deploy script (and ops) confirm which build is live. */
-function versionPlugin(version: string): Plugin {
+/** version.json: which build is live and what changed (deploy checks, /health, admin). */
+function versionPlugin(info: BuildInfo): Plugin {
   return {
     name: 'nba:version',
     apply: 'build',
@@ -65,7 +76,7 @@ function versionPlugin(version: string): Plugin {
       this.emitFile({
         type: 'asset',
         fileName: 'version.json',
-        source: JSON.stringify({ version, builtAt: new Date().toISOString() }, null, 2),
+        source: `${JSON.stringify({ service: 'nails-by-alynna-web', ...info }, null, 2)}\n`,
       });
     },
   };
@@ -75,12 +86,14 @@ const ADMIN_MODULE = /[\\/]src[\\/](admin)[\\/]|[\\/]locales[\\/][a-z]{2}[\\/]ad
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const version = buildVersion();
+  const build = buildInfo();
   const apiTarget = env.VITE_API_PROXY || 'http://127.0.0.1:8787';
 
   return {
     define: {
-      __APP_VERSION__: JSON.stringify(version),
+      __APP_VERSION__: JSON.stringify(build.version),
+      __APP_COMMIT__: JSON.stringify(build.commit),
+      __APP_BUILT_AT__: JSON.stringify(build.builtAt),
     },
     resolve: {
       alias: {
@@ -118,7 +131,7 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss(),
       brandPlugin(),
-      versionPlugin(version),
+      versionPlugin(build),
       VitePWA({
         registerType: 'prompt',
         injectRegister: false,
