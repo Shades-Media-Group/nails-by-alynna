@@ -152,6 +152,16 @@ export interface StaffInput {
 export interface AdminStaff extends StaffInput {
   id: string;
   order: number;
+  /** Minutes kept free after each client (the master sets it in My schedule); missing = 0. */
+  bufferMin?: number;
+}
+
+/** An upcoming booking that the new hours of a master no longer cover (it stays booked). */
+export interface OutsideHoursBooking {
+  id: string;
+  start: string;
+  end: string;
+  clientName: string;
 }
 
 export interface TimeOff {
@@ -201,6 +211,12 @@ export interface StudioSettings {
   bufferMin: number;
   maxActiveBookings: number;
   policy: I18nText;
+  /** Online booking offers only times that leave no dead gap in a master's day. */
+  smartSlots: boolean;
+  /** Back to back: at most this many free minutes between two visits. */
+  maxGapMin: number;
+  /** A gap this long (minutes) still fits another visit, so it is allowed. */
+  minBookableGapMin: number;
 }
 
 export interface AdminUser {
@@ -291,6 +307,10 @@ export const adminApi = {
   timeOff: (params: { from: string; to?: string }) => api.get<{ timeOff: TimeOff[] }>(`/admin/team/time-off${query(params)}`).then((r) => r.timeOff),
   createTimeOff: (input: TimeOffInput) => api.post<{ timeOff: TimeOff }>('/admin/team/time-off', input).then((r) => r.timeOff),
   deleteTimeOff: (id: string) => api.delete<{ ok: true }>(`/admin/team/time-off/${id}`),
+  /** The master profile of the signed-in staff member (404 when they are not a master). */
+  myStaff: () => api.get<{ staff: AdminStaff }>('/admin/team/me').then((r) => r.staff),
+  updateMyStaff: (input: { weekly?: WeeklyHours; bufferMin?: number }) =>
+    api.patch<{ staff: AdminStaff; outsideHours: OutsideHoursBooking[] }>('/admin/team/me', input),
 
   settings: () => api.get<{ settings: StudioSettings }>('/admin/settings').then((r) => r.settings),
   /** Owner only; send just the fields that changed. */
@@ -308,6 +328,7 @@ export const adminQueries = {
   stats: (date?: string) => queryOptions({ queryKey: ['admin', 'stats', date ?? 'today'], queryFn: () => adminApi.stats(date), staleTime: 30_000 }),
   catalog: () => queryOptions({ queryKey: ['admin', 'catalog'], queryFn: adminApi.catalog, staleTime: 60_000 }),
   staff: () => queryOptions({ queryKey: ['admin', 'staff'], queryFn: adminApi.staff, staleTime: 60_000 }),
+  myStaff: () => queryOptions({ queryKey: ['admin', 'staff', 'me'], queryFn: adminApi.myStaff, staleTime: 60_000, retry: false }),
   appointments: (params: AppointmentsParams) =>
     queryOptions({ queryKey: ['admin', 'appointments', params], queryFn: () => adminApi.appointments(params), staleTime: 15_000 }),
   appointment: (id: string) => queryOptions({ queryKey: ['admin', 'appointment', id], queryFn: () => adminApi.appointment(id), staleTime: 15_000 }),

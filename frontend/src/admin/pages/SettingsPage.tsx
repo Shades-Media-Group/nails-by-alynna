@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, type FormEvent } from 'react';
+import { Fragment, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/app/auth';
 import { Alert } from '@/components/common/Alert';
@@ -12,6 +12,7 @@ import type { I18nText } from '@/types/api';
 import { adminApi, adminQueries, type StudioSettings } from '../api';
 import { AdminHeader } from '../components/AdminHeader';
 import { I18nFields } from '../components/I18nFields';
+import { SchedulingSettings } from '../components/SchedulingSettings';
 import { fillFromRo } from '../components/utils';
 import { LoyaltySettings } from '../loyalty/LoyaltySettings';
 
@@ -128,8 +129,14 @@ export default function SettingsPage() {
           <Alert>{errorMessage(t, settings.error)}</Alert>
         ) : (
           <>
+            {/* Smart scheduling sits right after the booking rules it refines. */}
             {SECTIONS.map((section) => (
-              <Section key={section.id} section={section} settings={settings.data} canEdit={isOwner} />
+              <Fragment key={section.id}>
+                <Section section={section} settings={settings.data} canEdit={isOwner} />
+                {section.id === 'booking' ? (
+                  <SchedulingSettings settings={settings.data as unknown as Record<string, unknown>} canEdit={isOwner} />
+                ) : null}
+              </Fragment>
             ))}
             <LoyaltySettings settings={settings.data as unknown as Record<string, unknown>} canEdit={isOwner} />
           </>
@@ -155,7 +162,7 @@ function Section({ section, settings, canEdit }: { section: SectionDef; settings
   ) as Partial<StudioSettings>;
   const dirty = Object.keys(changed).length > 0;
   const issues = Object.fromEntries(
-    section.fields.map((f) => [f.key, issueOf(f, form[f.key])] as const).filter((entry): entry is readonly [keyof StudioSettings, string] => entry[1] !== null),
+    section.fields.map((f) => [f.key, issueOf(f, form[f.key])] as const).filter((entry): entry is readonly [(typeof section.fields)[number]['key'], string] => entry[1] !== null),
   );
 
   const save = useMutation({

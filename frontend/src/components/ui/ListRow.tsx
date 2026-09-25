@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { cx } from '@/lib/cx';
+import { SWATCH, type SwatchColor } from '@/lib/swatch';
 import { ChevronRightIcon, type IconComponent } from './icons';
 
 interface ListRowProps {
@@ -13,11 +14,13 @@ interface ListRowProps {
   external?: boolean;
   onClick?: () => void;
   tone?: 'default' | 'danger';
+  /** A brand colour for the icon's circle (menus); default grey. */
+  iconTone?: SwatchColor;
   trailing?: ReactNode;
 }
 
 /** Settings-style row. Renders a link, button or static row depending on props. */
-export function ListRow({ icon: Icon, label, description, value, to, href, external, onClick, tone = 'default', trailing }: ListRowProps) {
+export function ListRow({ icon: Icon, label, description, value, to, href, external, onClick, tone = 'default', iconTone, trailing }: ListRowProps) {
   const interactive = Boolean(to || href || onClick);
   const body = (
     <>
@@ -25,7 +28,7 @@ export function ListRow({ icon: Icon, label, description, value, to, href, exter
         <span
           className={cx(
             'inline-flex size-10 shrink-0 items-center justify-center rounded-pill text-[1.3rem]',
-            tone === 'danger' ? 'bg-red-50 text-red-600' : 'bg-ink-50 text-ink-800',
+            tone === 'danger' ? 'bg-red-50 text-red-600' : iconTone ? [SWATCH[iconTone].field, SWATCH[iconTone].ink] : 'bg-ink-50 text-ink-800',
           )}
         >
           <Icon fontSize="inherit" />

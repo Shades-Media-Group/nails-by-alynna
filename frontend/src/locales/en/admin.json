@@ -5,6 +5,7 @@
     "clients": "Clients",
     "services": "Services",
     "team": "Team",
+    "mySchedule": "My schedule",
     "settings": "Settings",
     "users": "Staff & roles",
     "audit": "Activity log",
@@ -400,6 +401,22 @@
     "blockedToast": "Online booking paused",
     "unblockedToast": "Online booking allowed"
   },
+  "mySchedule": {
+    "title": "My schedule",
+    "subtitle": "Your working week. Clients can book you only inside these hours.",
+    "hoursTitle": "Working hours",
+    "hoursText": "Add a second stretch to a day for a lunch break. A day without hours is a day off.",
+    "bufferTitle": "Break between clients",
+    "bufferText": "Minutes kept free after every client, to tidy up and breathe. Not needed after your last client before a break.",
+    "bufferNone": "None",
+    "bufferLabel": "Break between clients, in minutes",
+    "saved": "Schedule saved. Bookable times are updated.",
+    "outside_one": "{{count}} upcoming booking is outside your new hours. It stays booked: move it if needed.",
+    "outside_other": "{{count}} upcoming bookings are outside your new hours. They stay booked: move them if needed.",
+    "timeOffText": "Days off, holidays or a few hours away. Clients can't book you then.",
+    "notMaster": "You don't have a master profile",
+    "notMasterText": "The owner can link your account to a master in Team."
+  },
   "team": {
     "title": "Team",
     "subtitle": "Masters, working hours and time off.",
@@ -575,6 +592,21 @@
       "invalid_timezone": "Unknown time zone",
       "invalid_currency": "Use a three-letter code, like MDL"
     }
+  },
+  "scheduling": {
+    "title": "Smart scheduling",
+    "text": "Which times clients are offered online, so each master's day stays full.",
+    "smartSlots": "Offer compact times",
+    "smartSlotsText": "Clients see only times that keep each master's day compact: visits back to back, with no gap longer than {{gap}} that nobody can book. You and the team still see every free time.",
+    "smartSlotsTextStrict": "Clients see only times that keep each master's day compact: visits strictly back to back, with no gap nobody can book. You and the team still see every free time.",
+    "offText": "Clients see every free time, even ones that leave gaps nobody can book.",
+    "on": "On",
+    "off": "Off: clients see every free time",
+    "maxGap": "Allowed gap between visits",
+    "maxGapHint": "Free time between two visits up to this long still counts as back to back.",
+    "minBookableGap": "Shortest gap worth keeping open",
+    "minBookableGapHint": "A gap at least this long can still take another visit, so it may stay open. Shorter gaps are only left when a day has almost no other time. Never less than a master's shortest service.",
+    "example": "Example: when a visit and its break end at {{end}}, the next visit can start at {{tight}}, or at {{open}} or later."
   },
   "users": {
     "title": "Staff & roles",

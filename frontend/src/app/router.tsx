@@ -35,6 +35,7 @@ const adminRoutes: RouteObject = {
         { path: 'clients/:id', lazy: page(() => import('@/admin/pages/ClientPage')) },
         { path: 'services', lazy: page(() => import('@/admin/pages/ServicesPage')) },
         { path: 'team', lazy: page(() => import('@/admin/pages/TeamPage')) },
+        { path: 'schedule', lazy: page(() => import('@/admin/pages/MySchedulePage')) },
         { path: 'settings', lazy: page(() => import('@/admin/pages/SettingsPage')) },
         { path: 'scan', lazy: page(() => import('@/admin/pages/ScanPage')) },
         {

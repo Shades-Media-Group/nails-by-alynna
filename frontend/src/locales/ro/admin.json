@@ -5,6 +5,7 @@
     "clients": "Clienți",
     "services": "Servicii",
     "team": "Echipa",
+    "mySchedule": "Programul meu",
     "settings": "Setări",
     "users": "Personal și roluri",
     "audit": "Jurnal de activitate",
@@ -409,6 +410,23 @@
     "blockedToast": "Programarea online a fost oprită",
     "unblockedToast": "Programarea online a fost permisă"
   },
+  "mySchedule": {
+    "title": "Programul meu",
+    "subtitle": "Săptămâna ta de lucru. Clientele te pot programa doar în aceste ore.",
+    "hoursTitle": "Orele de lucru",
+    "hoursText": "Adaugă un al doilea interval într-o zi pentru pauza de masă. O zi fără ore e zi liberă.",
+    "bufferTitle": "Pauză între cliente",
+    "bufferText": "Minute lăsate libere după fiecare clientă, ca să faci ordine și să respiri. Nu e nevoie după ultima clientă dinaintea unei pauze.",
+    "bufferNone": "Fără",
+    "bufferLabel": "Pauză între cliente, în minute",
+    "saved": "Programul e salvat. Orele disponibile s-au actualizat.",
+    "outside_one": "{{count}} programare viitoare e în afara noului program. Rămâne valabilă: mut-o dacă e nevoie.",
+    "outside_few": "{{count}} programări viitoare sunt în afara noului program. Rămân valabile: mută-le dacă e nevoie.",
+    "outside_other": "{{count}} de programări viitoare sunt în afara noului program. Rămân valabile: mută-le dacă e nevoie.",
+    "timeOffText": "Zile libere, concediu sau câteva ore lipsă. Atunci nu te pot programa.",
+    "notMaster": "Nu ai un profil de maestru",
+    "notMasterText": "Proprietarul îți poate lega contul de un maestru în Echipa."
+  },
   "team": {
     "title": "Echipa",
     "subtitle": "Maeștri, program de lucru și zile libere.",
@@ -587,6 +605,21 @@
       "invalid_timezone": "Fus orar necunoscut",
       "invalid_currency": "Folosește un cod din trei litere, ca MDL"
     }
+  },
+  "scheduling": {
+    "title": "Programare inteligentă",
+    "text": "Ce ore li se oferă clienților online, ca ziua fiecărui maestru să rămână plină.",
+    "smartSlots": "Oferă ore compacte",
+    "smartSlotsText": "Clienții văd doar orele care păstrează ziua fiecărui maestru compactă: vizite una după alta, fără goluri mai lungi de {{gap}} pe care nu le poate ocupa nimeni. Tu și echipa vedeți în continuare toate orele libere.",
+    "smartSlotsTextStrict": "Clienții văd doar orele care păstrează ziua fiecărui maestru compactă: vizite strict una după alta, fără goluri pe care nu le poate ocupa nimeni. Tu și echipa vedeți în continuare toate orele libere.",
+    "offText": "Clienții văd toate orele libere, chiar și pe cele care lasă goluri pe care nu le poate ocupa nimeni.",
+    "on": "Pornit",
+    "off": "Oprit: clienții văd toate orele libere",
+    "maxGap": "Gol permis între vizite",
+    "maxGapHint": "Până la această durată, timpul liber dintre două vizite contează tot ca vizite una după alta.",
+    "minBookableGap": "Cel mai scurt gol care merită păstrat",
+    "minBookableGapHint": "Un gol cel puțin atât de lung mai poate primi o vizită, așa că poate rămâne liber. Golurile mai scurte rămân doar când ziua nu mai are aproape alte ore. Niciodată mai puțin decât cel mai scurt serviciu al maestrului.",
+    "example": "Exemplu: dacă o vizită și pauza ei se termină la {{end}}, următoarea vizită poate începe la {{tight}} sau la {{open}} ori mai târziu."
   },
   "users": {
     "title": "Personal și roluri",

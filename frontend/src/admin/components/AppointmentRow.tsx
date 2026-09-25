@@ -39,6 +39,8 @@ export function AppointmentRow({
   const inactive = a.status === 'cancelled' || a.status === 'no_show';
   const leaf = withDate ? dayParts(zonedDate(new Date(a.start), timeZone), locale) : null;
   const noShows = a.clientStats?.noShows ?? 0;
+  // Colour-coded by master, as in Fresha's calendar; cancelled and missed visits stay grey.
+  const tone = !inactive && a.staff ? SWATCH[a.staff.color] : null;
 
   return (
     <li className="flex items-center gap-1 pr-1">
@@ -47,13 +49,13 @@ export function AppointmentRow({
         className="press group flex min-w-0 flex-1 items-start gap-3 rounded-xl p-3 hover:bg-ink-50 focus-visible:bg-ink-50"
       >
         {leaf ? (
-          <span className={cx('flex w-12 shrink-0 flex-col items-center rounded-xl pb-1.5 pt-1', inactive ? 'bg-ink-50 text-ink-500' : 'bg-blush-100 text-ink-900')}>
-            <span className={cx('text-xs font-semibold capitalize', inactive ? 'text-ink-500' : 'text-rose-700')}>{leaf.month}</span>
+          <span className={cx('flex w-12 shrink-0 flex-col items-center rounded-xl pb-1.5 pt-1', inactive ? 'bg-ink-50 text-ink-500' : [tone?.field ?? 'bg-blush-100', 'text-ink-900'])}>
+            <span className={cx('text-xs font-semibold capitalize', inactive ? 'text-ink-500' : (tone?.ink ?? 'text-rose-700'))}>{leaf.month}</span>
             <span className="tabular text-xl font-extrabold leading-none tracking-[-0.03em]">{leaf.day}</span>
           </span>
         ) : (
-          <span className="tabular w-12 shrink-0 pt-px">
-            <span className={cx('block text-[0.9375rem] font-bold', past && 'text-ink-500')}>{formatTime(a.start, locale, timeZone)}</span>
+          <span className={cx('tabular w-14 shrink-0 rounded-lg py-1 text-center', past || !tone ? 'bg-ink-50' : tone.field)}>
+            <span className={cx('block text-[0.9375rem] font-bold', past ? 'text-ink-500' : tone?.ink)}>{formatTime(a.start, locale, timeZone)}</span>
             <span className="block text-xs text-ink-500">{formatTime(a.end, locale, timeZone)}</span>
           </span>
         )}
