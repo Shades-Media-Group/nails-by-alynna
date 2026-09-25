@@ -4,8 +4,20 @@
  * Output: dist/node/{app.js, app.js.map, package.json, tmp/restart.txt}
  * No `npm install` is needed on the server — every dependency is inlined.
  */
+import { execSync } from 'node:child_process';
 import { build } from 'esbuild';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+
+const git = (args) => {
+  try {
+    return execSync(`git ${args}`, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+  } catch {
+    return '';
+  }
+};
+const commit = git('rev-parse --short HEAD') || 'local';
+const version = process.env.APP_VERSION || `${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12)}-${commit}`;
+const changes = git('log -10 --pretty=format:%h%x20%s').split('\n').filter(Boolean);
 
 const OUT = 'dist/node';
 const pkg = JSON.parse(await readFile('package.json', 'utf8'));
@@ -38,7 +50,13 @@ await build({
     'gcp-metadata',
     '@aws-sdk/credential-providers',
   ],
-  define: { 'process.env.NODE_ENV': '"production"' },
+  define: {
+    'process.env.NODE_ENV': '"production"',
+    __APP_VERSION__: JSON.stringify(version),
+    __APP_COMMIT__: JSON.stringify(commit),
+    __APP_BUILT_AT__: JSON.stringify(new Date().toISOString()),
+    __APP_CHANGES__: JSON.stringify(changes),
+  },
   logLevel: 'info',
 });
 
@@ -60,4 +78,5 @@ await writeFile(
 );
 // Passenger restarts the app when this file's mtime changes.
 await writeFile(`${OUT}/tmp/restart.txt`, `${new Date().toISOString()}\n`);
-console.info(`[build-node] ${OUT}/app.js ready — upload the folder as the Plesk application root.`);
+await writeFile(`${OUT}/version.json`, `${JSON.stringify({ version, commit, changes }, null, 2)}\n`);
+console.info(`[build-node] ${OUT}/app.js ${version} ready — upload the folder as the Plesk application root.`);

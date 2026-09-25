@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { BUILD, runtimeName, STARTED_AT } from '../../build-info';
 import type { AppDeps, AppEnv } from '../../context';
 import { getSettings } from '../settings';
 
@@ -6,14 +7,36 @@ import { getSettings } from '../settings';
 export function publicRoutes(deps: AppDeps) {
   const app = new Hono<AppEnv>();
 
+  /**
+   * Uptime monitoring (UptimeRobot & co.): 200 + "status":"ok" when the API and database
+   * answer, 503 otherwise. Also reports which build is live and what changed in it.
+   */
   app.get('/health', async (c) => {
-    let db = 'ok';
+    const started = performance.now();
+    let database: 'ok' | 'error' = 'ok';
     try {
       await deps.db.command({ ping: 1 });
     } catch {
-      db = 'error';
+      database = 'error';
     }
-    return c.json({ status: db === 'ok' ? 'ok' : 'degraded', db, time: deps.now().toISOString() }, db === 'ok' ? 200 : 503);
+    const latencyMs = Math.round(performance.now() - started);
+    const ok = database === 'ok';
+    return c.json(
+      {
+        status: ok ? 'ok' : 'down',
+        service: 'nails-by-alynna-api',
+        version: BUILD.version,
+        commit: BUILD.commit,
+        builtAt: BUILD.builtAt,
+        runtime: runtimeName(),
+        environment: deps.config.env,
+        uptimeSec: Math.round((Date.now() - STARTED_AT) / 1000),
+        checks: { database: { status: database, latencyMs } },
+        changes: BUILD.changes,
+        time: new Date().toISOString(),
+      },
+      ok ? 200 : 503,
+    );
   });
 
   app.get('/config', async (c) => {
