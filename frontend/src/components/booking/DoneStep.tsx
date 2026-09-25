@@ -1,12 +1,12 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AddToCalendarSheet } from '@/components/appointments/AddToCalendar';
 import { ServiceLines } from '@/components/appointments/ServiceLines';
 import { Button, ButtonLink } from '@/components/ui';
 import { CalendarAddIcon } from '@/components/ui/icons';
-import { useI18nText, useStudio } from '@/hooks/useStudio';
+import { useStudio } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
-import { calendarEventFor } from '@/lib/appointment';
 import { formatDateTime } from '@/lib/format';
-import { downloadIcs } from '@/lib/ics';
 import type { Appointment } from '@/types/api';
 
 /** The check draws itself once; everything collapses to instant under reduced motion. */
@@ -32,10 +32,9 @@ function SuccessMark({ pending }: { pending: boolean }) {
 export function DoneStep({ appointment, rescheduled }: { appointment: Appointment; rescheduled: boolean }) {
   const { t } = useTranslation(['booking', 'common']);
   const { lp, locale } = useLocale();
-  const pick = useI18nText();
-  const { timeZone, data: config } = useStudio();
+  const { timeZone } = useStudio();
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const pending = appointment.status === 'pending';
-  const address = [config?.studio.address, config?.studio.city].filter(Boolean).join(', ');
   const title = rescheduled ? t('flow.doneRescheduledTitle') : pending ? t('flow.doneRequestTitle') : t('flow.doneTitle');
 
   return (
@@ -59,7 +58,7 @@ export function DoneStep({ appointment, rescheduled }: { appointment: Appointmen
           variant="primary"
           icon={CalendarAddIcon}
           fullWidth
-          onClick={() => downloadIcs(calendarEventFor(appointment, { t, locale, pick, address }), `nails-by-alynna-${appointment.code}.ics`)}
+          onClick={() => setCalendarOpen(true)}
         >
           {t('flow.addToCalendar')}
         </Button>
@@ -70,6 +69,7 @@ export function DoneStep({ appointment, rescheduled }: { appointment: Appointmen
           {t('flow.backHome')}
         </ButtonLink>
       </div>
+      <AddToCalendarSheet appointment={appointment} open={calendarOpen} onClose={() => setCalendarOpen(false)} />
     </div>
   );
 }

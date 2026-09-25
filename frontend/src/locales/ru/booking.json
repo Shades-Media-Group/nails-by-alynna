@@ -92,7 +92,12 @@
   },
   "calendar": {
     "title": "Nails by Alynna: {{services}}",
-    "description": "Запись {{code}}. Управлять ею можно в приложении: {{url}}"
+    "description": "Запись {{code}}. Управлять ею можно в приложении: {{url}}",
+    "sheetTitle": "Добавить в календарь",
+    "sheetText": "Выберите календарь, которым пользуетесь. Напоминание за час уже включено.",
+    "apple": "Календарь iPhone или Mac",
+    "google": "Google Календарь",
+    "other": "Outlook или другое приложение"
   },
   "studio": {
     "openNow": "Открыто · до {{time}}",

@@ -1,15 +1,15 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { CalendarAddIcon, ChevronRightIcon, DirectionsIcon, HourglassIcon } from '@/components/ui/icons';
-import { useI18nText, useStudio } from '@/hooks/useStudio';
+import { useStudio } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
-import { calendarEventFor } from '@/lib/appointment';
 import { dateToInstant, dayParts, formatDuration, formatTime, relativeDayLabel, zonedDate } from '@/lib/format';
-import { downloadIcs } from '@/lib/ics';
 import type { Locale } from '@/i18n/config';
 import type { TFunction } from 'i18next';
 import type { Appointment } from '@/types/api';
 import { LoyaltyBadge } from '@/components/loyalty/LoyaltyBits';
+import { AddToCalendarSheet } from './AddToCalendar';
 import { ServiceLines } from './ServiceLines';
 
 const DAY_MS = 86_400_000;
@@ -34,13 +34,12 @@ function visitDay(t: TFunction, locale: Locale, date: string, today: string): st
 export function NextVisitCard({ appointment }: { appointment: Appointment }) {
   const { t } = useTranslation(['booking', 'common']);
   const { lp, locale } = useLocale();
-  const pick = useI18nText();
   const { timeZone, data: config } = useStudio();
   const today = zonedDate(new Date(), timeZone);
   const date = zonedDate(new Date(appointment.start), timeZone);
   const leaf = dayParts(date, locale);
-  const address = [config?.studio.address, config?.studio.city].filter(Boolean).join(', ');
   const duration = formatDuration(t, appointment.durationMin);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const action =
     'press inline-flex h-9 items-center gap-1.5 rounded-pill bg-white/10 px-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/18';
@@ -77,7 +76,7 @@ export function NextVisitCard({ appointment }: { appointment: Appointment }) {
         <button
           type="button"
           className={action}
-          onClick={() => downloadIcs(calendarEventFor(appointment, { t, locale, pick, address }), `nails-by-alynna-${appointment.code}.ics`)}
+          onClick={() => setCalendarOpen(true)}
         >
           <CalendarAddIcon fontSize="inherit" className="text-base" />
           {t('flow.addToCalendar')}
@@ -89,6 +88,7 @@ export function NextVisitCard({ appointment }: { appointment: Appointment }) {
           </a>
         ) : null}
       </div>
+      <AddToCalendarSheet appointment={appointment} open={calendarOpen} onClose={() => setCalendarOpen(false)} />
     </section>
   );
 }

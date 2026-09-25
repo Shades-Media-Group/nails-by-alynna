@@ -73,7 +73,7 @@ export function adminAppointmentRoutes(deps: AppDeps) {
     ]);
     const now = deps.now();
     return docs.map((d) => ({
-      ...toStaffAppointment(d, staff, settings, now, loyalty),
+      ...toStaffAppointment(d, staff, settings, now, { loyalty }),
       clientStats: badges.get(d.clientId.toHexString()) ?? { visits: 0, noShows: 0 },
     }));
   }

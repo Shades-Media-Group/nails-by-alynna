@@ -60,10 +60,7 @@ export function adminLoyaltyRoutes(deps: AppDeps) {
         memberCode: code,
       },
       loyalty,
-      appointments: upcoming.map((a) => ({
-        ...toStaffAppointment(a, staff, settings, now),
-        loyalty: tags.get(a._id.toHexString()) ?? null,
-      })),
+      appointments: upcoming.map((a) => toStaffAppointment(a, staff, settings, now, { loyalty: tags })),
     };
   }
 

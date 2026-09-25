@@ -5,16 +5,16 @@ import { useParams } from 'react-router';
 import { NailArt } from '@/components/brand/NailArt';
 import { Alert } from '@/components/common/Alert';
 import { ContactSheet } from '@/components/common/ContactSheet';
+import { AddToCalendarSheet } from '@/components/appointments/AddToCalendar';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { LoyaltyLine } from '@/components/loyalty/LoyaltyBits';
 import { Button, ButtonLink, EmptyState, Sheet, Skeleton, Textarea, toast } from '@/components/ui';
 import { CalendarAddIcon, ChatIcon, DirectionsIcon, EventBusyIcon, HourglassIcon, ReplayIcon, ScheduleIcon } from '@/components/ui/icons';
 import { useCatalog, useI18nText, useStudio } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
-import { calendarEventFor, rebookQuery } from '@/lib/appointment';
+import { rebookQuery } from '@/lib/appointment';
 import { cx } from '@/lib/cx';
 import { dayParts, formatDateTime, formatDuration, formatPrice, formatTime, zonedDate } from '@/lib/format';
-import { downloadIcs } from '@/lib/ics';
 import { errorMessage } from '@/lib/errors';
 import { SWATCH } from '@/lib/swatch';
 import { appointmentsApi } from '@/services/api/endpoints';
@@ -32,6 +32,7 @@ export default function AppointmentDetailPage() {
   const appointment = useQuery(queries.appointment(id));
   const [cancelOpen, setCancelOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [reason, setReason] = useState('');
   // Read the clock once per visit to this screen, not on every render.
   const [now] = useState(() => Date.now());
@@ -78,7 +79,6 @@ export default function AppointmentDetailPage() {
   const leaf = dayParts(date, locale);
   const active = a.status === 'pending' || a.status === 'confirmed';
   const upcoming = active && new Date(a.end).getTime() > now;
-  const address = [config?.studio.address, config?.studio.city].filter(Boolean).join(', ');
 
   return (
     <div className="pb-8">
@@ -116,7 +116,7 @@ export default function AppointmentDetailPage() {
             <div className="mt-4 flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => downloadIcs(calendarEventFor(a, { t, locale, pick, address }), `nails-by-alynna-${a.code}.ics`)}
+                onClick={() => setCalendarOpen(true)}
                 className="press inline-flex h-9 items-center gap-1.5 rounded-pill bg-white/10 px-3.5 text-sm font-semibold hover:bg-white/18"
               >
                 <CalendarAddIcon fontSize="inherit" className="text-base" />
@@ -234,6 +234,7 @@ export default function AppointmentDetailPage() {
         </div>
       </Sheet>
       <ContactSheet open={contactOpen} onClose={() => setContactOpen(false)} />
+      {a ? <AddToCalendarSheet appointment={a} open={calendarOpen} onClose={() => setCalendarOpen(false)} /> : null}
     </div>
   );
 }

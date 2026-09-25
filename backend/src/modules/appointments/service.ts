@@ -264,15 +264,22 @@ export async function staffSummaries(deps: AppDeps, ids: ObjectId[]): Promise<Ma
   );
 }
 
+/** Per-appointment extras computed in bulk by the route: loyalty stamps and calendar links. */
+export interface AppointmentExtras {
+  /** Loyalty stamps (earned or expected) by appointment id, from loyalty/service loyaltyTags. */
+  loyalty?: Map<string, LoyaltyTag>;
+  calendar?: Map<string, string>;
+}
+
 export function toClientAppointment(
   a: AppointmentDoc,
   staff: Map<string, StaffSummary>,
   settings: StudioSettings,
   now: Date,
-  /** Loyalty stamps (earned or expected) by appointment id, from loyalty/service loyaltyTags. */
-  loyalty?: Map<string, LoyaltyTag>,
+  extras: AppointmentExtras = {},
 ) {
   const stored = a.status === 'completed' && a.loyalty ? { ...a.loyalty, predicted: false } : null;
+  const id = a._id.toHexString();
   return {
     id: a._id.toHexString(),
     code: a.code,
@@ -295,7 +302,9 @@ export function toClientAppointment(
     changeDeadline: cancelDeadline(a, settings).toISOString(),
     cancelledAt: a.cancelledAt?.toISOString() ?? null,
     cancelledBy: a.cancelledBy,
-    loyalty: loyalty?.get(a._id.toHexString()) ?? stored,
+    loyalty: extras.loyalty?.get(id) ?? stored,
+    /** Signed "Add to calendar" link, for visits still to come. */
+    calendarUrl: extras.calendar?.get(id) ?? null,
     createdAt: a.createdAt.toISOString(),
   };
 }
@@ -305,10 +314,10 @@ export function toStaffAppointment(
   staff: Map<string, StaffSummary>,
   settings: StudioSettings,
   now: Date,
-  loyalty?: Map<string, LoyaltyTag>,
+  extras: AppointmentExtras = {},
 ) {
   return {
-    ...toClientAppointment(a, staff, settings, now, loyalty),
+    ...toClientAppointment(a, staff, settings, now, extras),
     client: { id: a.clientId.toHexString(), ...a.client },
     staffNotes: a.staffNotes,
     source: a.source,

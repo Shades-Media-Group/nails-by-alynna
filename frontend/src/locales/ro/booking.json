@@ -90,7 +90,12 @@
   },
   "calendar": {
     "title": "Nails by Alynna: {{services}}",
-    "description": "Programarea {{code}}. O gestionezi în aplicație: {{url}}"
+    "description": "Programarea {{code}}. O gestionezi în aplicație: {{url}}",
+    "sheetTitle": "Adaugă în calendar",
+    "sheetText": "Alege calendarul pe care îl folosești. Include un memento cu o oră înainte.",
+    "apple": "Calendarul de pe iPhone sau Mac",
+    "google": "Google Calendar",
+    "other": "Outlook sau altă aplicație"
   },
   "studio": {
     "openNow": "Deschis acum · până la {{time}}",

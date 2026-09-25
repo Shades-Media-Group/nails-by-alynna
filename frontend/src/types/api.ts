@@ -184,6 +184,8 @@ export interface Appointment {
   cancelledAt: string | null;
   cancelledBy: 'client' | 'staff' | null;
   loyalty: AppointmentLoyalty | null;
+  /** Signed "Add to calendar" (.ics) link, for visits still to come. */
+  calendarUrl?: string | null;
   createdAt: string;
 }
 

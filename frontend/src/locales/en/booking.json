@@ -88,7 +88,12 @@
   },
   "calendar": {
     "title": "Nails by Alynna: {{services}}",
-    "description": "Booking {{code}}. Manage it in the app: {{url}}"
+    "description": "Booking {{code}}. Manage it in the app: {{url}}",
+    "sheetTitle": "Add to calendar",
+    "sheetText": "Pick the calendar you use. A reminder an hour before is included.",
+    "apple": "iPhone or Mac calendar",
+    "google": "Google Calendar",
+    "other": "Outlook or another app"
   },
   "studio": {
     "openNow": "Open now · until {{time}}",
