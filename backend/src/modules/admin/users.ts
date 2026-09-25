@@ -66,6 +66,9 @@ export function adminUserRoutes(deps: AppDeps) {
     }
     const target = await deps.col.users.findOne({ _id: id, deletedAt: null });
     if (!target) throw notFound('User');
+    // The shared demo accounts have a public password: never promoted, never switched off here
+    // (DEMO_LOGIN turns them on and off).
+    if (target.isDemo === true) throw new AppError(403, 'FORBIDDEN', 'Demo accounts cannot be changed');
 
     const losesAdministrator =
       target.role === 'administrator' &&

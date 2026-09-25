@@ -6,7 +6,7 @@ import { ACTIVE_STATUSES, type AppointmentDoc, type AppointmentStatus, type User
 import { audit } from '../../lib/audit';
 import { AppError, notFound } from '../../lib/errors';
 import { userSearch } from '../../lib/text';
-import { dayRange } from '../../lib/time';
+import { MINUTE, dayRange } from '../../lib/time';
 import {
   dateSchema,
   emailSchema,
@@ -21,13 +21,15 @@ import {
 } from '../../lib/validation';
 import { getSettings } from '../settings';
 import {
+  breakBetween,
   placeAppointment,
   rescheduleAppointment,
   staffSummaries,
   toStaffAppointment,
 } from '../appointments/service';
 import { placeholderEmail } from '../../lib/placeholder-email';
-import { loyaltyTags, stampOnCompletion } from '../loyalty/service';
+import { loyaltyStatus, loyaltyTags, stampOnCompletion } from '../loyalty/service';
+import { notifyBookingChange, notifyLoyaltyNext } from '../notifications';
 
 export { placeholderEmail };
 
@@ -59,6 +61,16 @@ export async function clientBadges(deps: AppDeps, clientIds: ObjectId[]) {
     ])
     .toArray();
   return new Map(rows.map((r) => [r._id.toHexString(), { visits: r.visits, noShows: r.noShows }]));
+}
+
+/** After a completed visit: if the client's next visit carries a loyalty discount, say so. */
+async function announceNextReward(deps: AppDeps, clientId: ObjectId): Promise<void> {
+  const [client, settings] = await Promise.all([deps.col.users.findOne({ _id: clientId }), getSettings(deps)]);
+  if (!client) return;
+  const status = await loyaltyStatus(deps, client, settings);
+  if (status.enabled && status.nextReward?.inVisits === 1) {
+    await notifyLoyaltyNext(deps, client, { percent: status.nextReward.percent, visits: status.visits });
+  }
 }
 
 export function adminAppointmentRoutes(deps: AppDeps) {
@@ -229,14 +241,20 @@ export function adminAppointmentRoutes(deps: AppDeps) {
         set.cancelReason = input.cancelReason ?? '';
       }
       if (doc.status === 'cancelled' && ACTIVE_STATUSES.includes(input.status)) {
-        // Restoring re-occupies the slot: it must still be free (unless forced).
+        // Restoring re-occupies the slot: it must still be free, breaks between clients included
+        // (unless forced).
         if (!input.force) {
+          const [settings, master] = await Promise.all([
+            getSettings(deps),
+            deps.col.staff.findOne({ _id: doc.staffId }, { projection: { bufferMin: 1 } }),
+          ]);
+          const gap = breakBetween(settings, master) * MINUTE;
           const clash = await deps.col.appointments.findOne({
             _id: { $ne: doc._id },
             staffId: doc.staffId,
             status: { $in: ACTIVE_STATUSES },
-            start: { $lt: doc.end },
-            end: { $gt: doc.start },
+            start: { $lt: new Date(doc.end.getTime() + gap) },
+            end: { $gt: new Date(doc.start.getTime() - gap) },
           });
           if (clash) throw new AppError(409, 'SLOT_TAKEN', 'The slot is taken by another appointment');
         }
@@ -266,6 +284,14 @@ export function adminAppointmentRoutes(deps: AppDeps) {
         targetId: id,
         meta: { from: doc.status, to: set.status },
       });
+      // Tell the client when the studio confirms or cancels their visit (in the background).
+      if (set.status === 'confirmed' && (doc.status === 'pending' || doc.status === 'cancelled')) {
+        deps.defer(notifyBookingChange(deps, id, 'confirmed'));
+      } else if (set.status === 'cancelled') {
+        deps.defer(notifyBookingChange(deps, id, 'cancelled'));
+      } else if (set.status === 'completed') {
+        deps.defer(announceNextReward(deps, updated.clientId));
+      }
     }
     const [appointment] = await respond([updated]);
     return c.json({ appointment });
@@ -287,6 +313,7 @@ export function adminAppointmentRoutes(deps: AppDeps) {
       force: input.force,
     });
     await audit(deps, { actorId: actor._id, action: 'appointment.reschedule_staff', targetType: 'appointment', targetId: id });
+    deps.defer(notifyBookingChange(deps, id, 'rescheduled'));
     const [appointment] = await respond([updated]);
     return c.json({ appointment });
   });

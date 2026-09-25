@@ -722,3 +722,128 @@ function linkLine(label: string, url: string | null): Block {
     text: `${label}: ${safe}`,
   };
 }
+
+// ── Welcome and loyalty ───────────────────────────────────────────────────────
+
+const WELCOME_COPY: Record<
+  Locale,
+  {
+    subject: string;
+    heading: string;
+    body: string;
+    loyalty: (rewards: string) => string;
+    reward: (visit: number, percent: number) => string;
+    book: string;
+    install: string;
+    installNote: string;
+  }
+> = {
+  ro: {
+    subject: 'Bun venit la Nails by Alynna',
+    heading: 'Contul tău e gata',
+    body: 'Te programezi într-un minut: alegi serviciile, maestrul și ora potrivită. Programările, memento-urile și cardul de fidelitate sunt toate în aplicație.',
+    loyalty: (rewards) => `Fiecare vizită e o ștampilă pe cardul de fidelitate: ${rewards}.`,
+    reward: (visit, percent) => `${visit === 1 ? 'prima' : `a ${visit}-a`} vizită are −${percent}%`,
+    book: 'Programează-te',
+    install: 'Pune aplicația pe ecran',
+    installNote: 'Pe telefon, adaugă aplicația pe ecranul principal: se deschide pe tot ecranul și primești memento-uri.',
+  },
+  ru: {
+    subject: 'Добро пожаловать в Nails by Alynna',
+    heading: 'Ваш аккаунт готов',
+    body: 'Запись занимает минуту: выберите услуги, мастера и удобное время. Записи, напоминания и карта лояльности — всё в приложении.',
+    loyalty: (rewards) => `Каждый визит — отметка на карте лояльности: ${rewards}.`,
+    reward: (visit, percent) => `${visit}-й визит −${percent}%`,
+    book: 'Записаться',
+    install: 'Добавить на экран',
+    installNote: 'На телефоне добавьте приложение на экран «Домой»: оно откроется на весь экран, и вы будете получать напоминания.',
+  },
+  en: {
+    subject: 'Welcome to Nails by Alynna',
+    heading: 'Your account is ready',
+    body: 'Booking takes a minute: pick services, a master and a time that suits you. Your bookings, reminders and loyalty card are all in the app.',
+    loyalty: (rewards) => `Every visit is a stamp on your loyalty card: ${rewards}.`,
+    reward: (visit, percent) => {
+      const suffix = visit % 10 === 1 && visit !== 11 ? 'st' : visit % 10 === 2 && visit !== 12 ? 'nd' : visit % 10 === 3 && visit !== 13 ? 'rd' : 'th';
+      return `your ${visit}${suffix} visit is ${percent}% off`;
+    },
+    book: 'Book a visit',
+    install: 'Add the app',
+    installNote: 'On your phone, add the app to your Home Screen: it opens full screen and sends you reminders.',
+  },
+};
+
+const localeSegment = (locale: Locale) => (locale === 'ro' ? '' : `/${locale}`);
+
+/** Sent once, when a new account is ready (email confirmed, or first Google sign-in). */
+export function welcomeEmail(opts: {
+  to: string;
+  name: string;
+  locale: Locale;
+  appUrl: string;
+  rewards: Array<{ visit: number; percent: number }>;
+  replyTo?: string;
+}): MailMessage {
+  const t = WELCOME_COPY[opts.locale];
+  const c = COMMON[opts.locale];
+  const base = `${opts.appUrl.replace(/\/$/, '')}${localeSegment(opts.locale)}`;
+  const rewards = opts.rewards.map((r) => t.reward(r.visit, r.percent)).join(', ');
+  return render({
+    locale: opts.locale,
+    to: opts.to,
+    toName: opts.name,
+    subject: t.subject,
+    preheader: t.body,
+    heading: t.heading,
+    blocks: [
+      para(c.greeting(opts.name)),
+      para(t.body),
+      rewards ? para(t.loyalty(rewards)) : { html: '', text: '' },
+      buttons([
+        { label: t.book, url: `${base}/book`, primary: true },
+        { label: t.install, url: `${base}/app` },
+      ]),
+      small(t.installNote),
+    ],
+    footer: [small(c.signature)],
+    replyTo: opts.replyTo,
+  });
+}
+
+const LOYALTY_NEXT_COPY: Record<Locale, { subject: (percent: number) => string; heading: (percent: number) => string; body: string; book: string }> = {
+  ro: {
+    subject: (percent) => `Următoarea vizită are −${percent}%`,
+    heading: (percent) => `Următoarea ta vizită are −${percent}%`,
+    body: 'Mulțumim pentru vizită! Cardul de fidelitate a ajuns la reducere: se aplică la salon, la prețul următoarei vizite.',
+    book: 'Programează-te',
+  },
+  ru: {
+    subject: (percent) => `Следующий визит со скидкой −${percent}%`,
+    heading: (percent) => `Ваш следующий визит −${percent}%`,
+    body: 'Спасибо за визит! На карте лояльности набралась скидка: она применяется в салоне к стоимости следующего визита.',
+    book: 'Записаться',
+  },
+  en: {
+    subject: (percent) => `Your next visit is ${percent}% off`,
+    heading: (percent) => `Your next visit is ${percent}% off`,
+    body: 'Thank you for coming in! Your loyalty card has reached a discount: it is applied at the studio, on the price of your next visit.',
+    book: 'Book a visit',
+  },
+};
+
+/** After a visit, when the next one on the card carries a discount. */
+export function loyaltyNextEmail(opts: { to: string; name: string; locale: Locale; appUrl: string; percent: number }): MailMessage {
+  const t = LOYALTY_NEXT_COPY[opts.locale];
+  const c = COMMON[opts.locale];
+  const base = `${opts.appUrl.replace(/\/$/, '')}${localeSegment(opts.locale)}`;
+  return render({
+    locale: opts.locale,
+    to: opts.to,
+    toName: opts.name,
+    subject: t.subject(opts.percent),
+    preheader: t.body,
+    heading: t.heading(opts.percent),
+    blocks: [para(c.greeting(opts.name)), para(t.body), buttons([{ label: t.book, url: `${base}/book`, primary: true }])],
+    footer: [small(c.signature)],
+  });
+}

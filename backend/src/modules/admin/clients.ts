@@ -189,6 +189,7 @@ export function adminClientRoutes(deps: AppDeps) {
     const input = await parseJson(c, updateSchema);
     const client = await deps.col.users.findOne({ _id: id, role: 'client', deletedAt: null });
     if (!client) throw notFound('Client');
+    if (client.isDemo === true) throw new AppError(403, 'FORBIDDEN', 'Demo accounts cannot be changed');
     // Clients with their own login manage their email themselves.
     if (input.email && input.email !== client.email && (client.passwordHash || client.googleId)) {
       throw new AppError(403, 'FORBIDDEN', 'Email of a registered client cannot be changed by staff', {

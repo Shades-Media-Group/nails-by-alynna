@@ -49,6 +49,29 @@ describe('demo accounts', () => {
     expect((await demo.post('/api/auth/logout')).status).toBe(200);
   });
 
+  it('cannot be promoted, switched off or edited by staff either', async () => {
+    const owner = await loginAs(ctx, 'owner@example.com', strongPassword);
+    const demoUser = await ctx.deps.col.users.findOne({ email: 'client.demo@example.com' });
+    const id = demoUser!._id.toHexString();
+    const attempts = await Promise.all([
+      owner.patch(`/api/admin/users/${id}`, { role: 'administrator' }),
+      owner.patch(`/api/admin/users/${id}`, { isActive: false }),
+      owner.patch(`/api/admin/clients/${id}`, { name: 'Changed', notes: 'x' }),
+    ]);
+    for (const res of attempts) {
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe('FORBIDDEN');
+    }
+    const after = await ctx.deps.col.users.findOne({ _id: demoUser!._id });
+    expect(after).toMatchObject({ role: 'client', isActive: true, name: demoUser!.name, passwordHash: demoUser!.passwordHash });
+  });
+
+  it('replays the intro: never marked as seen for the shared account', async () => {
+    const demo = await loginAs(ctx, 'client.demo@example.com', DEMO_PASSWORD);
+    expect((await demo.post('/api/me/onboarded')).body.error.code).toBe('DEMO_READ_ONLY');
+    expect((await demo.get('/api/auth/me')).body.user.onboarded).toBe(false);
+  });
+
   it('only sees its own device in the sessions list', async () => {
     await loginAs(ctx, 'client.demo@example.com', DEMO_PASSWORD);
     const mine = await loginAs(ctx, 'client.demo@example.com', DEMO_PASSWORD);

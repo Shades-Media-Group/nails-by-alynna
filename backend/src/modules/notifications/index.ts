@@ -2,6 +2,7 @@
  * Notifications: reminders before a visit, booking changes made by the studio, and the
  * user's preferences for each (Profile → Notifications), by email and Web Push.
  */
+export { notifyLoyaltyNext, notifyWelcome } from './account';
 export { notifyBookingChange, notifyUser, type BookingChange } from './booking';
 export { deliver, type DeliveryOutcome } from './deliver';
 export { DEFAULT_PREFS, resolvePrefs } from './prefs';
