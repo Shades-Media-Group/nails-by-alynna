@@ -91,5 +91,24 @@
   "calendar": {
     "title": "Nails by Alynna: {{services}}",
     "description": "Programarea {{code}}. O gestionezi în aplicație: {{url}}"
+  },
+  "studio": {
+    "openNow": "Deschis acum · până la {{time}}",
+    "opensToday": "Se deschide azi la {{time}}",
+    "closedNow": "Închis acum",
+    "hours": "Program",
+    "today": "Azi",
+    "closed": "Închis",
+    "about": "Despre salon",
+    "team": "Echipa",
+    "contact": "Contactează-ne",
+    "book": "Programează-te",
+    "policy": "Reguli de programare",
+    "freeCancel_one": "Anulare sau reprogramare gratuită cu cel puțin {{count}} oră înainte de vizită.",
+    "freeCancel_few": "Anulare sau reprogramare gratuită cu cel puțin {{count}} ore înainte de vizită.",
+    "freeCancel_other": "Anulare sau reprogramare gratuită cu cel puțin {{count}} de ore înainte de vizită.",
+    "approval": "Programările noi sunt confirmate de salon.",
+    "legal": "Termeni și confidențialitate",
+    "address": "Adresă"
   }
 }

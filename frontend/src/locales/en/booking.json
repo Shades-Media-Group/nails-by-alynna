@@ -89,5 +89,23 @@
   "calendar": {
     "title": "Nails by Alynna: {{services}}",
     "description": "Booking {{code}}. Manage it in the app: {{url}}"
+  },
+  "studio": {
+    "openNow": "Open now · until {{time}}",
+    "opensToday": "Opens today at {{time}}",
+    "closedNow": "Closed now",
+    "hours": "Opening hours",
+    "today": "Today",
+    "closed": "Closed",
+    "about": "About the studio",
+    "team": "The team",
+    "contact": "Get in touch",
+    "book": "Book a visit",
+    "policy": "Booking policy",
+    "freeCancel_one": "Free cancellation or rescheduling up to {{count}} hour before the visit.",
+    "approval": "New bookings are confirmed by the studio.",
+    "legal": "Terms and privacy",
+    "address": "Address",
+    "freeCancel_other": "Free cancellation or rescheduling up to {{count}} hours before the visit."
   }
 }
