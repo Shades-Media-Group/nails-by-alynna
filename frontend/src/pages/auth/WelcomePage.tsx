@@ -15,6 +15,7 @@ import { authApi } from '@/services/api/endpoints';
 import { queries } from '@/services/queries';
 
 const OAUTH_ERRORS = ['google', 'google_cancelled', 'google_conflict', 'google_disabled', 'account_disabled'];
+const SHOW_DEMO_BUTTONS = false;
 
 /** Figma "App Prototype _select_login": pick email or Google. */
 export default function WelcomePage() {
@@ -34,7 +35,8 @@ export default function WelcomePage() {
       navigate(lp(homePathFor(user)), { replace: true });
     },
   });
-  const demoRoles = config.data?.auth.demo ?? [];
+  // One-tap demo buttons are hidden for now; the client demo opens with demo / demo instead.
+  const demoRoles = SHOW_DEMO_BUTTONS ? (config.data?.auth.demo ?? []) : [];
 
   return (
     <AuthLayout

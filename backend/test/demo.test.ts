@@ -108,6 +108,9 @@ describe('demo switched off', () => {
       expect((await off.client().get('/api/config')).body.auth.demo).toEqual([]);
       expect((await off.client().post('/api/auth/demo', { role: 'client' })).status).toBe(404);
 
+      // With the demo off, the shortcut is just a wrong login.
+      expect((await off.client().post('/api/auth/login', { email: 'demo', password: 'demo' })).status).toBe(401);
+
       // The shared password is known, so the email form must refuse it too.
       const login = await off.client().post('/api/auth/login', { email: 'client.demo@example.com', password: DEMO_PASSWORD });
       expect(login.status).toBe(401);
@@ -133,6 +136,12 @@ describe('demo switched off', () => {
       expect((await some.client().get('/api/config')).body.auth.demo).toEqual(['client']);
       expect((await some.client().post('/api/auth/demo', { role: 'client' })).status).toBe(200);
       expect((await some.client().post('/api/auth/demo', { role: 'administrator' })).status).toBe(404);
+
+      // The shareable shortcut: demo / demo in the email form opens the client demo.
+      const shortcut = await some.client().post('/api/auth/login', { email: ' Demo ', password: 'demo' });
+      expect(shortcut.status).toBe(200);
+      expect(shortcut.body.user).toMatchObject({ isDemo: true, role: 'client' });
+      expect((await some.client().post('/api/auth/login', { email: 'demo', password: 'wrong' })).status).toBe(401);
       await expect(loginAs(some, 'owner.demo@example.com', DEMO_PASSWORD)).rejects.toThrow(/401/);
     } finally {
       await some.close();

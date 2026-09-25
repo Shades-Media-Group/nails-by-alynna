@@ -38,13 +38,15 @@ export default function LoginPage() {
     },
   });
 
-  const emailError = touched && !isEmail(email) ? t('common:validation.invalid_email') : undefined;
+  // "demo" (with password "demo") opens the shared client demo when the studio enables it.
+  const isDemoShortcut = email.trim().toLowerCase() === 'demo';
+  const emailError = touched && !isEmail(email) && !isDemoShortcut ? t('common:validation.invalid_email') : undefined;
   const passwordError = touched && !password ? t('common:validation.required') : undefined;
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
     setTouched(true);
-    if (!isEmail(email) || !password) return;
+    if ((!isEmail(email) && !isDemoShortcut) || !password) return;
     login.mutate({ email: email.trim(), password, remember });
   };
 

@@ -1,8 +1,9 @@
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { ObjectId } from 'mongodb';
 import { z } from 'zod';
+import type { Role } from '../../config';
 import type { AppDeps, AppEnv } from '../../context';
 import type { UserDoc } from '../../db/types';
 import { audit } from '../../lib/audit';
@@ -131,10 +132,20 @@ export function authRoutes(deps: AppDeps) {
 
   // ── Log in ─────────────────────────────────────────────────────────────────
   const loginSchema = z.object({
-    email: emailSchema,
+    // "demo" is the shareable shortcut to the client demo account (see DEMO_LOGIN).
+    email: z.string().trim().toLowerCase().max(254, 'too_long').pipe(z.union([z.literal('demo'), emailSchema])),
     password: z.string().min(1, 'required').max(128, 'too_long'),
     remember: z.boolean().default(true),
   });
+
+  /** Signs in the shared, read-only demo account of a role, if that role's demo is enabled. */
+  const demoSession = async (c: Context<AppEnv>, role: Role) => {
+    const user = await col.users.findOne({ isDemo: true, role, isActive: true, deletedAt: null });
+    if (!user) throw new AppError(404, 'NOT_FOUND', 'Demo account not available');
+    const tokens = await createSession(deps, user, { remember: false, ...meta(c, c.get('ip')) });
+    setSessionCookies(c, config, tokens);
+    return c.json({ user: toPublicUser(user) });
+  };
 
   app.post('/login', async (c) => {
     const ip = c.get('ip');
@@ -143,6 +154,12 @@ export function authRoutes(deps: AppDeps) {
       { key: `login:ip:${ip}`, limit: 30, windowSec: 900 },
       { key: `login:acct:${input.email}`, limit: 10, windowSec: 900 },
     ]);
+
+    // demo / demo: the client demo account, when enabled. Anything else behaves like a wrong login.
+    if (input.email === 'demo') {
+      if (input.password === 'demo' && config.demoRoles.includes('client')) return demoSession(c, 'client');
+      throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
+    }
 
     const user = await col.users.findOne({ email: input.email });
     if (!user || !user.passwordHash || user.deletedAt || demoSwitchedOff(deps, user)) {
@@ -249,11 +266,7 @@ export function authRoutes(deps: AppDeps) {
     await enforceRateLimits(deps, [{ key: `demo:ip:${ip}`, limit: 30, windowSec: 900 }]);
     const input = await parseJson(c, z.object({ role: z.enum(['client', 'admin', 'administrator']) }));
     if (!config.demoRoles.includes(input.role)) throw new AppError(404, 'NOT_FOUND', 'Demo account not available');
-    const user = await col.users.findOne({ isDemo: true, role: input.role, isActive: true, deletedAt: null });
-    if (!user) throw new AppError(404, 'NOT_FOUND', 'Demo account not available');
-    const tokens = await createSession(deps, user, { remember: false, ...meta(c, ip) });
-    setSessionCookies(c, config, tokens);
-    return c.json({ user: toPublicUser(user) });
+    return demoSession(c, input.role);
   });
 
   // ── Password reset ──────────────────────────────────────────────────────────
