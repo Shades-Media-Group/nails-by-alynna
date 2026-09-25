@@ -57,7 +57,7 @@ export async function calendarLinks(deps: AppDeps, docs: AppointmentDoc[]): Prom
 const pad = (n: number) => String(n).padStart(2, '0');
 const stamp = (d: Date) =>
   `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
-const escapeText = (value: string) => value.replace(/\\/g, '\\\\').replace(/\r?\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\;');
+const escapeText = (value: string) => value.replace(/\\/g, '\\\\').replace(/\r?\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
 
 /** Lines longer than 75 octets are folded (continuation lines start with a space). */
 function fold(line: string): string {
