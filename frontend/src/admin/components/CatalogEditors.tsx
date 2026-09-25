@@ -3,68 +3,17 @@ import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NailArt } from '@/components/brand/NailArt';
 import { Alert } from '@/components/common/Alert';
-import { Badge, Button, Select, Sheet, Switch, TextField, Textarea, toast } from '@/components/ui';
+import { Badge, Button, Select, Sheet, Switch, TextField, toast } from '@/components/ui';
 import { CheckIcon } from '@/components/ui/icons';
-import { LOCALES, type Locale } from '@/i18n/config';
 import { useLocale } from '@/i18n/useLocale';
 import { ART_GROUPS } from '@/lib/art';
 import { cx } from '@/lib/cx';
 import { errorMessage, fieldErrors } from '@/lib/errors';
 import { SWATCH, SWATCH_ORDER, type SwatchColor } from '@/lib/swatch';
-import type { I18nText, ServiceArt } from '@/types/api';
+import type { ServiceArt } from '@/types/api';
 import { adminApi, adminQueries, type AdminCategory, type AdminService, type CategoryInput, type ServiceInput } from '../api';
-
-const emptyText = (): I18nText => ({ ro: '', ru: '', en: '' });
-
-/** The same text in Romanian, Russian and English, one field per language. */
-function I18nFields({
-  label,
-  value,
-  onChange,
-  multiline,
-  required,
-  maxLength,
-  error,
-}: {
-  label: string;
-  value: I18nText;
-  onChange: (value: I18nText) => void;
-  multiline?: boolean;
-  required?: boolean;
-  maxLength: number;
-  error?: string;
-}) {
-  const { t } = useTranslation('admin');
-  return (
-    <fieldset className="flex flex-col gap-2">
-      <legend className="mb-1 text-sm font-semibold text-ink-700">{label}</legend>
-      {LOCALES.map((locale: Locale) =>
-        multiline ? (
-          <Textarea
-            key={locale}
-            label={t(`languages.${locale}`)}
-            lang={locale}
-            rows={2}
-            maxLength={maxLength}
-            value={value[locale]}
-            onChange={(e) => onChange({ ...value, [locale]: e.target.value })}
-          />
-        ) : (
-          <TextField
-            key={locale}
-            label={t(`languages.${locale}`)}
-            lang={locale}
-            maxLength={maxLength}
-            required={required && locale === 'ro'}
-            value={value[locale]}
-            onChange={(e) => onChange({ ...value, [locale]: e.target.value })}
-            error={locale === 'ro' ? error : undefined}
-          />
-        ),
-      )}
-    </fieldset>
-  );
-}
+import { I18nFields } from './I18nFields';
+import { emptyText, fillFromRo } from './utils';
 
 /** The illustration collection, grouped, drawn in the category's colour. */
 function ArtPicker({ value, color, onChange }: { value: ServiceArt; color: SwatchColor; onChange: (art: ServiceArt) => void }) {
@@ -425,9 +374,4 @@ export function CategoryEditor({ category, onClose }: { category: AdminCategory 
       </form>
     </Sheet>
   );
-}
-
-/** Empty Russian or English fields fall back to the Romanian text instead of staying blank. */
-function fillFromRo(text: I18nText): I18nText {
-  return { ro: text.ro.trim(), ru: text.ru.trim() || text.ro.trim(), en: text.en.trim() || text.ro.trim() };
 }
