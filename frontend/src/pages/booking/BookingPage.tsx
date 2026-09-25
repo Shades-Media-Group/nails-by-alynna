@@ -213,6 +213,7 @@ export default function BookingPage() {
               }}
               slot={slot}
               onSlot={setSlot}
+              exclude={rescheduleId}
             />
           ) : slot ? (
             <ConfirmStep

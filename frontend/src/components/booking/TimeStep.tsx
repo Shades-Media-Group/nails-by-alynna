@@ -22,18 +22,20 @@ interface TimeStepProps {
   onDate: (date: string) => void;
   slot: Slot | null;
   onSlot: (slot: Slot) => void;
+  /** Moving a booking: its own time counts as free. */
+  exclude?: string | null;
 }
 
 /** Days with their number of free times, then the free times of the chosen day. */
-export function TimeStep({ serviceIds, staffId, date, onDate, slot, onSlot }: TimeStepProps) {
+export function TimeStep({ serviceIds, staffId, date, onDate, slot, onSlot, exclude = null }: TimeStepProps) {
   const { t } = useTranslation(['booking', 'common']);
   const { locale } = useLocale();
   const { timeZone } = useStudio();
   const today = zonedDate(new Date(), timeZone);
 
   const days = useQuery({
-    queryKey: ['availability-days', serviceIds, staffId],
-    queryFn: () => availabilityApi.days({ serviceIds, staffId, days: WINDOW_DAYS }),
+    queryKey: ['availability-days', serviceIds, staffId, exclude],
+    queryFn: () => availabilityApi.days({ serviceIds, staffId, days: WINDOW_DAYS, exclude }),
     enabled: serviceIds.length > 0,
     staleTime: 30_000,
   });
@@ -45,8 +47,8 @@ export function TimeStep({ serviceIds, staffId, date, onDate, slot, onSlot }: Ti
   }, [date, firstFree, onDate]);
 
   const slots = useQuery({
-    queryKey: ['availability-slots', serviceIds, staffId, date],
-    queryFn: () => availabilityApi.slots({ serviceIds, staffId, date: date! }),
+    queryKey: ['availability-slots', serviceIds, staffId, date, exclude],
+    queryFn: () => availabilityApi.slots({ serviceIds, staffId, date: date!, exclude }),
     enabled: Boolean(date) && serviceIds.length > 0,
     staleTime: 15_000,
   });

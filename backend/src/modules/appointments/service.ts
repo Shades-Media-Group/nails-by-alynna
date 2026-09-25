@@ -43,12 +43,31 @@ async function resolveStaff(
   deps: AppDeps,
   staffId: ObjectId | null,
   services: Awaited<ReturnType<typeof loadServices>>,
+  /** For "any master" at a chosen time: prefer a master who is free then. */
+  at?: { start: Date; end: Date; bufferMin: number },
 ): Promise<StaffDoc> {
   const staff = await deps.col.staff
     .find(staffId ? { _id: staffId, isActive: true } : { isActive: true, isBookable: true })
     .sort({ order: 1, _id: 1 })
     .toArray();
-  const member = staff.find((s) => canPerform(s, services)) ?? (staffId ? staff[0] : undefined);
+  const capable = staff.filter((s) => canPerform(s, services));
+  let member = capable[0] ?? (staffId ? staff[0] : undefined);
+  if (!staffId && at && capable.length > 1) {
+    const buffer = at.bufferMin * MINUTE;
+    const busy = await deps.col.appointments.distinct('staffId', {
+      staffId: { $in: capable.map((s) => s._id) },
+      status: { $in: ACTIVE_STATUSES },
+      start: { $lt: new Date(at.end.getTime() + buffer) },
+      end: { $gt: new Date(at.start.getTime() - buffer) },
+    });
+    const away = await deps.col.timeOff.distinct('staffId', {
+      staffId: { $in: capable.map((s) => s._id) },
+      start: { $lt: at.end },
+      end: { $gt: at.start },
+    });
+    const taken = new Set([...busy, ...away].map((id) => String(id)));
+    member = capable.find((s) => !taken.has(s._id.toHexString())) ?? member;
+  }
   if (!member) {
     throw new AppError(422, 'VALIDATION_ERROR', 'Master unavailable', { fields: { staffId: 'unavailable' } });
   }
@@ -91,7 +110,14 @@ export async function placeAppointment(deps: AppDeps, input: PlaceInput): Promis
     staffId = new ObjectId(chosen);
   } else {
     services = await loadServices(deps, input.serviceIds);
-    staffId = (await resolveStaff(deps, input.staffId, services))._id;
+    const minutes = services.reduce((sum, s) => sum + s.durationMin, 0);
+    staffId = (
+      await resolveStaff(deps, input.staffId, services, {
+        start: input.start,
+        end: new Date(input.start.getTime() + minutes * MINUTE),
+        bufferMin: settings.bufferMin,
+      })
+    )._id;
   }
 
   const durationMin = services.reduce((sum, s) => sum + s.durationMin, 0);

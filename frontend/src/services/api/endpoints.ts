@@ -67,13 +67,14 @@ export const meApi = {
 };
 
 export const availabilityApi = {
-  days: (params: { serviceIds: string[]; staffId?: string | null; from?: string; days?: number }) =>
+  /** `exclude`: the booking being moved, whose own time counts as free. */
+  days: (params: { serviceIds: string[]; staffId?: string | null; from?: string; days?: number; exclude?: string | null }) =>
     api.get<AvailabilityDays>(
-      `/availability/days${query({ serviceIds: params.serviceIds.join(','), staffId: params.staffId ?? 'any', from: params.from, days: params.days })}`,
+      `/availability/days${query({ serviceIds: params.serviceIds.join(','), staffId: params.staffId ?? 'any', from: params.from, days: params.days, exclude: params.exclude })}`,
     ),
-  slots: (params: { serviceIds: string[]; staffId?: string | null; date: string }) =>
+  slots: (params: { serviceIds: string[]; staffId?: string | null; date: string; exclude?: string | null }) =>
     api.get<{ date: string; durationMin: number; slots: Slot[] }>(
-      `/availability/slots${query({ serviceIds: params.serviceIds.join(','), staffId: params.staffId ?? 'any', date: params.date })}`,
+      `/availability/slots${query({ serviceIds: params.serviceIds.join(','), staffId: params.staffId ?? 'any', date: params.date, exclude: params.exclude })}`,
     ),
 };
 

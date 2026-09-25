@@ -128,13 +128,20 @@ export async function loadAvailabilityContext(
   return { settings, services, durationMin, staff, appointments, timeOff, closures };
 }
 
-export function bookingWindow(settings: StudioSettings, now: Date) {
+/** How far ahead staff can see and book (clients are limited to the studio's horizon). */
+const STAFF_HORIZON_DAYS = 365;
+
+export function bookingWindow(settings: StudioSettings, now: Date, staff = false) {
   const today = todayIn(settings.timezone, now);
-  return { first: today, last: addDays(today, settings.horizonDays) };
+  return { first: today, last: addDays(today, staff ? Math.max(settings.horizonDays, STAFF_HORIZON_DAYS) : settings.horizonDays) };
 }
 
-export function slotsForDate(ctx: AvailabilityContext, date: string, now: Date): Slot[] {
-  const { first, last } = bookingWindow(ctx.settings, now);
+/**
+ * Free start times on a date. Clients see the studio's rules (lead time, horizon); staff booking
+ * at the desk or on the phone see every free time from now on.
+ */
+export function slotsForDate(ctx: AvailabilityContext, date: string, now: Date, opts: { staff?: boolean } = {}): Slot[] {
+  const { first, last } = bookingWindow(ctx.settings, now, opts.staff);
   if (date < first || date > last) return [];
   return computeDaySlots({
     date,
@@ -142,7 +149,7 @@ export function slotsForDate(ctx: AvailabilityContext, date: string, now: Date):
     durationMin: ctx.durationMin,
     stepMin: ctx.settings.slotStepMin,
     bufferMin: ctx.settings.bufferMin,
-    earliestStart: now.getTime() + ctx.settings.leadTimeMin * MINUTE,
+    earliestStart: now.getTime() + (opts.staff ? 0 : ctx.settings.leadTimeMin) * MINUTE,
     staff: ctx.staff.map((s) => ({ id: s._id.toHexString(), weekly: s.weekly })),
     appointments: ctx.appointments,
     timeOff: ctx.timeOff,

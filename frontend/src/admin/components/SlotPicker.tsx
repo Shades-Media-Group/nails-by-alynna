@@ -37,6 +37,7 @@ export function SlotPicker({
   value,
   onChange,
   initialDate,
+  exclude = null,
 }: {
   serviceIds: string[];
   /** null = any master. */
@@ -45,6 +46,8 @@ export function SlotPicker({
   onChange: (value: TimeChoice | null) => void;
   /** Day to open on (e.g. from the calendar). */
   initialDate?: string;
+  /** Moving a booking: its own time counts as free. */
+  exclude?: string | null;
 }) {
   const { t } = useTranslation(['admin', 'booking', 'common']);
   const { locale } = useLocale();
@@ -58,8 +61,8 @@ export function SlotPicker({
   const ready = serviceIds.length > 0;
 
   const days = useQuery({
-    queryKey: ['availability-days', serviceIds, staffId],
-    queryFn: () => availabilityApi.days({ serviceIds, staffId, days: WINDOW_DAYS }),
+    queryKey: ['availability-days', serviceIds, staffId, exclude],
+    queryFn: () => availabilityApi.days({ serviceIds, staffId, days: WINDOW_DAYS, exclude }),
     enabled: ready && mode === 'free',
     staleTime: 30_000,
   });
@@ -69,8 +72,8 @@ export function SlotPicker({
   const activeDate = date ?? preferred ?? firstFree;
 
   const slots = useQuery({
-    queryKey: ['availability-slots', serviceIds, staffId, activeDate],
-    queryFn: () => availabilityApi.slots({ serviceIds, staffId, date: activeDate! }),
+    queryKey: ['availability-slots', serviceIds, staffId, activeDate, exclude],
+    queryFn: () => availabilityApi.slots({ serviceIds, staffId, date: activeDate!, exclude }),
     enabled: ready && mode === 'free' && Boolean(activeDate),
     staleTime: 15_000,
   });

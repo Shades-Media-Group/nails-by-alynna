@@ -105,6 +105,7 @@ export function RescheduleSheet({
             staffId={staffId}
             value={choice}
             onChange={(value) => setChosen(value ? { key: pickerKey, value } : null)}
+            exclude={appointment.id}
           />
         </section>
         {save.isError ? (
