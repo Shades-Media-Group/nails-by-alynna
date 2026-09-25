@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { NailArt } from '@/components/brand/NailArt';
+import { RealisticNailArt } from '@/components/brand/nails/RealisticNailArt';
 import { AddIcon, CheckIcon, ScheduleIcon } from '@/components/ui/icons';
 import { useI18nText } from '@/hooks/useStudio';
 import { cx } from '@/lib/cx';
@@ -25,8 +25,8 @@ export function ServiceCard({ service, color, currency, selected, onToggle }: Se
 
   const body = (
     <>
-      <span className={cx('flex size-20 shrink-0 items-center justify-center rounded-lg', SWATCH[color].field)}>
-        <NailArt art={service.art} color={color} className="w-[4.5rem]" />
+      <span className={cx('flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-lg', SWATCH[color].field)}>
+        <RealisticNailArt art={service.art} color={color} className="w-[4.5rem]" />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-[0.9375rem] font-bold leading-snug text-ink-900">{name}</span>

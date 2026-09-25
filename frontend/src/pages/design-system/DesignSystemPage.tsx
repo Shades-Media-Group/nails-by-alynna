@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NailArt } from '@/components/brand/NailArt';
+import { RealisticNailArt } from '@/components/brand/nails/RealisticNailArt';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge, Button, Chip } from '@/components/ui';
 import { ArrowForwardIcon, CalendarAddIcon } from '@/components/ui/icons';
@@ -7,12 +8,20 @@ import { ART_GROUPS } from '@/lib/art';
 import { cx } from '@/lib/cx';
 import { SWATCH, SWATCH_ORDER, type SwatchColor } from '@/lib/swatch';
 
+/** The two illustration looks and where each one is used. */
+const LOOKS = {
+  classic: { label: 'Classic', note: 'Used everywhere except the screens where clients pick services.', Art: NailArt },
+  realistic: { label: 'Realistic', note: 'Services page, every booking step and Popular on Home.', Art: RealisticNailArt },
+} as const;
+
 /**
  * Internal reference for the owner and developers (administrators only): the illustration
  * collection in every swatch, the button family and the type scale. English only on purpose.
  */
 export default function DesignSystemPage() {
   const [color, setColor] = useState<SwatchColor>('blush');
+  const [look, setLook] = useState<keyof typeof LOOKS>('classic');
+  const { Art } = LOOKS[look];
 
   return (
     <div className="pb-10">
@@ -30,14 +39,22 @@ export default function DesignSystemPage() {
             </Chip>
           ))}
         </div>
+        <div className="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-label="Look">
+          {(Object.keys(LOOKS) as Array<keyof typeof LOOKS>).map((key) => (
+            <Chip key={key} selected={key === look} onClick={() => setLook(key)} role="radio" aria-checked={key === look}>
+              {LOOKS[key].label}
+            </Chip>
+          ))}
+        </div>
+        <p className="mt-2 text-sm text-ink-600">{LOOKS[look].note}</p>
         {ART_GROUPS.map((group) => (
           <div key={group.key} className="mt-6">
             <h3 className="text-sm font-semibold capitalize text-ink-600">{group.key}</h3>
             <ul className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-7">
               {group.arts.map((art) => (
                 <li key={art} className="flex flex-col items-center gap-1.5">
-                  <span className={cx('flex aspect-square w-full items-center justify-center rounded-xl p-2', SWATCH[color].field)}>
-                    <NailArt art={art} color={color} className="w-full" />
+                  <span className={cx('flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl p-2', SWATCH[color].field)}>
+                    <Art art={art} color={color} className="w-full" />
                   </span>
                   <code className="text-xs text-ink-600">{art}</code>
                 </li>

@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { NailArt } from '@/components/brand/NailArt';
+import { RealisticNailArt } from '@/components/brand/nails/RealisticNailArt';
 import { LoyaltyConfirmNote } from '@/components/loyalty/LoyaltyBits';
 import { Alert } from '@/components/common/Alert';
 import { Button, TextField, Textarea } from '@/components/ui';
@@ -75,7 +75,7 @@ export function ConfirmStep(props: ConfirmStepProps) {
             return (
               <li key={service.id} className="flex items-center gap-3 px-4 py-3">
                 <span className={cx('flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-lg', SWATCH[color].field)}>
-                  <NailArt art={service.art} color={color} className="w-10" />
+                  <RealisticNailArt art={service.art} color={color} className="w-10" />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[0.9375rem] font-semibold leading-snug">{pick(service.name)}</span>

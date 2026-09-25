@@ -7,6 +7,7 @@ import { NextVisitCard } from '@/components/appointments/NextVisitCard';
 import { LoyaltyTile } from '@/components/loyalty/LoyaltyBits';
 import { Logo } from '@/components/brand/Logo';
 import { NailArt } from '@/components/brand/NailArt';
+import { RealisticNailArt } from '@/components/brand/nails/RealisticNailArt';
 import { ContactSheet } from '@/components/common/ContactSheet';
 import { InstallBanner } from '@/components/common/InstallBanner';
 import { SectionHeading } from '@/components/layout/PageHeader';
@@ -151,7 +152,7 @@ export default function HomePage() {
                         className="press lift group flex h-full flex-col rounded-xl bg-white p-2 ring-1 ring-inset ring-ink-100"
                       >
                         <span className={cx('flex h-24 items-center justify-center overflow-hidden rounded-lg', SWATCH[color].field)}>
-                          <NailArt
+                          <RealisticNailArt
                             art={service.art}
                             color={color}
                             className="w-24 transition-transform duration-500 ease-(--ease-out) group-hover:scale-105"
