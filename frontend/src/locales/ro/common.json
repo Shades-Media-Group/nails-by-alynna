@@ -1,0 +1,179 @@
+{
+  "brand": {
+    "name": "Nails by Alynna",
+    "tagline1": "Unghiile tale.",
+    "tagline2": "Regulile tale.",
+    "city": "Chișinău",
+    "salon": "Salon de unghii"
+  },
+  "nav": {
+    "main": "Navigare principală",
+    "home": "Acasă",
+    "services": "Servicii",
+    "book": "Programare",
+    "bookings": "Programări",
+    "profile": "Profil",
+    "studio": "Salon",
+    "admin": "Panou"
+  },
+  "actions": {
+    "continue": "Continuă",
+    "back": "Înapoi",
+    "close": "Închide",
+    "cancel": "Anulează",
+    "save": "Salvează",
+    "saveChanges": "Salvează modificările",
+    "retry": "Încearcă din nou",
+    "edit": "Editează",
+    "delete": "Șterge",
+    "confirm": "Confirmă",
+    "done": "Gata",
+    "seeAll": "Vezi tot",
+    "showPassword": "Arată parola",
+    "hidePassword": "Ascunde parola",
+    "copy": "Copiază",
+    "copied": "Copiat",
+    "logout": "Ieșire din cont",
+    "bookNow": "Programează-te",
+    "later": "Mai târziu",
+    "open": "Deschide",
+    "search": "Caută",
+    "clear": "Șterge",
+    "change": "Schimbă",
+    "add": "Adaugă",
+    "remove": "Elimină",
+    "select": "Alege",
+    "reload": "Reîncarcă"
+  },
+  "status": {
+    "pending": "Așteaptă confirmarea",
+    "confirmed": "Confirmată",
+    "completed": "Finalizată",
+    "cancelled": "Anulată",
+    "no_show": "Ratată"
+  },
+  "price": {
+    "value": "{{amount}}",
+    "from": "de la {{amount}}",
+    "currencyMdl": "{{amount}} lei"
+  },
+  "duration": {
+    "min": "{{m}} min",
+    "h": "{{h}} h",
+    "hm": "{{h}} h {{m}} min"
+  },
+  "time": {
+    "today": "Azi",
+    "tomorrow": "Mâine",
+    "morning": "Dimineața",
+    "afternoon": "După-amiaza",
+    "evening": "Seara",
+    "until": "până la {{time}}"
+  },
+  "language": {
+    "label": "Limba",
+    "choose": "Alege limba"
+  },
+  "errors": {
+    "generic": "Ceva n-a mers bine. Te rugăm să încerci din nou.",
+    "network": "Nu există conexiune. Verifică internetul și încearcă din nou.",
+    "sessionExpired": "Sesiunea s-a încheiat. Te rugăm să intri din nou în cont.",
+    "notFoundTitle": "Pagina și-a luat o zi liberă",
+    "notFoundText": "Linkul poate fi greșit sau pagina a fost mutată.",
+    "boundaryTitle": "Ceva n-a mers bine",
+    "boundaryText": "Reîncarcă aplicația pentru a continua. Dacă se repetă, contactează salonul.",
+    "goHome": "Mergi la început",
+    "codes": {
+      "INVALID_CREDENTIALS": "Email sau parolă greșită.",
+      "EMAIL_TAKEN": "Există deja un cont cu acest email. Intră în cont sau resetează parola.",
+      "WEAK_PASSWORD": "Alege o parolă mai puternică.",
+      "WRONG_PASSWORD": "Parola este incorectă.",
+      "ACCOUNT_DISABLED": "Acest cont este dezactivat. Te rugăm să contactezi salonul.",
+      "RESET_TOKEN_INVALID": "Linkul nu este valid sau a expirat. Cere unul nou.",
+      "SLOT_TAKEN": "Cineva tocmai a rezervat această oră. Te rugăm să alegi alta.",
+      "SLOT_UNAVAILABLE": "Această oră nu mai este disponibilă. Te rugăm să alegi alta.",
+      "BOOKING_LIMIT": "Ai deja numărul maxim de programări viitoare.",
+      "BOOKING_BLOCKED": "Programările online sunt suspendate pentru contul tău. Te rugăm să contactezi salonul.",
+      "CANCEL_WINDOW_PASSED": "E prea târziu pentru a modifica online această programare. Te rugăm să contactezi salonul.",
+      "INVALID_STATUS": "Această acțiune nu este posibilă pentru programare.",
+      "LAST_ADMINISTRATOR": "Trebuie să rămână cel puțin un administrator.",
+      "SELF_ACTION": "Nu îți poți schimba propriul rol sau statut.",
+      "IN_USE": "Este încă folosit și nu poate fi șters.",
+      "CONFLICT": "S-a modificat între timp. Reîncarcă și încearcă din nou.",
+      "FORBIDDEN": "Nu ai acces la această secțiune.",
+      "NOT_FOUND": "Nu am găsit ce căutai.",
+      "RATE_LIMITED": "Prea multe încercări. Așteaptă câteva minute și încearcă din nou.",
+      "CSRF_REJECTED": "Cerere blocată pentru siguranța ta. Reîncarcă pagina și încearcă din nou.",
+      "VALIDATION_ERROR": "Verifică câmpurile marcate.",
+      "NETWORK": "Nu există conexiune. Verifică internetul și încearcă din nou."
+    }
+  },
+  "validation": {
+    "required": "Câmp obligatoriu",
+    "invalid_email": "Introdu o adresă de email validă",
+    "invalid_phone": "Introdu un număr de telefon valid, de ex. 069 123 456",
+    "invalid_name": "Folosește doar litere",
+    "too_short": "Prea scurt",
+    "too_long": "Prea lung",
+    "too_common": "Această parolă este prea răspândită",
+    "too_simple": "Folosește o parolă mai variată",
+    "contains_email": "Nu folosi emailul în parolă",
+    "taken": "Deja înregistrat",
+    "wrong": "Parolă incorectă",
+    "password_rules": "Cel puțin 8 caractere",
+    "passwords_mismatch": "Parolele nu coincid",
+    "invalid": "Valoare nevalidă"
+  },
+  "offline": "Ești offline — îți arătăm ce am salvat.",
+  "update": {
+    "title": "O versiune nouă e gata",
+    "text": "Actualizează pentru cele mai noi servicii și îmbunătățiri.",
+    "action": "Actualizează"
+  },
+  "consent": {
+    "title": "Pe scurt despre confidențialitate",
+    "text": "Folosim cookie-uri esențiale ca să rămâi conectată și să-ți ținem minte limba. Cu acordul tău, ținem minte și mici preferințe și numărăm vizitele anonim, ca să îmbunătățim aplicația.",
+    "acceptAll": "Accept tot",
+    "minimal": "Minim",
+    "custom": "Personalizat",
+    "settingsTitle": "Alege ce putem păstra",
+    "settingsText": "Alegerea rămâne pe acest dispozitiv 6 luni. O poți schimba oricând în Profil → Confidențialitate.",
+    "essential": "Esențiale",
+    "essentialText": "Autentificarea, securitatea, limba și această alegere. Fără ele aplicația nu funcționează.",
+    "preferences": "Preferințe",
+    "preferencesText": "Ține minte sfaturile închise și o programare neterminată pe acest dispozitiv.",
+    "analytics": "Statistici anonime",
+    "analyticsText": "Numără ce ecrane sunt folosite, fără să te identifice.",
+    "save": "Salvează alegerea",
+    "policy": "Politica de confidențialitate",
+    "manage": "Setări cookie"
+  },
+  "installBanner": {
+    "title": "Pune-ne pe ecranul principal",
+    "text": "Deschide Nails by Alynna ca pe o aplicație, direct de pe telefon.",
+    "action": "Arată-mi cum"
+  },
+  "contact": {
+    "title": "Contactează salonul",
+    "subtitle": "De obicei răspundem în decurs de o oră, în programul de lucru.",
+    "call": "Sună",
+    "whatsapp": "WhatsApp",
+    "viber": "Viber",
+    "telegram": "Telegram",
+    "instagram": "Instagram",
+    "email": "Email",
+    "directions": "Cum ajungi",
+    "none": "Datele de contact vor fi adăugate în curând."
+  },
+  "a11y": {
+    "skipToContent": "Sari la conținut",
+    "loading": "Se încarcă…",
+    "logoAlt": "Nails by Alynna — salon de unghii"
+  },
+  "footer": {
+    "privacy": "Confidențialitate",
+    "terms": "Termeni",
+    "cookies": "Setări cookie",
+    "rights": "© {{year}} Nails by Alynna, Chișinău"
+  }
+}

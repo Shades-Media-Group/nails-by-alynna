@@ -1,0 +1,179 @@
+{
+  "brand": {
+    "name": "Nails by Alynna",
+    "tagline1": "Your nails.",
+    "tagline2": "Your rules.",
+    "city": "Chișinău",
+    "salon": "Nail salon"
+  },
+  "nav": {
+    "main": "Main navigation",
+    "home": "Home",
+    "services": "Services",
+    "book": "Book",
+    "bookings": "Bookings",
+    "profile": "Profile",
+    "studio": "Studio",
+    "admin": "Dashboard"
+  },
+  "actions": {
+    "continue": "Continue",
+    "back": "Back",
+    "close": "Close",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saveChanges": "Save changes",
+    "retry": "Try again",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "done": "Done",
+    "seeAll": "See all",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "copy": "Copy",
+    "copied": "Copied",
+    "logout": "Log out",
+    "bookNow": "Book now",
+    "later": "Later",
+    "open": "Open",
+    "search": "Search",
+    "clear": "Clear",
+    "change": "Change",
+    "add": "Add",
+    "remove": "Remove",
+    "select": "Select",
+    "reload": "Reload"
+  },
+  "status": {
+    "pending": "Awaiting confirmation",
+    "confirmed": "Confirmed",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "no_show": "Missed"
+  },
+  "price": {
+    "value": "{{amount}}",
+    "from": "from {{amount}}",
+    "currencyMdl": "{{amount}} MDL"
+  },
+  "duration": {
+    "min": "{{m}} min",
+    "h": "{{h}} h",
+    "hm": "{{h}} h {{m}} min"
+  },
+  "time": {
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "morning": "Morning",
+    "afternoon": "Afternoon",
+    "evening": "Evening",
+    "until": "until {{time}}"
+  },
+  "language": {
+    "label": "Language",
+    "choose": "Choose language"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "No connection. Check your internet and try again.",
+    "sessionExpired": "Your session has ended. Please log in again.",
+    "notFoundTitle": "This page took a day off",
+    "notFoundText": "The link may be broken, or the page has moved.",
+    "boundaryTitle": "Something went wrong",
+    "boundaryText": "Reload the app to continue. If it keeps happening, contact the studio.",
+    "goHome": "Go to the start",
+    "codes": {
+      "INVALID_CREDENTIALS": "Wrong email or password.",
+      "EMAIL_TAKEN": "An account with this email already exists. Log in or reset your password.",
+      "WEAK_PASSWORD": "Choose a stronger password.",
+      "WRONG_PASSWORD": "The password is incorrect.",
+      "ACCOUNT_DISABLED": "This account is disabled. Please contact the studio.",
+      "RESET_TOKEN_INVALID": "This link is invalid or has expired. Request a new one.",
+      "SLOT_TAKEN": "Someone just booked this time. Please choose another one.",
+      "SLOT_UNAVAILABLE": "This time is no longer available. Please choose another one.",
+      "BOOKING_LIMIT": "You already have the maximum number of upcoming visits.",
+      "BOOKING_BLOCKED": "Online booking is paused for your account. Please contact the studio.",
+      "CANCEL_WINDOW_PASSED": "It's too late to change this visit online. Please contact the studio.",
+      "INVALID_STATUS": "This action isn't possible for this appointment.",
+      "LAST_ADMINISTRATOR": "At least one administrator must remain.",
+      "SELF_ACTION": "You can't change your own role or status.",
+      "IN_USE": "It's still in use and can't be deleted.",
+      "CONFLICT": "It changed meanwhile. Reload and try again.",
+      "FORBIDDEN": "You don't have access to this.",
+      "NOT_FOUND": "We couldn't find it.",
+      "RATE_LIMITED": "Too many attempts. Please wait a few minutes and try again.",
+      "CSRF_REJECTED": "Request blocked for your security. Reload the page and try again.",
+      "VALIDATION_ERROR": "Please check the highlighted fields.",
+      "NETWORK": "No connection. Check your internet and try again."
+    }
+  },
+  "validation": {
+    "required": "Required",
+    "invalid_email": "Enter a valid email address",
+    "invalid_phone": "Enter a valid phone number, e.g. 069 123 456",
+    "invalid_name": "Use letters only",
+    "too_short": "Too short",
+    "too_long": "Too long",
+    "too_common": "This password is too common",
+    "too_simple": "Use a more varied password",
+    "contains_email": "Don't use your email in the password",
+    "taken": "Already registered",
+    "wrong": "Incorrect password",
+    "password_rules": "At least 8 characters",
+    "passwords_mismatch": "Passwords don't match",
+    "invalid": "Invalid value"
+  },
+  "offline": "You're offline — showing what we saved.",
+  "update": {
+    "title": "A new version is ready",
+    "text": "Update to get the latest services and fixes.",
+    "action": "Update"
+  },
+  "consent": {
+    "title": "A quick word on privacy",
+    "text": "We use essential cookies to keep you signed in and remember your language. With your permission we also remember small preferences and count anonymous visits to improve the app.",
+    "acceptAll": "Accept all",
+    "minimal": "Minimal",
+    "custom": "Custom",
+    "settingsTitle": "Choose what we may store",
+    "settingsText": "Your choice stays on this device for 6 months. Change it any time in Profile → Privacy.",
+    "essential": "Essential",
+    "essentialText": "Sign-in, security, your language and this choice. The app can't work without them.",
+    "preferences": "Preferences",
+    "preferencesText": "Remembers tips you dismissed and an unfinished booking on this device.",
+    "analytics": "Anonymous statistics",
+    "analyticsText": "Counts which screens are used, without identifying you.",
+    "save": "Save my choice",
+    "policy": "Privacy policy",
+    "manage": "Cookie settings"
+  },
+  "installBanner": {
+    "title": "Put us on your home screen",
+    "text": "Open Nails by Alynna like an app, straight from your phone.",
+    "action": "Show me how"
+  },
+  "contact": {
+    "title": "Contact the studio",
+    "subtitle": "We usually reply within the hour during working hours.",
+    "call": "Call",
+    "whatsapp": "WhatsApp",
+    "viber": "Viber",
+    "telegram": "Telegram",
+    "instagram": "Instagram",
+    "email": "Email",
+    "directions": "Directions",
+    "none": "Contact details will be added soon."
+  },
+  "a11y": {
+    "skipToContent": "Skip to content",
+    "loading": "Loading…",
+    "logoAlt": "Nails by Alynna — nail salon"
+  },
+  "footer": {
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "cookies": "Cookie settings",
+    "rights": "© {{year}} Nails by Alynna, Chișinău"
+  }
+}
