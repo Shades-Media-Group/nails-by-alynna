@@ -18,8 +18,9 @@ import { categoryInputSchema, categoryPatchSchema, serviceInputSchema, servicePa
 
 /** Where an entry came from, for the admin list: "Price list", "Price list, edited" or "Added". */
 function origin(doc: { defaultKey?: string; customized?: string[] }) {
-  const isDefault = Boolean(doc.defaultKey) && !doc.defaultKey!.startsWith('legacy:');
-  return { isDefault, customized: isDefault ? (doc.customized ?? []) : [] };
+  const isLegacy = Boolean(doc.defaultKey?.startsWith('legacy:'));
+  const isDefault = Boolean(doc.defaultKey) && !isLegacy;
+  return { isDefault, isLegacy, customized: isDefault ? (doc.customized ?? []) : [] };
 }
 
 function toCategory(c: CategoryDoc) {
