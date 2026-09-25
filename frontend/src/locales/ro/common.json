@@ -106,7 +106,7 @@
       "CSRF_REJECTED": "Cerere blocată pentru siguranța ta. Reîncarcă pagina și încearcă din nou.",
       "VALIDATION_ERROR": "Verifică câmpurile marcate.",
       "NETWORK": "Nu există conexiune. Verifică internetul și încearcă din nou.",
-      "DEMO_READ_ONLY": "Acesta este un cont demo — modificările nu se salvează."
+      "DEMO_READ_ONLY": "Acesta este un cont demo, așa că modificările nu se salvează."
     }
   },
   "validation": {
@@ -125,7 +125,7 @@
     "passwords_mismatch": "Parolele nu coincid",
     "invalid": "Valoare nevalidă"
   },
-  "offline": "Ești offline — îți arătăm ce am salvat.",
+  "offline": "Ești offline. Îți arătăm ce am salvat.",
   "update": {
     "title": "O versiune nouă e gata",
     "text": "Actualizează pentru cele mai noi servicii și îmbunătățiri.",
@@ -169,7 +169,7 @@
   "a11y": {
     "skipToContent": "Sari la conținut",
     "loading": "Se încarcă…",
-    "logoAlt": "Nails by Alynna — salon de unghii"
+    "logoAlt": "Nails by Alynna, salon de unghii"
   },
   "footer": {
     "privacy": "Confidențialitate",
@@ -180,6 +180,6 @@
   },
   "demo": {
     "badge": "Demo",
-    "text": "Cont demo — explorează liber, nimic nu se salvează."
+    "text": "Cont demo. Explorează liber, nimic nu se salvează."
   }
 }

@@ -5,7 +5,7 @@
     "nextVisit": "Următoarea vizită",
     "details": "Detalii",
     "bookTitle": "Programează-te",
-    "bookText": "Alege serviciul și ora — durează un minut.",
+    "bookText": "Alege serviciul și ora. Durează un minut.",
     "bookAgain": "Repetă programarea",
     "bookAgainText": "Ca data trecută: {{services}}",
     "shortcuts": "Scurtături",
@@ -41,7 +41,7 @@
     "stepOf": "Pasul {{current}} din {{total}}",
     "leave": "Ieși din programare",
     "chooseServices": "Ce îți dorești?",
-    "chooseServicesText": "Alege unul sau mai multe servicii — adunăm noi timpul.",
+    "chooseServicesText": "Alege unul sau mai multe servicii, iar noi adunăm timpul.",
     "chooseMaster": "Cine să-ți facă unghiile?",
     "anyMaster": "Orice maestru",
     "anyMasterText": "Cele mai multe ore libere",
@@ -66,7 +66,7 @@
     "phoneText": "Ca salonul să te poată contacta despre această vizită.",
     "policyTitle": "Modificări și anulări",
     "freeUntil": "Poți modifica sau anula gratuit până pe {{date}}.",
-    "approvalNotice": "Aceasta este o cerere — salonul o confirmă în scurt timp.",
+    "approvalNotice": "Aceasta este o cerere. Salonul o confirmă în scurt timp.",
     "confirm": "Confirmă programarea",
     "confirmRequest": "Trimite cererea",
     "confirmReschedule": "Mută vizita",
@@ -74,16 +74,16 @@
     "doneRequestTitle": "Cererea a fost trimisă!",
     "doneRescheduledTitle": "Vizita a fost mutată",
     "doneText": "Am salvat-o în programările tale. Ne vedem curând!",
-    "doneRequestText": "Salonul o va confirma în scurt timp — statutul îl vezi în programările tale.",
+    "doneRequestText": "Salonul o va confirma în scurt timp. Statutul îl vezi în programările tale.",
     "addToCalendar": "Adaugă în calendar",
     "viewBooking": "Vezi programarea",
     "backHome": "Înapoi acasă",
     "code": "Codul programării",
-    "slotTakenToast": "Ora tocmai a fost ocupată — te rugăm să alegi alta.",
+    "slotTakenToast": "Ora tocmai a fost ocupată. Te rugăm să alegi alta.",
     "change": "Schimbă"
   },
   "calendar": {
-    "title": "Nails by Alynna — {{services}}",
+    "title": "Nails by Alynna: {{services}}",
     "description": "Programarea {{code}}. O gestionezi în aplicație: {{url}}"
   }
 }

@@ -5,7 +5,7 @@
     "nextVisit": "Your next visit",
     "details": "Details",
     "bookTitle": "Book a visit",
-    "bookText": "Pick a service and a time — it takes a minute.",
+    "bookText": "Pick a service and a time. It takes a minute.",
     "bookAgain": "Book again",
     "bookAgainText": "Same as last time: {{services}}",
     "shortcuts": "Shortcuts",
@@ -40,7 +40,7 @@
     "stepOf": "Step {{current}} of {{total}}",
     "leave": "Leave booking",
     "chooseServices": "What would you like?",
-    "chooseServicesText": "Choose one or more services — we add up the time.",
+    "chooseServicesText": "Choose one or more services and we'll add up the time.",
     "chooseMaster": "Who should do your nails?",
     "anyMaster": "Any master",
     "anyMasterText": "Most free times",
@@ -64,7 +64,7 @@
     "phoneText": "So the studio can reach you about this visit.",
     "policyTitle": "Changes and cancellations",
     "freeUntil": "Free to change or cancel until {{date}}.",
-    "approvalNotice": "This is a request — the studio confirms it shortly.",
+    "approvalNotice": "This is a request. The studio confirms it shortly.",
     "confirm": "Confirm booking",
     "confirmRequest": "Send request",
     "confirmReschedule": "Move my visit",
@@ -72,16 +72,16 @@
     "doneRequestTitle": "Request sent!",
     "doneRescheduledTitle": "Your visit moved",
     "doneText": "We've saved it in your bookings. See you soon!",
-    "doneRequestText": "The studio will confirm it shortly — you'll see the status in your bookings.",
+    "doneRequestText": "The studio will confirm it shortly. You'll see the status in your bookings.",
     "addToCalendar": "Add to calendar",
     "viewBooking": "View booking",
     "backHome": "Back to home",
     "code": "Booking code",
-    "slotTakenToast": "That time was just taken — please pick another.",
+    "slotTakenToast": "That time was just taken. Please pick another.",
     "change": "Change"
   },
   "calendar": {
-    "title": "Nails by Alynna — {{services}}",
+    "title": "Nails by Alynna: {{services}}",
     "description": "Booking {{code}}. Manage it in the app: {{url}}"
   }
 }

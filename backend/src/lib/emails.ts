@@ -6,25 +6,25 @@ const COPY: Record<
   { subject: string; greeting: (name: string) => string; body: string; cta: string; ignore: string }
 > = {
   ro: {
-    subject: 'Resetează parola — Nails by Alynna',
+    subject: 'Resetează parola pentru Nails by Alynna',
     greeting: (name) => `Bună, ${name}!`,
     body: 'Am primit o cerere de resetare a parolei. Linkul este valabil 30 de minute.',
     cta: 'Setează o parolă nouă',
-    ignore: 'Dacă nu ai cerut tu resetarea, ignoră acest mesaj — parola rămâne neschimbată.',
+    ignore: 'Dacă nu ai cerut tu resetarea, ignoră acest mesaj. Parola rămâne neschimbată.',
   },
   ru: {
-    subject: 'Сброс пароля — Nails by Alynna',
+    subject: 'Сброс пароля в Nails by Alynna',
     greeting: (name) => `Привет, ${name}!`,
     body: 'Мы получили запрос на сброс пароля. Ссылка действует 30 минут.',
     cta: 'Задать новый пароль',
-    ignore: 'Если вы не запрашивали сброс, просто проигнорируйте это письмо — пароль не изменится.',
+    ignore: 'Если вы не запрашивали сброс, просто проигнорируйте это письмо. Пароль не изменится.',
   },
   en: {
-    subject: 'Reset your password — Nails by Alynna',
+    subject: 'Reset your password for Nails by Alynna',
     greeting: (name) => `Hi ${name},`,
     body: 'We received a request to reset your password. The link is valid for 30 minutes.',
     cta: 'Set a new password',
-    ignore: "If you didn't ask for this, ignore this email — your password stays the same.",
+    ignore: "If you didn't ask for this, ignore this email. Your password stays the same.",
   },
 };
 

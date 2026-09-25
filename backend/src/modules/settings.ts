@@ -34,7 +34,7 @@ export const DEFAULT_SETTINGS: StudioSettings = {
   maxActiveBookings: 3,
   policy: {
     ro: 'Poți anula sau reprograma gratuit până la termenul indicat. După aceea, te rugăm să ne contactezi.',
-    ru: 'Отменить или перенести запись можно бесплатно до указанного срока. Позже — пожалуйста, свяжитесь с нами.',
+    ru: 'Отменить или перенести запись можно бесплатно до указанного срока. Позже, пожалуйста, свяжитесь с нами.',
     en: 'You can cancel or reschedule for free until the deadline shown. After that, please contact the studio.',
   },
 };

@@ -142,7 +142,7 @@ export default defineConfig(({ mode }) => {
           id: '/',
           name: 'Nails by Alynna',
           short_name: 'Nails Alynna',
-          description: 'Book your nails at Nails by Alynna, Chișinău — manicure, pedicure, extensions and nail art.',
+          description: 'Book your nails at Nails by Alynna, Chișinău: manicure, pedicure, extensions and nail art.',
           lang: 'ro',
           dir: 'ltr',
           start_url: '/?source=pwa',
