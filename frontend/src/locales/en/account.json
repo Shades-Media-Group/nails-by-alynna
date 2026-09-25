@@ -52,6 +52,7 @@
     "password": "Password",
     "passwordChange": "Change your password",
     "passwordSetText": "You sign in with Google. Add a password to also sign in with email.",
+    "passwordSetPlain": "Add a password to sign in with your email.",
     "passwordSet": "Set a password",
     "currentPassword": "Current password",
     "newPassword": "New password",

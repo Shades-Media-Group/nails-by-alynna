@@ -52,6 +52,7 @@
     "password": "Пароль",
     "passwordChange": "Изменить пароль",
     "passwordSetText": "Вы входите через Google. Добавьте пароль, чтобы входить и по email.",
+    "passwordSetPlain": "Добавьте пароль, чтобы входить по email.",
     "passwordSet": "Задать пароль",
     "currentPassword": "Текущий пароль",
     "newPassword": "Новый пароль",

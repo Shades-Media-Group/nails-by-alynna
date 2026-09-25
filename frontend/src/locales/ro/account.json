@@ -52,6 +52,7 @@
     "password": "Parola",
     "passwordChange": "Schimbă parola",
     "passwordSetText": "Te autentifici cu Google. Adaugă o parolă ca să intri și cu emailul.",
+    "passwordSetPlain": "Adaugă o parolă ca să intri cu emailul.",
     "passwordSet": "Setează o parolă",
     "currentPassword": "Parola actuală",
     "newPassword": "Parola nouă",
