@@ -297,8 +297,12 @@ function RequestCard({
   const { timeZone } = useStudio();
   const leaf = dayParts(zonedDate(new Date(a.start), timeZone), locale);
   return (
-    <li className="rounded-2xl bg-white p-3 ring-1 ring-inset ring-ink-100">
-      <Link to={lp(`/admin/appointments/${a.id}`)} className="group flex items-start gap-3 rounded-xl">
+    <li className="rounded-2xl bg-white ring-1 ring-inset ring-ink-100">
+      {/* The whole top of the card opens the booking, not just the name. */}
+      <Link
+        to={lp(`/admin/appointments/${a.id}`)}
+        className="group flex items-start gap-3 rounded-t-2xl px-3 pt-3 transition-colors hover:bg-ink-50/70 focus-visible:bg-ink-50/70"
+      >
         <span className="flex w-12 shrink-0 flex-col items-center rounded-xl bg-peach-50 pb-1.5 pt-1">
           <span className="text-xs font-semibold capitalize text-peach-800">{leaf.month}</span>
           <span className="tabular text-xl font-extrabold leading-none tracking-[-0.03em]">{leaf.day}</span>
@@ -315,7 +319,7 @@ function RequestCard({
           ) : null}
         </span>
       </Link>
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 p-3">
         <Button size="md" variant="outline" disabled={disabled} onClick={onDecline}>
           {t('appointment.decline')}
         </Button>

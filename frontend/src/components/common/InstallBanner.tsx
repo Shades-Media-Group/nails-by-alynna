@@ -34,9 +34,10 @@ export function InstallBanner() {
       </span>
       <div className="min-w-0">
         <p className="text-[0.9375rem] font-bold leading-snug text-cyan-800">{t('installBanner.title')}</p>
+        {/* The link stretches over the whole banner, so a tap anywhere on it opens the install steps. */}
         <Link
           to={lp('/app')}
-          className="group mt-0.5 inline-flex items-center gap-0.5 text-sm font-semibold text-ink-900 underline-offset-4 hover:underline"
+          className="group mt-0.5 inline-flex items-center gap-0.5 text-sm font-semibold text-ink-900 underline-offset-4 after:absolute after:inset-0 after:rounded-2xl after:transition-colors after:content-[''] hover:underline hover:after:bg-white/30 active:after:bg-white/50"
         >
           {t('installBanner.action')}
           <ChevronRightIcon
@@ -49,7 +50,7 @@ export function InstallBanner() {
         type="button"
         onClick={dismiss}
         aria-label={t('actions.close')}
-        className="press absolute right-2 top-1/2 inline-flex size-9 -translate-y-1/2 items-center justify-center rounded-pill text-[1.2rem] text-cyan-800 hover:bg-white/70"
+        className="press absolute right-2 top-1/2 z-10 inline-flex size-9 -translate-y-1/2 items-center justify-center rounded-pill text-[1.2rem] text-cyan-800 hover:bg-white/70"
       >
         <CloseIcon fontSize="inherit" />
       </button>
