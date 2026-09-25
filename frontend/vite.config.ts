@@ -204,6 +204,8 @@ export default defineConfig(({ mode }) => {
       include: ['src/**/*.test.{ts,tsx}'],
       setupFiles: ['./src/test/setup.ts'],
       css: false,
+      // Let Vite resolve the MUI icon modules so the SvgIcon alias applies in tests too.
+      server: { deps: { inline: [/@mui\/icons-material/] } },
     },
   };
 });

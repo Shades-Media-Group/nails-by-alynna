@@ -132,7 +132,7 @@
   },
   "consent": {
     "title": "A quick word on privacy",
-    "text": "We use essential cookies to keep you signed in and remember your language. With your permission we also remember small preferences and count anonymous visits to improve the app.",
+    "text": "We use essential cookies to keep you signed in. With your OK we also remember small preferences and count visits anonymously.",
     "acceptAll": "Accept all",
     "minimal": "Minimal",
     "custom": "Custom",

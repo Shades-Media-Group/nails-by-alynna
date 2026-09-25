@@ -1,6 +1,7 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
+import { isSplashGone, onSplashGone } from '@/components/brand/splash';
 import { Button, Checkbox } from '@/components/ui';
 import { CloseIcon, CookieIcon } from '@/components/ui/icons';
 import { useLocale } from '@/i18n/useLocale';
@@ -14,33 +15,51 @@ import {
 } from '@/lib/consent';
 
 /**
- * First-party consent card (no third-party service). Three equal-weight choices — Minimal,
- * Custom, Accept all — and a custom view with a tick box per category. Optional categories
- * start unticked; essential is ticked and locked.
+ * First-party consent dialog (no third-party service). Shown as a modal over a blurred page
+ * until the visitor chooses: Minimal / Custom / Accept all. Custom offers a tick box per
+ * category — essential is ticked and locked, optional ones start unticked.
+ * Native <dialog> + showModal(): focus is trapped and the page behind is inert.
  */
 export function ConsentBanner() {
   const { t } = useTranslation('common');
   const { lp } = useLocale();
   const { choice, mode } = useConsent();
+  const splashGone = useSyncExternalStore(onSplashGone, isSplashGone, isSplashGone);
   const [customLocal, setCustomLocal] = useState(false);
   const titleId = useId();
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
   const showCustom = customLocal || mode === 'custom';
-  if (mode === 'hidden' && !customLocal) return null;
+  const visible = (mode !== 'hidden' || customLocal) && splashGone;
 
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (visible && !dialog.open) dialog.showModal();
+    if (!visible && dialog.open) dialog.close();
+  }, [visible]);
+
+  if (!visible) return null;
+
+  const dismissible = Boolean(choice);
   const close = () => {
     closeConsentSettings();
     setCustomLocal(false);
   };
 
   return (
-    <section
-      role="region"
+    <dialog
+      ref={dialogRef}
       aria-labelledby={titleId}
       data-testid="consent-banner"
-      className="fixed inset-x-3 bottom-[calc(var(--safe-bottom)+0.75rem)] z-50 animate-rise md:inset-x-auto md:bottom-6 md:left-6 md:w-[26rem]"
+      onCancel={(event) => {
+        // A first-time choice is required; Escape only closes the reopened settings.
+        event.preventDefault();
+        if (dismissible) close();
+      }}
+      className="fixed inset-x-0 bottom-0 top-auto m-0 w-full max-w-none bg-transparent p-3 pb-[calc(var(--safe-bottom)+0.75rem)] backdrop:bg-ink-900/35 backdrop:backdrop-blur-[6px] open:animate-rise md:inset-0 md:m-auto md:h-fit md:w-[27rem] md:p-0"
     >
-      <div className="max-h-[80dvh] overflow-y-auto rounded-xl bg-white p-4 shadow-raised ring-1 ring-ink-100">
+      <div className="max-h-[85dvh] overflow-y-auto rounded-xl bg-white p-4 shadow-raised md:p-5">
         <div className="flex gap-3">
           <span className="mt-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-pill bg-peach-50 text-[1.2rem] text-peach-700">
             <CookieIcon fontSize="inherit" />
@@ -51,12 +70,12 @@ export function ConsentBanner() {
             </h2>
             <p className="mt-1 text-sm leading-relaxed text-ink-600">
               {showCustom ? t('consent.settingsText') : t('consent.text')}{' '}
-              <Link to={lp('/privacy')} className="font-semibold text-ink-900 underline">
+              <Link to={lp('/privacy')} onClick={() => dismissible && close()} className="font-semibold text-ink-900 underline">
                 {t('consent.policy')}
               </Link>
             </p>
           </div>
-          {showCustom && choice ? (
+          {showCustom && dismissible ? (
             <button
               type="button"
               onClick={close}
@@ -72,22 +91,21 @@ export function ConsentBanner() {
           <CustomChoices key={choice?.decidedAt ?? 'new'} initial={choice} onDone={() => setCustomLocal(false)} />
         ) : (
           <div className="mt-4 flex flex-col gap-2">
-            {/* Equal weight for "Minimal" and "Accept all": no nudging towards consent. */}
             <div className="grid grid-cols-2 gap-2">
-              <Button size="sm" variant="soft" onClick={acceptMinimal}>
+              <Button size="sm" variant="outline" onClick={acceptMinimal}>
                 {t('consent.minimal')}
               </Button>
-              <Button size="sm" variant="soft" onClick={acceptAll}>
-                {t('consent.acceptAll')}
+              <Button size="sm" variant="outline" onClick={() => setCustomLocal(true)}>
+                {t('consent.custom')}
               </Button>
             </div>
-            <Button size="sm" variant="ghost" onClick={() => setCustomLocal(true)}>
-              {t('consent.custom')}
+            <Button size="md" fullWidth onClick={acceptAll}>
+              {t('consent.acceptAll')}
             </Button>
           </div>
         )}
       </div>
-    </section>
+    </dialog>
   );
 }
 

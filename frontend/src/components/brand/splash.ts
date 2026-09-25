@@ -8,12 +8,32 @@ import { session, STORAGE_KEYS } from '@/lib/storage';
 const FIRST_OPEN_MS = 2400;
 const RELOAD_MS = 700;
 let hidden = false;
+let gone = typeof document === 'undefined' || !document.getElementById('splash');
+const listeners = new Set<() => void>();
+
+/** True once the splash has faded out (overlays such as the consent card wait for it). */
+export function isSplashGone(): boolean {
+  return gone;
+}
+
+export function onSplashGone(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function markGone() {
+  gone = true;
+  listeners.forEach((listener) => listener());
+}
 
 export function hideSplash(): void {
   if (hidden) return;
   hidden = true;
   const splash = document.getElementById('splash');
-  if (!splash) return;
+  if (!splash) {
+    markGone();
+    return;
+  }
   const minimum = session.get(STORAGE_KEYS.splashSeen) ? RELOAD_MS : FIRST_OPEN_MS;
   const wait = Math.max(0, minimum - performance.now());
   window.setTimeout(() => {
@@ -21,6 +41,9 @@ export function hideSplash(): void {
     splash.classList.add('is-leaving');
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#ffffff');
     document.documentElement.style.background = '#ffffff';
-    window.setTimeout(() => splash.remove(), 600);
+    window.setTimeout(() => {
+      splash.remove();
+      markGone();
+    }, 500);
   }, wait);
 }
