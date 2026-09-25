@@ -85,7 +85,9 @@
     "backHome": "На главную",
     "code": "Код записи",
     "slotTakenToast": "Это время только что заняли. Выберите, пожалуйста, другое.",
-    "change": "Изменить"
+    "change": "Изменить",
+    "withMaster": "мастер {{name}}",
+    "phoneLabel": "Номер телефона"
   },
   "calendar": {
     "title": "Nails by Alynna: {{services}}",

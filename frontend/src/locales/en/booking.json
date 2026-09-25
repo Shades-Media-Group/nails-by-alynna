@@ -81,7 +81,9 @@
     "backHome": "Back to home",
     "code": "Booking code",
     "slotTakenToast": "That time was just taken. Please pick another.",
-    "change": "Change"
+    "change": "Change",
+    "withMaster": "with {{name}}",
+    "phoneLabel": "Phone number"
   },
   "calendar": {
     "title": "Nails by Alynna: {{services}}",

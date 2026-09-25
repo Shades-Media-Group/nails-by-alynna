@@ -83,7 +83,9 @@
     "backHome": "Înapoi acasă",
     "code": "Codul programării",
     "slotTakenToast": "Ora tocmai a fost ocupată. Te rugăm să alegi alta.",
-    "change": "Schimbă"
+    "change": "Schimbă",
+    "withMaster": "cu {{name}}",
+    "phoneLabel": "Număr de telefon"
   },
   "calendar": {
     "title": "Nails by Alynna: {{services}}",
