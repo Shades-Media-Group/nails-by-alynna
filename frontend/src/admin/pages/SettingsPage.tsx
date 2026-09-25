@@ -13,6 +13,7 @@ import { adminApi, adminQueries, type StudioSettings } from '../api';
 import { AdminHeader } from '../components/AdminHeader';
 import { I18nFields } from '../components/I18nFields';
 import { fillFromRo } from '../components/utils';
+import { LoyaltySettings } from '../loyalty/LoyaltySettings';
 
 type TextKey = 'name' | 'legalName' | 'legalId' | 'address' | 'city' | 'mapsUrl' | 'phone' | 'whatsapp' | 'viber' | 'telegram' | 'instagram' | 'email';
 type I18nKey = 'tagline' | 'about' | 'policy';
@@ -126,7 +127,12 @@ export default function SettingsPage() {
         ) : settings.isError ? (
           <Alert>{errorMessage(t, settings.error)}</Alert>
         ) : (
-          SECTIONS.map((section) => <Section key={section.id} section={section} settings={settings.data} canEdit={isOwner} />)
+          <>
+            {SECTIONS.map((section) => (
+              <Section key={section.id} section={section} settings={settings.data} canEdit={isOwner} />
+            ))}
+            <LoyaltySettings settings={settings.data as unknown as Record<string, unknown>} canEdit={isOwner} />
+          </>
         )}
       </div>
     </div>

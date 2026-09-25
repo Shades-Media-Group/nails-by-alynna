@@ -5,7 +5,7 @@
   "stamps": "{{stamps}} of {{cycle}} visits",
   "cardNumber": "Card {{card}}",
   "next": "Next visit: {{percent}}% off",
-  "nextOn": "{{percent}}% off your {{ordinal}} visit",
+  "nextOn": "{{percent}}% off the {{ordinal}} visit",
   "stampAria": "Visit {{visit}} of {{cycle}}",
   "stamped": "stamped",
   "discount": "−{{percent}}%",
@@ -86,5 +86,39 @@
     "stampOnly": "This visit: stamp {{visit}} of {{cycle}}",
     "completeHint": "Mark the visit completed to stamp the card and lock the discount.",
     "noAccount": "No app account yet"
+  },
+  "admin": {
+    "appointment": {
+      "title": "Loyalty card",
+      "stamp": "Stamp {{visit}} of {{cycle}}",
+      "discount": "−{{percent}}% · −{{amount}}",
+      "toPay": "To pay with the discount: {{amount}}",
+      "paid": "Paid with the discount: {{amount}}",
+      "whenDone": "The discount is locked in when you mark the visit done.",
+      "locked": "Stamped when the visit was completed.",
+      "stampWhenDone": "The stamp is added when you mark the visit done."
+    },
+    "client": {
+      "title": "Loyalty card",
+      "code": "Card code {{code}}",
+      "open": "Open card"
+    },
+    "settings": {
+      "title": "Loyalty card",
+      "text": "Every completed visit is a stamp. Choose how many visits make a card and which visits get a discount.",
+      "enabled": "Loyalty card on",
+      "enabledText": "Clients see their card and discounts in the app.",
+      "cycle": "Visits per card",
+      "rewards": "Discounts",
+      "visit": "Visit",
+      "percent": "Discount",
+      "add": "Add a discount",
+      "remove": "Remove this discount",
+      "save": "Save",
+      "saved": "Loyalty card saved",
+      "none": "No discounts yet.",
+      "summary": "{{ordinal}} visit: −{{percent}}%",
+      "off": "Off"
+    }
   }
 }

@@ -87,5 +87,39 @@
     "stampOnly": "Vizita aceasta: ștampila {{visit}} din {{cycle}}",
     "completeHint": "Marchează vizita ca finalizată ca să pui ștampila și să fixezi reducerea.",
     "noAccount": "Încă fără cont în aplicație"
+  },
+  "admin": {
+    "appointment": {
+      "title": "Card de fidelitate",
+      "stamp": "Ștampila {{visit}} din {{cycle}}",
+      "discount": "−{{percent}}% · −{{amount}}",
+      "toPay": "De plată cu reducere: {{amount}}",
+      "paid": "Plătit cu reducere: {{amount}}",
+      "whenDone": "Reducerea se fixează când marchezi vizita ca finalizată.",
+      "locked": "Ștampilat la finalizarea vizitei.",
+      "stampWhenDone": "Ștampila se pune când marchezi vizita ca finalizată."
+    },
+    "client": {
+      "title": "Card de fidelitate",
+      "code": "Codul cardului {{code}}",
+      "open": "Deschide cardul"
+    },
+    "settings": {
+      "title": "Card de fidelitate",
+      "text": "Fiecare vizită finalizată e o ștampilă. Alege câte vizite are un card și care vizite primesc reducere.",
+      "enabled": "Card de fidelitate activ",
+      "enabledText": "Clienții văd cardul și reducerile în aplicație.",
+      "cycle": "Vizite pe card",
+      "rewards": "Reduceri",
+      "visit": "Vizita",
+      "percent": "Reducere",
+      "add": "Adaugă o reducere",
+      "remove": "Șterge această reducere",
+      "save": "Salvează",
+      "saved": "Cardul de fidelitate a fost salvat",
+      "none": "Încă nicio reducere.",
+      "summary": "{{ordinal}} vizită: −{{percent}}%",
+      "off": "Oprit"
+    }
   }
 }

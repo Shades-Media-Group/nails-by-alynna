@@ -21,6 +21,7 @@ import { useNow, useRefreshBookings, useStatusChange } from '../components/hooks
 import { RescheduleSheet } from '../components/RescheduleSheet';
 import { StatusBadge } from '../components/StatusBadge';
 import { isPlaceholderEmail, telHref, whatsappHref } from '../components/utils';
+import { AppointmentLoyalty } from '../loyalty/AppointmentLoyalty';
 
 type SheetKind = 'cancel' | 'noShow' | 'restoreForce' | 'reschedule' | null;
 
@@ -307,6 +308,7 @@ function Services({ appointment: a }: { appointment: StaffAppointment }) {
         <span className="font-bold">{t('appointment.total')}</span>
         <span className="tabular text-lg font-extrabold">{formatPrice(t, a.totalPrice, currency, a.priceFrom)}</span>
       </div>
+      <AppointmentLoyalty appointment={a} />
     </section>
   );
 }

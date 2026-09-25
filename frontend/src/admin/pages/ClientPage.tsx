@@ -18,6 +18,7 @@ import { ConfirmSheet } from '../components/ConfirmSheet';
 import { useNow } from '../components/hooks';
 import { InviteSheet } from '../components/InviteSheet';
 import { clientFieldIssues, telHref, whatsappHref, type ClientFieldValues } from '../components/utils';
+import { ClientLoyalty } from '../loyalty/ClientLoyalty';
 
 const HISTORY_STEP = 15;
 
@@ -116,6 +117,7 @@ export default function ClientPage() {
         </div>
 
         <div className="flex min-w-0 flex-col gap-6">
+          <ClientLoyalty clientId={client.id} />
           <Stats detail={detail.data} />
           <DetailsForm key={client.id} detail={detail.data} />
           <BookingAccess detail={detail.data} />
