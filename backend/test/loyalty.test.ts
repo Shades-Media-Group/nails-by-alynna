@@ -12,7 +12,7 @@ import { createTestContext, loginAs, registerClient, strongPassword, type TestCl
 
 const rules: LoyaltyRules = rulesFrom(DEFAULT_SETTINGS);
 
-describe('loyalty card maths (4th visit −15%, 8th −50%)', () => {
+describe('loyalty card maths (4th visit −15%, 8th −30%)', () => {
   it('numbers visits on an 8-stamp card and starts a new card after the 8th', () => {
     expect(positionAfter(rules, 0)).toBe(1);
     expect(positionAfter(rules, 3)).toBe(4);
@@ -24,14 +24,14 @@ describe('loyalty card maths (4th visit −15%, 8th −50%)', () => {
   it('puts the discount on the right visits', () => {
     expect(stampFor(rules, 2, 400)).toEqual({ visit: 3, cycle: 8, percent: 0, discount: 0 });
     expect(stampFor(rules, 3, 400)).toEqual({ visit: 4, cycle: 8, percent: 15, discount: 60 });
-    expect(stampFor(rules, 7, 450)).toEqual({ visit: 8, cycle: 8, percent: 50, discount: 225 });
-    expect(stampFor(rules, 15, 300)).toMatchObject({ visit: 8, percent: 50, discount: 150 });
+    expect(stampFor(rules, 7, 450)).toEqual({ visit: 8, cycle: 8, percent: 30, discount: 135 });
+    expect(stampFor(rules, 15, 300)).toMatchObject({ visit: 8, percent: 30, discount: 90 });
   });
 
   it('tells how far the next discount is', () => {
     expect(nextReward(rules, 0)).toEqual({ visit: 4, percent: 15, inVisits: 4 });
     expect(nextReward(rules, 3)).toEqual({ visit: 4, percent: 15, inVisits: 1 });
-    expect(nextReward(rules, 4)).toEqual({ visit: 8, percent: 50, inVisits: 4 });
+    expect(nextReward(rules, 4)).toEqual({ visit: 8, percent: 30, inVisits: 4 });
     expect(nextReward(rules, 8)).toEqual({ visit: 4, percent: 15, inVisits: 4 });
     expect(nextReward({ ...rules, rewards: [] }, 3)).toBeNull();
   });
@@ -125,18 +125,18 @@ describe('loyalty over the API', () => {
     expect(fourth.loyalty).toEqual({ visit: 4, cycle: 8, percent: 15, discount: Math.round(price * 0.15), predicted: false });
 
     const card = await client.get('/api/loyalty');
-    expect(card.body.loyalty).toMatchObject({ visits: 4, stamps: 4, nextReward: { visit: 8, percent: 50, inVisits: 4 } });
+    expect(card.body.loyalty).toMatchObject({ visits: 4, stamps: 4, nextReward: { visit: 8, percent: 30, inVisits: 4 } });
     expect(card.body.loyalty.history).toEqual([
       expect.objectContaining({ appointmentId: ids[3], visit: 4, percent: 15, discount: Math.round(price * 0.15) }),
     ]);
   });
 
-  it('gives 50% on the 8th visit, then starts a new card', async () => {
+  it('gives 30% on the 8th visit, then starts a new card', async () => {
     await at(new Date('2026-06-01T06:00:00Z'));
     for (let i = 4; i < 9; i++) await book(i);
     for (let i = 4; i < 7; i++) await complete(i);
     const eighth = await complete(7);
-    expect(eighth.loyalty).toMatchObject({ visit: 8, percent: 50, discount: Math.round(price * 0.5) });
+    expect(eighth.loyalty).toMatchObject({ visit: 8, percent: 30, discount: Math.round(price * 0.3) });
     const ninth = await complete(8);
     expect(ninth.loyalty).toMatchObject({ visit: 1, percent: 0 });
     const card = await client.get('/api/loyalty');

@@ -11,7 +11,7 @@ import {
 
 /*
  * Loyalty stamp card. Every completed visit is a stamp; the studio sets how many visits make a
- * card and which of them carry a discount (by default the 4th visit is 15% off, the 8th 50% off,
+ * card and which of them carry a discount (by default the 4th visit is 15% off, the 8th 30% off,
  * then a new card starts). Staff can add or remove stamps by hand for visits outside the app.
  *
  * A completed visit keeps the stamp it earned (position on the card + discount), so later
