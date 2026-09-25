@@ -13,7 +13,7 @@ const optionalString = z
 
 const schema = z.object({
   APP_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  APP_URL: z.url().default('http://localhost:5173'),
+  APP_URL: z.url().default('http://localhost:5180'),
   ALLOWED_ORIGINS: optionalString,
   MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
   MONGODB_DB: z.string().min(1).default('nails_by_alynna'),

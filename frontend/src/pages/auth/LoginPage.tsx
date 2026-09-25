@@ -93,12 +93,13 @@ export default function LoginPage() {
           error={passwordError}
           required
         />
-        <div className="flex items-center justify-between gap-3">
-          <Checkbox label={t('login.remember')} checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-          <Link to={lp('/forgot-password')} className="shrink-0 text-sm font-semibold text-ink-700 underline-offset-4 hover:underline">
-            {t('login.forgot')}
-          </Link>
-        </div>
+        <Link
+          to={lp('/forgot-password')}
+          className="-mt-1 self-end rounded-pill px-1 text-sm font-semibold text-ink-700 underline-offset-4 hover:underline"
+        >
+          {t('login.forgot')}
+        </Link>
+        <Checkbox label={t('login.remember')} checked={remember} onChange={(e) => setRemember(e.target.checked)} />
         <Button type="submit" size="lg" fullWidth loading={login.isPending} trailingIcon={ArrowForwardIcon} className="mt-2">
           {t('login.submit')}
         </Button>

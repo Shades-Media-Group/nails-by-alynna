@@ -26,7 +26,6 @@ export default function WelcomePage() {
 
   return (
     <AuthLayout
-      centered
       footer={
         <>
           {t('welcome.noAccount')}{' '}

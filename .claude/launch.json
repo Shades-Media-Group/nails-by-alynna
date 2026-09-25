@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "api",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["--cwd", "backend", "dev"],
+      "port": 8787
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["--cwd", "frontend", "dev"],
+      "port": 5180
+    }
+  ]
+}

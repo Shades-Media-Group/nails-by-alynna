@@ -71,15 +71,18 @@ export function ConsentBanner() {
         {showCustom ? (
           <CustomChoices key={choice?.decidedAt ?? 'new'} initial={choice} onDone={() => setCustomLocal(false)} />
         ) : (
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            <Button size="sm" variant="outline" className="px-2" onClick={acceptMinimal}>
-              {t('consent.minimal')}
-            </Button>
-            <Button size="sm" variant="outline" className="px-2" onClick={() => setCustomLocal(true)}>
+          <div className="mt-4 flex flex-col gap-2">
+            {/* Equal weight for "Minimal" and "Accept all": no nudging towards consent. */}
+            <div className="grid grid-cols-2 gap-2">
+              <Button size="sm" variant="soft" onClick={acceptMinimal}>
+                {t('consent.minimal')}
+              </Button>
+              <Button size="sm" variant="soft" onClick={acceptAll}>
+                {t('consent.acceptAll')}
+              </Button>
+            </div>
+            <Button size="sm" variant="ghost" onClick={() => setCustomLocal(true)}>
               {t('consent.custom')}
-            </Button>
-            <Button size="sm" className="px-2" onClick={acceptAll}>
-              {t('consent.acceptAll')}
             </Button>
           </div>
         )}

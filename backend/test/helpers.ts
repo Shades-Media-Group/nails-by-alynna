@@ -5,7 +5,7 @@ import type { MailMessage } from '../src/lib/mailer';
 import { createDeps, createMongo, migrate } from '../src/runtime';
 import { runSeed } from '../src/seed/run';
 
-export const APP_ORIGIN = 'http://localhost:5173';
+export const APP_ORIGIN = 'http://localhost:5180';
 
 export async function createTestContext(env: Record<string, string> = {}) {
   const dbName = `nba_test_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
