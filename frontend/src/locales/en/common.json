@@ -132,7 +132,7 @@
   "offline": "You're offline. Showing what we saved.",
   "update": {
     "title": "A new version is ready",
-    "text": "Update to get the latest services and fixes.",
+    "text": "Update now: it takes a second and you stay signed in.",
     "action": "Update"
   },
   "consent": {
@@ -184,6 +184,6 @@
   },
   "demo": {
     "badge": "Demo",
-    "text": "Demo account. Explore freely, nothing is saved."
+    "text": "Demo account · nothing is saved"
   }
 }

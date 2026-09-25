@@ -1,18 +1,17 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { ChevronRightIcon, HourglassIcon } from '@/components/ui/icons';
-import { useI18nText, useStudio } from '@/hooks/useStudio';
+import { useStudio } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
-import { serviceNames } from '@/lib/appointment';
 import { cx } from '@/lib/cx';
 import { dayParts, formatTime, zonedDate } from '@/lib/format';
 import type { Appointment } from '@/types/api';
+import { ServiceLines } from './ServiceLines';
 
 /** One booking in a list: calendar leaf, weekday and time, services, and a status only if it matters. */
 export function AppointmentCard({ appointment }: { appointment: Appointment }) {
   const { t } = useTranslation(['account', 'common']);
   const { lp, locale } = useLocale();
-  const pick = useI18nText();
   const { timeZone } = useStudio();
   const date = zonedDate(new Date(appointment.start), timeZone);
   const leaf = dayParts(date, locale);
@@ -37,7 +36,7 @@ export function AppointmentCard({ appointment }: { appointment: Appointment }) {
         <span className={cx('block font-bold first-letter:uppercase', inactive && 'text-ink-500 line-through decoration-ink-300')}>
           {weekday}, {formatTime(appointment.start, locale, timeZone)}
         </span>
-        <span className="block truncate text-sm text-ink-600">{serviceNames(appointment, pick)}</span>
+        <ServiceLines appointment={appointment} max={2} className="text-sm text-ink-600" />
         {appointment.status === 'pending' ? (
           <span className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-peach-800">
             <HourglassIcon fontSize="inherit" />

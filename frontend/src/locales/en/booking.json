@@ -83,7 +83,8 @@
     "slotTakenToast": "That time was just taken. Please pick another.",
     "change": "Change",
     "withMaster": "with {{name}}",
-    "phoneLabel": "Phone number"
+    "phoneLabel": "Phone number",
+    "moreServices": "+{{count}} more"
   },
   "calendar": {
     "title": "Nails by Alynna: {{services}}",

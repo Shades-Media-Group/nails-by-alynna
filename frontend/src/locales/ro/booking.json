@@ -85,7 +85,8 @@
     "slotTakenToast": "Ora tocmai a fost ocupată. Te rugăm să alegi alta.",
     "change": "Schimbă",
     "withMaster": "cu {{name}}",
-    "phoneLabel": "Număr de telefon"
+    "phoneLabel": "Număr de telefon",
+    "moreServices": "+încă {{count}}"
   },
   "calendar": {
     "title": "Nails by Alynna: {{services}}",

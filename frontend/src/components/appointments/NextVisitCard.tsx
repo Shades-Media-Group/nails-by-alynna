@@ -3,12 +3,13 @@ import { Link } from 'react-router';
 import { CalendarAddIcon, ChevronRightIcon, DirectionsIcon, HourglassIcon } from '@/components/ui/icons';
 import { useI18nText, useStudio } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
-import { calendarEventFor, serviceNames } from '@/lib/appointment';
+import { calendarEventFor } from '@/lib/appointment';
 import { dateToInstant, dayParts, formatDuration, formatTime, relativeDayLabel, zonedDate } from '@/lib/format';
 import { downloadIcs } from '@/lib/ics';
 import type { Locale } from '@/i18n/config';
 import type { TFunction } from 'i18next';
 import type { Appointment } from '@/types/api';
+import { ServiceLines } from './ServiceLines';
 
 const DAY_MS = 86_400_000;
 
@@ -54,7 +55,7 @@ export function NextVisitCard({ appointment }: { appointment: Appointment }) {
           <span className="block text-[1.0625rem] font-bold leading-snug">
             {t('home.visitAt', { day: visitDay(t, locale, date, today), time: formatTime(appointment.start, locale, timeZone) })}
           </span>
-          <span className="mt-0.5 line-clamp-2 block text-sm text-white/75">{serviceNames(appointment, pick)}</span>
+          <ServiceLines appointment={appointment} max={2} className="mt-0.5 text-sm leading-snug text-white/75" />
           <span className="mt-0.5 block text-sm text-white/55">
             {appointment.staff ? t('home.durationWith', { duration, name: appointment.staff.name }) : duration}
           </span>

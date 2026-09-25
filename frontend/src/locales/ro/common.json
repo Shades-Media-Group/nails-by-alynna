@@ -131,8 +131,8 @@
   },
   "offline": "Ești offline. Îți arătăm ce am salvat.",
   "update": {
-    "title": "O versiune nouă e gata",
-    "text": "Actualizează pentru cele mai noi servicii și îmbunătățiri.",
+    "title": "E gata o versiune nouă",
+    "text": "Actualizează acum: durează o secundă, iar contul rămâne deschis.",
     "action": "Actualizează"
   },
   "consent": {
@@ -184,6 +184,6 @@
   },
   "demo": {
     "badge": "Demo",
-    "text": "Cont demo. Explorează liber, nimic nu se salvează."
+    "text": "Cont demo · nimic nu se salvează"
   }
 }

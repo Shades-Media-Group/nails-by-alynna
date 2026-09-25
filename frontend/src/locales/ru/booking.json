@@ -87,7 +87,8 @@
     "slotTakenToast": "Это время только что заняли. Выберите, пожалуйста, другое.",
     "change": "Изменить",
     "withMaster": "мастер {{name}}",
-    "phoneLabel": "Номер телефона"
+    "phoneLabel": "Номер телефона",
+    "moreServices": "+ещё {{count}}"
   },
   "calendar": {
     "title": "Nails by Alynna: {{services}}",

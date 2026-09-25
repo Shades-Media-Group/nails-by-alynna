@@ -1,9 +1,10 @@
 import { useTranslation } from 'react-i18next';
+import { ServiceLines } from '@/components/appointments/ServiceLines';
 import { Button, ButtonLink } from '@/components/ui';
 import { CalendarAddIcon } from '@/components/ui/icons';
 import { useI18nText, useStudio } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
-import { calendarEventFor, serviceNames } from '@/lib/appointment';
+import { calendarEventFor } from '@/lib/appointment';
 import { formatDateTime } from '@/lib/format';
 import { downloadIcs } from '@/lib/ics';
 import type { Appointment } from '@/types/api';
@@ -47,7 +48,7 @@ export function DoneStep({ appointment, rescheduled }: { appointment: Appointmen
 
       <div className="mt-6 w-full max-w-sm rounded-2xl bg-ink-50 p-4 text-left animate-rise">
         <p className="font-bold first-letter:uppercase">{formatDateTime(appointment.start, locale, timeZone)}</p>
-        <p className="mt-0.5 text-sm text-ink-600">{serviceNames(appointment, pick)}</p>
+        <ServiceLines appointment={appointment} className="mt-0.5 text-sm text-ink-600" />
         <p className="mt-3 text-xs text-ink-500">
           {t('flow.code')}: <span className="tabular font-semibold tracking-wide text-ink-800">{appointment.code}</span>
         </p>
