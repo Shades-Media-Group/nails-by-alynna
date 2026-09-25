@@ -6,7 +6,18 @@ import type { SwatchColor } from '@/lib/swatch';
 export type I18nText = Record<Locale, string>;
 export type Role = 'client' | 'admin' | 'administrator';
 export type AppointmentStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no_show';
-export type ServiceArt = 'gel' | 'french' | 'extension' | 'pedicure' | 'design' | 'removal' | 'care';
+type LengthLevel = 1 | 2 | 3 | 4 | 5 | 6;
+/** Illustration for a service; length-N / refill-N draw a nail at size N with guide lines. */
+export type ServiceArt =
+  | 'gel'
+  | 'french'
+  | 'extension'
+  | 'pedicure'
+  | 'design'
+  | 'removal'
+  | 'care'
+  | `length-${LengthLevel}`
+  | `refill-${LengthLevel}`;
 
 export interface User {
   id: string;

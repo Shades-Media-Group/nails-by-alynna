@@ -10,6 +10,10 @@ export const ACTIVE_STATUSES: AppointmentStatus[] = ['pending', 'confirmed'];
 /** Tile/illustration color keys shared with the frontend design system. */
 export type SwatchColor = 'blush' | 'cyan' | 'peach' | 'mint' | 'lilac';
 /** Illustration keys for service artwork. */
+export const LENGTH_LEVELS = [1, 2, 3, 4, 5, 6] as const;
+type LengthLevel = (typeof LENGTH_LEVELS)[number];
+
+/** Illustration for a service; length-N / refill-N draw a nail at size N with guide lines. */
 export type ServiceArt =
   | 'gel'
   | 'french'
@@ -17,7 +21,9 @@ export type ServiceArt =
   | 'pedicure'
   | 'design'
   | 'removal'
-  | 'care';
+  | 'care'
+  | `length-${LengthLevel}`
+  | `refill-${LengthLevel}`;
 
 export interface UserDoc {
   _id: ObjectId;

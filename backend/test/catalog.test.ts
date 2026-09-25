@@ -61,7 +61,7 @@ describe('staff editing the price list', () => {
     expect(edit.status).toBe(200);
     expect(edit.body.service).toMatchObject({ price: 480, isDefault: true, customized: ['price'] });
     // Editing only the price leaves every other field alone.
-    expect(edit.body.service).toMatchObject({ isActive: true, art: 'extension', durationMin: 130 });
+    expect(edit.body.service).toMatchObject({ isActive: true, art: 'length-2', durationMin: 130 });
 
     const result = await syncCatalogDefaults(ctx.deps, {
       version: CATALOG_DEFAULTS_VERSION + 1,

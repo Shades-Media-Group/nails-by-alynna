@@ -1,9 +1,21 @@
 import { z } from 'zod';
 import { i18nOptionalTextSchema, i18nTextSchema, objectIdSchema, timeSchema } from '../../lib/validation';
+import { LENGTH_LEVELS } from '../../db/types';
 import { timeToMinutes } from '../../lib/time';
 
 export const swatchColorSchema = z.enum(['blush', 'cyan', 'peach', 'mint', 'lilac']);
-export const serviceArtSchema = z.enum(['gel', 'french', 'extension', 'pedicure', 'design', 'removal', 'care']);
+export const SERVICE_ARTS = [
+  'gel',
+  'french',
+  'extension',
+  'pedicure',
+  'design',
+  'removal',
+  'care',
+  ...LENGTH_LEVELS.map((level) => `length-${level}` as const),
+  ...LENGTH_LEVELS.map((level) => `refill-${level}` as const),
+] as const;
+export const serviceArtSchema = z.enum(SERVICE_ARTS);
 
 const intervalSchema = z
   .object({ start: timeSchema, end: timeSchema })

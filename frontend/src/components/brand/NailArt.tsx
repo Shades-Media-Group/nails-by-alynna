@@ -36,6 +36,46 @@ function Nail({ d, fill, gloss, transform, tip }: { d: string; fill: string; glo
   );
 }
 
+/** Tip height for each size in the 220×160 box: size 1 is short, size 6 reaches the top. */
+const LEVEL_Y = [0, 96, 80, 64, 48, 32, 16];
+const CUTICLE_Y = 150;
+
+/**
+ * Sizes as lengths: one nail reaching size N, dotted guide lines for sizes 1 to 6 (the chosen
+ * one drawn in the swatch colour), and for refills a pale regrowth band at the cuticle, the
+ * part a correction fills in.
+ */
+function LengthNail({ level, refill, color, fill }: { level: number; refill: boolean; color: SwatchColor; fill: string }) {
+  const swatch = SWATCH[color].hex;
+  const tip = LEVEL_Y[level] ?? LEVEL_Y[1]!;
+  const nail = `M76 ${CUTICLE_Y}V${tip + 34}C76 ${tip + 14} 92 ${tip} 110 ${tip}C128 ${tip} 144 ${tip + 14} 144 ${tip + 34}V${CUTICLE_Y}Z`;
+  return (
+    <>
+      {LEVEL_Y.slice(1).map((y, index) => {
+        const current = index + 1 === level;
+        return (
+          <line
+            key={y}
+            x1={current ? 40 : 50}
+            x2={current ? 180 : 170}
+            y1={y}
+            y2={y}
+            stroke={current ? swatch.accent : '#CBCDCC'}
+            strokeWidth={current ? 4 : 3}
+            strokeDasharray={current ? '9 7' : '2 8'}
+            strokeLinecap="round"
+          />
+        );
+      })}
+      <path d={nail} fill={fill} />
+      {/* The natural nail under the product. */}
+      <path d={`M84 ${CUTICLE_Y}V120C84 113 95 108 110 108C125 108 136 113 136 120V${CUTICLE_Y}Z`} fill="#FFFFFF" opacity="0.28" />
+      {refill ? <rect x="76" y={CUTICLE_Y - 16} width="68" height="16" fill="#FFFFFF" opacity="0.78" /> : null}
+      <path d={`M92 ${tip + 38}C92 ${tip + 26} 97 ${tip + 17} 104 ${tip + 11}`} stroke="#FFFFFF" strokeWidth="7" strokeLinecap="round" fill="none" opacity="0.7" />
+    </>
+  );
+}
+
 export function NailArt({ art, color, className, shine }: Props) {
   const gradientId = useId();
   const sweepId = useId();
@@ -43,7 +83,9 @@ export function NailArt({ art, color, className, shine }: Props) {
   const fill = `url(#${gradientId})`;
   const white = '#FFFFFF';
 
+  const length = /^(length|refill)-([1-6])$/.exec(art);
   const nails = (() => {
+    if (length) return <LengthNail level={Number(length[2])} refill={length[1] === 'refill'} color={color} fill={fill} />;
     switch (art) {
       case 'french':
         return [
@@ -95,7 +137,7 @@ export function NailArt({ art, color, className, shine }: Props) {
   })();
 
   return (
-    <svg viewBox="0 0 220 160" className={cx('block', className)} aria-hidden="true" focusable="false">
+    <svg viewBox={length ? '34 6 152 152' : '0 0 220 160'} className={cx('block', className)} aria-hidden="true" focusable="false">
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor={swatch.accent} stopOpacity="0.78" />

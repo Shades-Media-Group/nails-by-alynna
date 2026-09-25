@@ -31,33 +31,39 @@ export interface DefaultCategory {
 }
 
 /** Bump whenever DEFAULT_CATALOG changes, so existing databases pick the change up. */
-export const CATALOG_DEFAULTS_VERSION = 2;
+export const CATALOG_DEFAULTS_VERSION = 4;
 
 const SIZE_PRICES = { extension: [400, 450, 500, 550, 600, 650], correction: [370, 420, 470, 520, 570, 620] };
 const SIZE_MINUTES = { extension: [120, 130, 140, 150, 165, 180], correction: [105, 115, 125, 135, 150, 165] };
 
+const SIZE_NAMES = {
+  extension: { ro: 'Alungire, mărimea', ru: 'Наращивание, размер', en: 'Extensions, size' },
+  correction: { ro: 'Corecție, mărimea', ru: 'Коррекция, размер', en: 'Refill, size' },
+};
+
+/** What each size means, in words (size = length of the nail). */
+function sizeDescription(size: number): I18nText {
+  if (size === 1) return { ro: 'Cea mai scurtă lungime.', ru: 'Самая короткая длина.', en: 'The shortest length.' };
+  if (size === 6) return { ro: 'Cea mai mare lungime.', ru: 'Самая большая длина.', en: 'The longest length.' };
+  return { ro: `Lungimea ${size} din 6.`, ru: `Длина ${size} из 6.`, en: `Length ${size} of 6.` };
+}
+
+/**
+ * Sizes 1 to 6. Names stand on their own ("Extensions, size 3"), because bookings, calendar
+ * entries and the admin show them without the category heading.
+ */
 function sizes(kind: 'extension' | 'correction', popularSize: number): DefaultService[] {
+  const names = SIZE_NAMES[kind];
   return SIZE_PRICES[kind].map((price, index) => {
     const size = index + 1;
     return {
       key: `${kind}-size-${size}`,
-      art: 'extension',
+      art: kind === 'extension' ? `length-${size as 1 | 2 | 3 | 4 | 5 | 6}` : `refill-${size as 1 | 2 | 3 | 4 | 5 | 6}`,
       price,
       durationMin: SIZE_MINUTES[kind][index]!,
       isPopular: size === popularSize,
-      name: { ro: `Mărimea ${size}`, ru: `Размер ${size}`, en: `Size ${size}` },
-      description:
-        kind === 'extension'
-          ? {
-              ro: `Alungire cu gel, mărimea ${size} din 6.`,
-              ru: `Наращивание гелем, размер ${size} из 6.`,
-              en: `Gel extensions, size ${size} of 6.`,
-            }
-          : {
-              ro: `Corecția alungirii, mărimea ${size} din 6.`,
-              ru: `Коррекция наращивания, размер ${size} из 6.`,
-              en: `Extension refill, size ${size} of 6.`,
-            },
+      name: { ro: `${names.ro} ${size}`, ru: `${names.ru} ${size}`, en: `${names.en} ${size}` },
+      description: sizeDescription(size),
     };
   });
 }
