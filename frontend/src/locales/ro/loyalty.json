@@ -1,0 +1,91 @@
+{
+  "title": "Card de fidelitate",
+  "subtitle": "Fiecare vizită e o ștampilă. Reducerile vin singure.",
+  "off": "Cardul de fidelitate este pus pe pauză deocamdată.",
+  "stamps": "{{stamps}} din {{cycle}} vizite",
+  "cardNumber": "Cardul {{card}}",
+  "next": "Următoarea vizită: −{{percent}}%",
+  "nextOn": "−{{percent}}% la {{ordinal}} vizită",
+  "stampAria": "Vizita {{visit}} din {{cycle}}",
+  "stamped": "ștampilată",
+  "discount": "−{{percent}}%",
+  "qr": {
+    "title": "Arată codul la recepție",
+    "text": "Echipa îl scanează ca să găsească cardul și să pună ștampila.",
+    "label": "Codul QR al cardului tău de fidelitate",
+    "code": "Codul cardului"
+  },
+  "how": {
+    "title": "Cum funcționează",
+    "stamp": "Fiecare vizită finalizată adaugă o ștampilă.",
+    "reward": "{{ordinal}} vizită de pe fiecare card: −{{percent}}% la acea vizită.",
+    "restart": "După vizita {{cycle}}, începe un card nou.",
+    "applied": "Reducerea se aplică la salon, la prețul acelei vizite."
+  },
+  "history": {
+    "title": "Reduceri folosite",
+    "empty": "Reducerile tale vor apărea aici.",
+    "line": "{{ordinal}} vizită · −{{percent}}% (−{{amount}})"
+  },
+  "badge": {
+    "predicted": "−{{percent}}% fidelitate",
+    "applied": "Fidelitate −{{percent}}%"
+  },
+  "detail": {
+    "title": "Card de fidelitate",
+    "visit": "Vizita {{visit}} din {{cycle}}",
+    "discount": "−{{percent}}% · −{{amount}}",
+    "expected": "Reducere estimată, aplicată la salon.",
+    "applied": "Reducere aplicată la această vizită.",
+    "noDiscount": "Vizita aceasta adaugă o ștampilă."
+  },
+  "confirm": "Va fi {{ordinal}} vizită pe card: −{{percent}}% la salon.",
+  "tile": {
+    "title": "Card de fidelitate",
+    "open": "Deschide cardul de fidelitate"
+  },
+  "link": {
+    "title": "Card de client Nails by Alynna",
+    "text": "Acest cod QR aparține unui client al salonului. Echipa îl scanează în aplicație.",
+    "open": "Deschide aplicația"
+  },
+  "scan": {
+    "nav": "Scanează card",
+    "title": "Scanează cardul clientului",
+    "subtitle": "Îndreaptă camera spre codul QR din aplicația clientului.",
+    "start": "Pornește camera",
+    "stop": "Oprește camera",
+    "starting": "Pornește camera…",
+    "denied": "Accesul la cameră e blocat. Permite-l din setările browserului sau scrie codul.",
+    "unsupported": "Browserul nu poate folosi camera aici. Scrie codul în schimb.",
+    "failed": "Camera nu a pornit. Încearcă din nou sau scrie codul.",
+    "type": "Scrie codul",
+    "codeLabel": "Codul cardului",
+    "codePlaceholder": "de ex. K7QM 2XRP",
+    "open": "Deschide cardul",
+    "invalid": "Acesta nu pare un cod de card.",
+    "notFound": "Niciun client nu are acest card.",
+    "again": "Scanează altul"
+  },
+  "card": {
+    "visits_one": "{{count}} vizită",
+    "visits_few": "{{count}} vizite",
+    "visits_other": "{{count}} de vizite",
+    "addStamp": "Adaugă o ștampilă",
+    "removeStamp": "Scoate o ștampilă",
+    "stampTitleAdd": "Adaugi o ștampilă manual?",
+    "stampTitleRemove": "Scoți o ștampilă?",
+    "stampText": "Pentru o vizită care nu e în aplicație sau pentru a corecta cardul. Se păstrează în istoric.",
+    "reason": "Motiv (opțional)",
+    "added": "Ștampilă adăugată",
+    "removed": "Ștampilă scoasă",
+    "profile": "Profilul clientului",
+    "book": "Programare nouă",
+    "upcoming": "Vizite viitoare",
+    "noUpcoming": "Nicio programare viitoare.",
+    "thisVisit": "Vizita aceasta: −{{percent}}% (−{{amount}})",
+    "stampOnly": "Vizita aceasta: ștampila {{visit}} din {{cycle}}",
+    "completeHint": "Marchează vizita ca finalizată ca să pui ștampila și să fixezi reducerea.",
+    "noAccount": "Încă fără cont în aplicație"
+  }
+}

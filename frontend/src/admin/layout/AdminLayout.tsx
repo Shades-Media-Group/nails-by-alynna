@@ -15,6 +15,7 @@ import {
   LogoutIcon,
   MoreHorizIcon,
   PersonIcon,
+  QrCodeScannerIcon,
   SettingsIcon,
   SpaIcon,
   type IconComponent,
@@ -35,7 +36,7 @@ interface Item {
  * daily four (today, calendar, new booking, clients) and the rest under "More".
  */
 export function AdminLayout() {
-  const { t } = useTranslation('admin');
+  const { t } = useTranslation(['admin', 'loyalty']);
   const { lp } = useLocale();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -47,6 +48,7 @@ export function AdminLayout() {
     { to: lp('/admin'), label: t('nav.dashboard'), icon: DashboardIcon, end: true },
     { to: lp('/admin/calendar'), label: t('nav.calendar'), icon: CalendarIcon },
     { to: lp('/admin/clients'), label: t('nav.clients'), icon: GroupIcon },
+    { to: lp('/admin/scan'), label: t('loyalty:scan.nav'), icon: QrCodeScannerIcon },
     { to: lp('/admin/services'), label: t('nav.services'), icon: SpaIcon },
     { to: lp('/admin/team'), label: t('nav.team'), icon: PersonIcon },
     { to: lp('/admin/settings'), label: t('nav.settings'), icon: SettingsIcon },

@@ -6,6 +6,7 @@ import { NailArt } from '@/components/brand/NailArt';
 import { Alert } from '@/components/common/Alert';
 import { ContactSheet } from '@/components/common/ContactSheet';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { LoyaltyLine } from '@/components/loyalty/LoyaltyBits';
 import { Button, ButtonLink, EmptyState, Sheet, Skeleton, Textarea, toast } from '@/components/ui';
 import { CalendarAddIcon, ChatIcon, DirectionsIcon, EventBusyIcon, HourglassIcon, ReplayIcon, ScheduleIcon } from '@/components/ui/icons';
 import { useCatalog, useI18nText, useStudio } from '@/hooks/useStudio';
@@ -162,6 +163,7 @@ export default function AppointmentDetailPage() {
             <span className="font-bold">{t('booking.total')}</span>
             <span className="tabular text-lg font-extrabold">{formatPrice(t, a.totalPrice, currency, a.priceFrom)}</span>
           </div>
+          <LoyaltyLine loyalty={a.loyalty} currency={currency} />
         </section>
 
         {a.notes ? (

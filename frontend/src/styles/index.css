@@ -187,6 +187,11 @@
     from { stroke-dashoffset: var(--path-length, 60); }
     to { stroke-dashoffset: 0; }
   }
+  /* The sweep inside the QR scanner's aiming frame. */
+  @keyframes scanline {
+    0%, 100% { top: 18%; opacity: 0.25; }
+    50% { top: calc(82% - 2px); opacity: 1; }
+  }
   @keyframes progress {
     0% { transform: translateX(-100%) scaleX(0.3); }
     60% { transform: translateX(40%) scaleX(0.6); }

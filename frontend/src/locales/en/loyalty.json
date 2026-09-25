@@ -1,0 +1,90 @@
+{
+  "title": "Loyalty card",
+  "subtitle": "Every visit is a stamp. The discounts come by themselves.",
+  "off": "The loyalty card is paused for now.",
+  "stamps": "{{stamps}} of {{cycle}} visits",
+  "cardNumber": "Card {{card}}",
+  "next": "Next visit: {{percent}}% off",
+  "nextOn": "{{percent}}% off your {{ordinal}} visit",
+  "stampAria": "Visit {{visit}} of {{cycle}}",
+  "stamped": "stamped",
+  "discount": "−{{percent}}%",
+  "qr": {
+    "title": "Show this at the desk",
+    "text": "Staff scan it to find your card and add the stamp.",
+    "label": "Your loyalty card QR code",
+    "code": "Card code"
+  },
+  "how": {
+    "title": "How it works",
+    "stamp": "Each completed visit adds a stamp.",
+    "reward": "Your {{ordinal}} visit on each card: {{percent}}% off that visit.",
+    "restart": "After visit {{cycle}}, a new card starts.",
+    "applied": "The discount is applied at the studio, on the price of that visit."
+  },
+  "history": {
+    "title": "Discounts used",
+    "empty": "Your discounts will show up here.",
+    "line": "{{ordinal}} visit · −{{percent}}% (−{{amount}})"
+  },
+  "badge": {
+    "predicted": "−{{percent}}% loyalty",
+    "applied": "Loyalty −{{percent}}%"
+  },
+  "detail": {
+    "title": "Loyalty card",
+    "visit": "Visit {{visit}} of {{cycle}}",
+    "discount": "−{{percent}}% · −{{amount}}",
+    "expected": "Expected discount, applied at the studio.",
+    "applied": "Discount applied to this visit.",
+    "noDiscount": "This visit adds a stamp."
+  },
+  "confirm": "This will be your {{ordinal}} visit on the card: {{percent}}% off at the studio.",
+  "tile": {
+    "title": "Loyalty card",
+    "open": "Open loyalty card"
+  },
+  "link": {
+    "title": "Nails by Alynna member card",
+    "text": "This QR code belongs to a client of the studio. Staff scan it in the app.",
+    "open": "Open the app"
+  },
+  "scan": {
+    "nav": "Scan card",
+    "title": "Scan a client card",
+    "subtitle": "Point the camera at the QR code in the client's app.",
+    "start": "Turn on the camera",
+    "stop": "Stop camera",
+    "starting": "Starting the camera…",
+    "denied": "Camera access is blocked. Allow it in the browser settings, or type the code.",
+    "unsupported": "This browser can't use the camera here. Type the code instead.",
+    "failed": "The camera didn't start. Try again or type the code.",
+    "type": "Type the code",
+    "codeLabel": "Card code",
+    "codePlaceholder": "e.g. K7QM 2XRP",
+    "open": "Open card",
+    "invalid": "That doesn't look like a card code.",
+    "notFound": "No client has this card.",
+    "again": "Scan another"
+  },
+  "card": {
+    "visits_one": "{{count}} visit",
+    "visits_other": "{{count}} visits",
+    "addStamp": "Add a stamp",
+    "removeStamp": "Remove a stamp",
+    "stampTitleAdd": "Add a stamp by hand?",
+    "stampTitleRemove": "Remove a stamp?",
+    "stampText": "For a visit that isn't in the app, or to correct the card. It is recorded in the history.",
+    "reason": "Reason (optional)",
+    "added": "Stamp added",
+    "removed": "Stamp removed",
+    "profile": "Client profile",
+    "book": "New booking",
+    "upcoming": "Coming visits",
+    "noUpcoming": "No bookings coming up.",
+    "thisVisit": "This visit: −{{percent}}% (−{{amount}})",
+    "stampOnly": "This visit: stamp {{visit}} of {{cycle}}",
+    "completeHint": "Mark the visit completed to stamp the card and lock the discount.",
+    "noAccount": "No app account yet"
+  }
+}

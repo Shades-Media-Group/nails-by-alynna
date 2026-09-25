@@ -73,6 +73,39 @@ export interface PublicConfig {
     policy: I18nText;
     mastersCount: number;
   };
+  loyalty: { enabled: boolean; cycle: number; rewards: LoyaltyReward[] };
+}
+
+/** A reward on the loyalty card: the Nth visit of every card gets `percent` off. */
+export interface LoyaltyReward {
+  visit: number;
+  percent: number;
+}
+
+/** The stamp a visit earned (completed) or is expected to earn (upcoming, `predicted`). */
+export interface AppointmentLoyalty {
+  visit: number;
+  cycle: number;
+  percent: number;
+  discount: number;
+  predicted: boolean;
+}
+
+export interface LoyaltyStatus {
+  enabled: boolean;
+  cycle: number;
+  rewards: LoyaltyReward[];
+  visits: number;
+  /** Stamps on the current card, 0..cycle-1. */
+  stamps: number;
+  card: number;
+  nextReward: (LoyaltyReward & { inVisits: number }) | null;
+  history: Array<{ appointmentId: string; date: string; visit: number; percent: number; discount: number }>;
+}
+
+export interface LoyaltyCard {
+  card: { code: string; url: string };
+  loyalty: LoyaltyStatus;
 }
 
 export interface Category {
@@ -150,6 +183,7 @@ export interface Appointment {
   changeDeadline: string;
   cancelledAt: string | null;
   cancelledBy: 'client' | 'staff' | null;
+  loyalty: AppointmentLoyalty | null;
   createdAt: string;
 }
 

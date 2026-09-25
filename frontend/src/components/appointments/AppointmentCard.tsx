@@ -6,6 +6,7 @@ import { useLocale } from '@/i18n/useLocale';
 import { cx } from '@/lib/cx';
 import { dayParts, formatTime, zonedDate } from '@/lib/format';
 import type { Appointment } from '@/types/api';
+import { LoyaltyBadge } from '@/components/loyalty/LoyaltyBits';
 import { ServiceLines } from './ServiceLines';
 
 /** One booking in a list: calendar leaf, weekday and time, services, and a status only if it matters. */
@@ -37,6 +38,7 @@ export function AppointmentCard({ appointment }: { appointment: Appointment }) {
           {weekday}, {formatTime(appointment.start, locale, timeZone)}
         </span>
         <ServiceLines appointment={appointment} max={2} className="text-sm text-ink-600" />
+        {!inactive ? <LoyaltyBadge loyalty={appointment.loyalty} className="mt-1.5" /> : null}
         {appointment.status === 'pending' ? (
           <span className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-peach-800">
             <HourglassIcon fontSize="inherit" />

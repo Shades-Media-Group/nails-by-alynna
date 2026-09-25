@@ -1,6 +1,7 @@
 import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NailArt } from '@/components/brand/NailArt';
+import { LoyaltyConfirmNote } from '@/components/loyalty/LoyaltyBits';
 import { Alert } from '@/components/common/Alert';
 import { Button, TextField, Textarea } from '@/components/ui';
 import { CallIcon, ScheduleIcon } from '@/components/ui/icons';
@@ -100,6 +101,8 @@ export function ConfirmStep(props: ConfirmStepProps) {
           </div>
         ) : null}
       </section>
+
+      {mode === 'new' ? <LoyaltyConfirmNote start={slot.start} /> : null}
 
       {needsPhone ? (
         <section className="flex flex-col gap-2">

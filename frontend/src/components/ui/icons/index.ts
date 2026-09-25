@@ -2,8 +2,8 @@
  * The app's icon vocabulary — MUI free icons, Rounded variant only. Import icons from here
  * (not from @mui/icons-material directly) so the set stays consistent and tree-shaken.
  */
-export { default as AddIcon } from '@mui/icons-material/AddRounded';
 export { default as AddBoxIcon } from '@mui/icons-material/AddBoxOutlined';
+export { default as AddIcon } from '@mui/icons-material/AddRounded';
 export { default as AdminIcon } from '@mui/icons-material/AdminPanelSettingsRounded';
 export { default as ArrowBackIcon } from '@mui/icons-material/ArrowBackRounded';
 export { default as ArrowForwardIcon } from '@mui/icons-material/ArrowForwardRounded';
@@ -36,31 +36,36 @@ export { default as ExpandMoreIcon } from '@mui/icons-material/ExpandMoreRounded
 export { default as GroupIcon } from '@mui/icons-material/GroupRounded';
 export { default as HistoryIcon } from '@mui/icons-material/HistoryRounded';
 export { default as HomeIcon } from '@mui/icons-material/HomeRounded';
-export { default as HourglassIcon } from '@mui/icons-material/HourglassTopRounded';
 export { default as HomeOutlinedIcon } from '@mui/icons-material/HomeOutlined';
+export { default as HourglassIcon } from '@mui/icons-material/HourglassTopRounded';
 export { default as InfoIcon } from '@mui/icons-material/InfoOutlined';
 export { default as InstagramIcon } from '@mui/icons-material/Instagram';
 export { default as InstallIcon } from '@mui/icons-material/InstallMobileRounded';
 export { default as IosShareIcon } from '@mui/icons-material/IosShareRounded';
+export { default as KeyboardIcon } from '@mui/icons-material/KeyboardRounded';
 export { default as KeyIcon } from '@mui/icons-material/KeyRounded';
-export { default as LaptopIcon } from '@mui/icons-material/LaptopMacRounded';
 export { default as LanguageIcon } from '@mui/icons-material/LanguageRounded';
+export { default as LaptopIcon } from '@mui/icons-material/LaptopMacRounded';
 export { default as LocationIcon } from '@mui/icons-material/PlaceRounded';
 export { default as LockIcon } from '@mui/icons-material/LockRounded';
 export { default as LogoutIcon } from '@mui/icons-material/LogoutRounded';
+export { default as LoyaltyIcon } from '@mui/icons-material/LoyaltyRounded';
 export { default as MenuIcon } from '@mui/icons-material/MenuRounded';
 export { default as MoreHorizIcon } from '@mui/icons-material/MoreHorizRounded';
 export { default as MoreVertIcon } from '@mui/icons-material/MoreVertRounded';
 export { default as NotesIcon } from '@mui/icons-material/NotesRounded';
 export { default as PaletteIcon } from '@mui/icons-material/PaletteRounded';
 export { default as PendingIcon } from '@mui/icons-material/PendingActionsRounded';
+export { default as PersonAddIcon } from '@mui/icons-material/PersonAddAlt1Rounded';
 export { default as PersonIcon } from '@mui/icons-material/PersonRounded';
 export { default as PersonOutlineIcon } from '@mui/icons-material/PersonOutlineRounded';
-export { default as PersonAddIcon } from '@mui/icons-material/PersonAddAlt1Rounded';
 export { default as PhoneIphoneIcon } from '@mui/icons-material/PhoneIphoneRounded';
 export { default as PrivacyIcon } from '@mui/icons-material/PrivacyTipRounded';
 export { default as QrCodeIcon } from '@mui/icons-material/QrCode2Rounded';
+export { default as QrCodeScannerIcon } from '@mui/icons-material/QrCodeScannerRounded';
+export { default as RedeemIcon } from '@mui/icons-material/RedeemRounded';
 export { default as RefreshIcon } from '@mui/icons-material/RefreshRounded';
+export { default as RemoveIcon } from '@mui/icons-material/RemoveRounded';
 export { default as ReplayIcon } from '@mui/icons-material/ReplayRounded';
 export { default as ScheduleIcon } from '@mui/icons-material/ScheduleRounded';
 export { default as SearchIcon } from '@mui/icons-material/SearchRounded';

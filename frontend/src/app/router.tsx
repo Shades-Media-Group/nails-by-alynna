@@ -36,6 +36,7 @@ const adminRoutes: RouteObject = {
         { path: 'services', lazy: page(() => import('@/admin/pages/ServicesPage')) },
         { path: 'team', lazy: page(() => import('@/admin/pages/TeamPage')) },
         { path: 'settings', lazy: page(() => import('@/admin/pages/SettingsPage')) },
+        { path: 'scan', lazy: page(() => import('@/admin/pages/ScanPage')) },
         {
           element: <RequireRole roles={['administrator']} />,
           children: [
@@ -73,6 +74,8 @@ function localeTree(locale: Locale): RouteObject {
       { path: 'app', lazy: page(() => import('@/pages/install/InstallPage')) },
       { path: 'privacy', lazy: page(() => import('@/pages/legal/PrivacyPage')) },
       { path: 'terms', lazy: page(() => import('@/pages/legal/TermsPage')) },
+      // Where the loyalty-card QR points (staff scanning with the phone camera land on the card).
+      { path: 'c/:code', lazy: page(() => import('@/pages/loyalty/CardLinkPage')) },
       {
         element: <RequireAuth />,
         children: [
@@ -85,6 +88,7 @@ function localeTree(locale: Locale): RouteObject {
               { path: 'bookings/:id', lazy: page(() => import('@/pages/appointments/AppointmentDetailPage')) },
               { path: 'profile', lazy: page(() => import('@/pages/profile/ProfilePage')) },
               { path: 'studio', lazy: page(() => import('@/pages/studio/StudioPage')) },
+              { path: 'loyalty', lazy: page(() => import('@/pages/loyalty/LoyaltyPage')) },
             ],
           },
           { path: 'book', lazy: page(() => import('@/pages/booking/BookingPage')) },

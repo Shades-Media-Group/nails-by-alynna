@@ -9,6 +9,7 @@ import { downloadIcs } from '@/lib/ics';
 import type { Locale } from '@/i18n/config';
 import type { TFunction } from 'i18next';
 import type { Appointment } from '@/types/api';
+import { LoyaltyBadge } from '@/components/loyalty/LoyaltyBits';
 import { ServiceLines } from './ServiceLines';
 
 const DAY_MS = 86_400_000;
@@ -59,6 +60,7 @@ export function NextVisitCard({ appointment }: { appointment: Appointment }) {
           <span className="mt-0.5 block text-sm text-white/55">
             {appointment.staff ? t('home.durationWith', { duration, name: appointment.staff.name }) : duration}
           </span>
+          <LoyaltyBadge loyalty={appointment.loyalty} className="mt-2" />
         </span>
         <ChevronRightIcon
           fontSize="inherit"

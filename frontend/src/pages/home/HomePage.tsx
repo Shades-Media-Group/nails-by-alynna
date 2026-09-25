@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { useAuth } from '@/app/auth';
 import { NextVisitCard } from '@/components/appointments/NextVisitCard';
+import { LoyaltyTile } from '@/components/loyalty/LoyaltyBits';
 import { Logo } from '@/components/brand/Logo';
 import { NailArt } from '@/components/brand/NailArt';
 import { ContactSheet } from '@/components/common/ContactSheet';
@@ -116,6 +117,8 @@ export default function HomePage() {
               <ChevronRightIcon fontSize="inherit" className={cx(arrow, 'text-xl text-ink-400')} />
             </Link>
           ) : null}
+
+          <LoyaltyTile className="stagger" style={order(3)} />
 
           <div className="stagger" style={order(3)}>
             <InstallBanner />

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Nails by Alynna \u2014 mobile-first booking PWA (React + Vite)",
+  "description": "Nails by Alynna — mobile-first booking PWA (React + Vite)",
   "engines": {
     "node": ">=22.22.0"
   },
@@ -25,6 +25,7 @@
     "@mui/icons-material": "^9.4.0",
     "@tanstack/react-query": "^5.103.2",
     "i18next": "^26.4.2",
+    "jsqr": "1.4.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-i18next": "^17.0.15",
