@@ -65,7 +65,12 @@ export function adminSettingsRoutes(deps: AppDeps) {
     const now = deps.now();
     await deps.col.settings.updateOne(
       { _id: 'studio' },
-      { $set: { ...input, updatedAt: now }, $setOnInsert: { ...omit(DEFAULT_SETTINGS, Object.keys(input)) } },
+      {
+        $set: { ...input, updatedAt: now },
+        $setOnInsert: { ...omit(DEFAULT_SETTINGS, Object.keys(input)) },
+        // Saved here = the studio's choice; later default updates leave these fields alone.
+        $addToSet: { customized: { $each: Object.keys(input) } },
+      },
       { upsert: true },
     );
     invalidateSettingsCache(deps);

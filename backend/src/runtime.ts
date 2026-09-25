@@ -3,6 +3,7 @@ import type { AppDeps } from './context';
 import { collections, createMongo, ensureIndexes, SCHEMA_VERSION, type MongoHandle } from './db';
 import { createMailer } from './lib/mailer';
 import { createPasswordHasher } from './lib/password';
+import { syncDefaults } from './seed/defaults';
 
 /** Builds the dependency graph shared by the Node server and the Worker's Durable Object. */
 export function createDeps(
@@ -25,13 +26,16 @@ export function createDeps(
 /** Applies indexes once per schema version (tracked in the `meta` collection). */
 export async function migrate(deps: AppDeps): Promise<void> {
   const current = await deps.col.meta.findOne({ _id: 'schemaVersion' });
-  if (current?.value === SCHEMA_VERSION) return;
-  await ensureIndexes(deps.db);
-  await deps.col.meta.updateOne(
-    { _id: 'schemaVersion' },
-    { $set: { value: SCHEMA_VERSION, updatedAt: new Date() } },
-    { upsert: true },
-  );
+  if (current?.value !== SCHEMA_VERSION) {
+    await ensureIndexes(deps.db);
+    await deps.col.meta.updateOne(
+      { _id: 'schemaVersion' },
+      { $set: { value: SCHEMA_VERSION, updatedAt: new Date() } },
+      { upsert: true },
+    );
+  }
+  // The default price list and contact details (no-op when already at the current version).
+  await syncDefaults(deps, (message) => console.info(`[defaults] ${message}`));
 }
 
 export { createMongo };

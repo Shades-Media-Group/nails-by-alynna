@@ -11,7 +11,7 @@ beforeAll(async () => {
   await ctx.seed({ admin: { email: 'owner@example.com', password: strongPassword, name: 'Alina', surname: 'Owner' } });
   owner = await loginAs(ctx, 'owner@example.com', strongPassword);
   const catalog = await ctx.client().get('/api/catalog');
-  gelId = catalog.body.services.find((s: { slug: string }) => s.slug === 'manicure-gel').id;
+  gelId = catalog.body.services.find((s: { slug: string }) => s.slug === 'gel-polish').id;
 });
 afterAll(async () => {
   await ctx.close();
@@ -33,15 +33,15 @@ describe('role guards', () => {
     expect((await ctx.client().get('/api/admin/stats')).status).toBe(401);
   });
 
-  it('lets admins run the day but not own the studio', async () => {
+  it('lets admins run the day and the price list, but not own the studio', async () => {
     const admin = await makeStaff('admin', 'staff1@example.com');
     expect((await admin.client.get('/api/admin/stats')).status).toBe(200);
     expect((await admin.client.get('/api/admin/clients')).status).toBe(200);
     expect((await admin.client.get('/api/admin/users')).status).toBe(403);
     expect((await admin.client.get('/api/admin/audit')).status).toBe(403);
     expect((await admin.client.patch('/api/admin/settings', { requireApproval: true })).status).toBe(403);
-    const service = await admin.client.post('/api/admin/catalog/services', {});
-    expect(service.status).toBe(403);
+    // The price list is everyday work: staff may manage it (an empty body fails validation).
+    expect((await admin.client.post('/api/admin/catalog/services', {})).status).toBe(422);
   });
 
   it('applies role changes immediately', async () => {

@@ -32,6 +32,8 @@ export type ErrorCode =
   | 'LAST_ADMINISTRATOR'
   | 'SELF_ACTION'
   | 'IN_USE'
+  | 'NOT_A_DEFAULT'
+  | 'ONE_PER_CATEGORY'
   | 'PAYLOAD_TOO_LARGE'
   | 'DEMO_READ_ONLY'
   | 'RATE_LIMITED'

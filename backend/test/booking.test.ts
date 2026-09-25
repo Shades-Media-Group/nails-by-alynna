@@ -9,8 +9,8 @@ beforeAll(async () => {
   ctx = await createTestContext();
   await ctx.seed();
   const catalog = await ctx.client().get('/api/catalog');
-  gelId = catalog.body.services.find((s: { slug: string }) => s.slug === 'manicure-gel').id;
-  artId = catalog.body.services.find((s: { slug: string }) => s.slug === 'art-simple').id;
+  gelId = catalog.body.services.find((s: { slug: string }) => s.slug === 'gel-polish').id;
+  artId = catalog.body.services.find((s: { slug: string }) => s.slug === 'design-complex').id;
 });
 afterAll(async () => {
   await ctx.close();
@@ -50,8 +50,8 @@ describe('availability', () => {
   it('adds up the duration of several services', async () => {
     const { client } = await registerClient(ctx);
     const combined = await client.get(`/api/availability/slots?serviceIds=${gelId},${artId}&date=2026-06-02`);
-    expect(combined.body.durationMin).toBe(105);
-    expect(combined.body.slots.at(-1).time).toBe('17:15');
+    expect(combined.body.durationMin).toBe(120);
+    expect(combined.body.slots.at(-1).time).toBe('17:00'); // 2 h must end by 19:00
   });
 });
 
@@ -61,7 +61,7 @@ describe('booking', () => {
     const [first] = await slots(client, '2026-06-02');
     const res = await client.post('/api/appointments', { serviceIds: [gelId], start: first!.start, notes: 'Nude, please' });
     expect(res.status).toBe(201);
-    expect(res.body.appointment).toMatchObject({ status: 'confirmed', totalPrice: 350, durationMin: 90, canChange: true });
+    expect(res.body.appointment).toMatchObject({ status: 'confirmed', totalPrice: 300, durationMin: 90, canChange: true });
     expect(res.body.appointment.code).toMatch(/^[A-Z2-9]{6}$/);
 
     const after = await slots(client, '2026-06-02');

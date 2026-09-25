@@ -1,4 +1,4 @@
-import type { ObjectId } from 'mongodb';
+import { ObjectId } from 'mongodb';
 import type { AppDeps } from '../../context';
 import { ACTIVE_STATUSES, type ServiceDoc, type StaffDoc, type StudioSettings } from '../../db/types';
 import { AppError } from '../../lib/errors';
@@ -28,7 +28,25 @@ export async function loadServices(deps: AppDeps, serviceIds: ObjectId[]): Promi
       fields: { serviceIds: 'unavailable' },
     });
   }
+  await assertOnePerSingleChoiceCategory(deps, ordered as ServiceDoc[]);
   return ordered as ServiceDoc[];
+}
+
+/** Options of one thing (e.g. extension lengths) can't be combined in a single visit. */
+async function assertOnePerSingleChoiceCategory(deps: AppDeps, services: ServiceDoc[]): Promise<void> {
+  const perCategory = new Map<string, number>();
+  for (const service of services) {
+    const key = service.categoryId.toHexString();
+    perCategory.set(key, (perCategory.get(key) ?? 0) + 1);
+  }
+  const repeated = [...perCategory].filter(([, count]) => count > 1).map(([id]) => new ObjectId(id));
+  if (repeated.length === 0) return;
+  const exclusive = await deps.col.categories.countDocuments({ _id: { $in: repeated }, singleChoice: true });
+  if (exclusive > 0) {
+    throw new AppError(422, 'ONE_PER_CATEGORY', 'Choose one option from this category', {
+      fields: { serviceIds: 'one_per_category' },
+    });
+  }
 }
 
 export function canPerform(staff: StaffDoc, services: ServiceDoc[]): boolean {

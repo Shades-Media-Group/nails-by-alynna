@@ -48,7 +48,7 @@ export function collections(db: Db): Collections {
 }
 
 /** Bump when indexes change; the runtime re-applies them once per version. */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export async function ensureIndexes(db: Db): Promise<void> {
   const c = collections(db);
@@ -78,8 +78,15 @@ export async function ensureIndexes(db: Db): Promise<void> {
       { key: { expiresAt: 1 }, expireAfterSeconds: 0, name: 'ttl' },
     ]),
     c.rateLimits.createIndexes([{ key: { expiresAt: 1 }, expireAfterSeconds: 0, name: 'ttl' }]),
-    c.categories.createIndexes([{ key: { order: 1 }, name: 'order' }]),
-    c.services.createIndexes([{ key: { categoryId: 1, order: 1 }, name: 'category_order' }]),
+    c.categories.createIndexes([
+      { key: { order: 1 }, name: 'order' },
+      // One document per default entry, even if two processes sync at the same moment.
+      { key: { defaultKey: 1 }, unique: true, name: 'default_key', partialFilterExpression: { defaultKey: { $type: 'string' } } },
+    ]),
+    c.services.createIndexes([
+      { key: { categoryId: 1, order: 1 }, name: 'category_order' },
+      { key: { defaultKey: 1 }, unique: true, name: 'default_key', partialFilterExpression: { defaultKey: { $type: 'string' } } },
+    ]),
     c.staff.createIndexes([{ key: { order: 1 }, name: 'order' }]),
     c.timeOff.createIndexes([{ key: { staffId: 1, start: 1, end: 1 }, name: 'staff_range' }]),
     c.appointments.createIndexes([

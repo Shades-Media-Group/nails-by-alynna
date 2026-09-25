@@ -1,7 +1,10 @@
 import type { AppDeps } from '../context';
 import type { StudioSettings } from '../db/types';
 
-/** Defaults are placeholders the administrator edits in Settings (address/phone included). */
+/**
+ * Studio defaults; the administrator edits them in Settings. Contact details come from the
+ * published price list; seed/defaults.ts brings existing databases up to date.
+ */
 export const DEFAULT_SETTINGS: StudioSettings = {
   name: 'Nails by Alynna',
   tagline: {
@@ -17,11 +20,11 @@ export const DEFAULT_SETTINGS: StudioSettings = {
   address: '',
   city: 'Chișinău',
   mapsUrl: '',
-  phone: '',
+  phone: '+37368230429',
   whatsapp: '',
   viber: '',
   telegram: '',
-  instagram: '',
+  instagram: '_nailsbyalynna_',
   email: '',
   timezone: 'Europe/Chisinau',
   currency: 'MDL',

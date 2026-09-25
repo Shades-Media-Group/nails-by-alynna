@@ -90,6 +90,8 @@ export function publicRoutes(deps: AppDeps) {
         id: cat._id.toHexString(),
         slug: cat.slug,
         name: cat.name,
+        description: cat.description ?? null,
+        singleChoice: cat.singleChoice ?? false,
         color: cat.color,
       })),
       services: services

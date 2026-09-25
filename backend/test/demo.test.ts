@@ -16,7 +16,7 @@ beforeAll(async () => {
     demoData: true,
   });
   const catalog = await ctx.client().get('/api/catalog');
-  gelId = catalog.body.services.find((s: { slug: string }) => s.slug === 'manicure-gel').id;
+  gelId = catalog.body.services.find((s: { slug: string }) => s.slug === 'gel-polish').id;
 });
 afterAll(async () => {
   await ctx.close();

@@ -1,11 +1,12 @@
 import { ObjectId } from 'mongodb';
 import type { AppDeps } from '../context';
-import type { AppointmentDoc, AppointmentStatus, CategoryDoc, ServiceDoc, StaffDoc, UserDoc } from '../db/types';
+import type { AppointmentDoc, AppointmentStatus, StaffDoc, UserDoc } from '../db/types';
 import { bookingCode } from '../lib/crypto';
-import { slugify, userSearch } from '../lib/text';
+import { userSearch } from '../lib/text';
 import { addDays, isoWeekday, MINUTE, todayIn, zonedTimeToUtc } from '../lib/time';
 import { DEFAULT_SETTINGS, invalidateSettingsCache } from '../modules/settings';
-import { DEFAULT_WEEKLY, SEED_CATALOG, SEED_MASTER } from './data';
+import { DEFAULT_WEEKLY, SEED_MASTER } from './data';
+import { syncDefaults } from './defaults';
 
 export interface SeedOptions {
   admin?: { email: string; password: string; name: string; surname: string; resetPassword?: boolean };
@@ -29,41 +30,7 @@ export async function runSeed(deps: AppDeps, options: SeedOptions = {}): Promise
     log('✓ studio settings created');
   }
 
-  if ((await col.categories.countDocuments()) === 0) {
-    let categoryOrder = 0;
-    for (const category of SEED_CATALOG) {
-      const categoryId = new ObjectId();
-      const categoryDoc: CategoryDoc = {
-        _id: categoryId,
-        slug: category.key,
-        name: category.name,
-        color: category.color,
-        order: ++categoryOrder,
-        isActive: true,
-        createdAt: now,
-        updatedAt: now,
-      };
-      await col.categories.insertOne(categoryDoc);
-      const services: ServiceDoc[] = category.services.map((s, index) => ({
-        _id: new ObjectId(),
-        categoryId,
-        slug: slugify(s.key),
-        name: s.name,
-        description: s.description,
-        durationMin: s.durationMin,
-        price: s.price,
-        priceFrom: s.priceFrom ?? false,
-        art: s.art,
-        isPopular: s.isPopular ?? false,
-        isActive: true,
-        order: index + 1,
-        createdAt: now,
-        updatedAt: now,
-      }));
-      await col.services.insertMany(services);
-    }
-    log(`✓ catalog created (${SEED_CATALOG.length} categories)`);
-  }
+  await syncDefaults(deps, log);
 
   let adminUser: UserDoc | null = null;
   if (options.admin) {
@@ -221,17 +188,17 @@ async function seedDemoData(deps: AppDeps, log: (m: string) => void) {
   const tz = settings.timezone;
   const today = todayIn(tz, now);
   const plan: Array<{ day: number; time: string; slugs: string[]; status: AppointmentStatus; client: number }> = [
-    { day: -21, time: '11:00', slugs: ['manicure-gel'], status: 'completed', client: 4 },
-    { day: -14, time: '12:00', slugs: ['extensions-gel'], status: 'completed', client: 0 },
-    { day: -9, time: '15:00', slugs: ['pedicure-gel'], status: 'completed', client: 1 },
-    { day: -7, time: '15:30', slugs: ['pedicure-gel'], status: 'completed', client: 4 },
-    { day: -3, time: '10:00', slugs: ['manicure-classic'], status: 'no_show', client: 2 },
-    { day: 0, time: '10:00', slugs: ['manicure-gel', 'art-simple'], status: 'confirmed', client: 3 },
-    { day: 0, time: '13:30', slugs: ['extensions-refill'], status: 'confirmed', client: 0 },
-    { day: 0, time: '16:00', slugs: ['manicure-french'], status: 'pending', client: 1 },
-    { day: 1, time: '11:00', slugs: ['pedicure-classic'], status: 'confirmed', client: 2 },
-    { day: 2, time: '12:00', slugs: ['manicure-gel', 'art-simple'], status: 'confirmed', client: 4 },
-    { day: 3, time: '14:00', slugs: ['extensions-long'], status: 'pending', client: 3 },
+    { day: -21, time: '11:00', slugs: ['gel-polish'], status: 'completed', client: 4 },
+    { day: -14, time: '12:00', slugs: ['extension-size-2'], status: 'completed', client: 0 },
+    { day: -9, time: '15:00', slugs: ['correction-size-3'], status: 'completed', client: 1 },
+    { day: -7, time: '15:30', slugs: ['gel-polish', 'french'], status: 'completed', client: 4 },
+    { day: -3, time: '10:00', slugs: ['removal', 'hygiene'], status: 'no_show', client: 2 },
+    { day: 0, time: '10:00', slugs: ['gel-polish', 'design-complex'], status: 'confirmed', client: 3 },
+    { day: 0, time: '13:30', slugs: ['correction-size-2'], status: 'confirmed', client: 0 },
+    { day: 0, time: '16:00', slugs: ['gel-polish', 'french'], status: 'pending', client: 1 },
+    { day: 1, time: '11:00', slugs: ['extension-size-1'], status: 'confirmed', client: 2 },
+    { day: 2, time: '12:00', slugs: ['gel-polish', 'design-3d-gel'], status: 'confirmed', client: 4 },
+    { day: 3, time: '14:00', slugs: ['extension-size-4'], status: 'pending', client: 3 },
   ];
 
   const docs: AppointmentDoc[] = [];

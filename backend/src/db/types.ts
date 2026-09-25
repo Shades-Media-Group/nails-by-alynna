@@ -84,10 +84,25 @@ export interface RateLimitDoc {
   expiresAt: Date;
 }
 
-export interface CategoryDoc {
+/**
+ * Catalog entries created from the studio's default price list carry `defaultKey`. When a new
+ * default version ships, the sync updates only the fields not listed in `customized` (the ones
+ * staff changed by hand). Entries staff created themselves have no `defaultKey` and are never
+ * touched by the sync.
+ */
+export interface ManagedDefault {
+  defaultKey?: string;
+  customized?: string[];
+}
+
+export interface CategoryDoc extends ManagedDefault {
   _id: ObjectId;
   slug: string;
   name: I18nText;
+  /** Shown under the category heading (e.g. what "size" means). */
+  description?: I18nText | null;
+  /** A booking takes at most one service from this category (e.g. one extension length). */
+  singleChoice?: boolean;
   color: SwatchColor;
   order: number;
   isActive: boolean;
@@ -95,7 +110,7 @@ export interface CategoryDoc {
   updatedAt: Date;
 }
 
-export interface ServiceDoc {
+export interface ServiceDoc extends ManagedDefault {
   _id: ObjectId;
   categoryId: ObjectId;
   slug: string;
@@ -209,6 +224,8 @@ export interface StudioSettings {
 
 export interface SettingsDoc extends StudioSettings {
   _id: 'studio';
+  /** Settings changed in Admin → Settings; default updates never overwrite these. */
+  customized?: string[];
   updatedAt: Date;
 }
 

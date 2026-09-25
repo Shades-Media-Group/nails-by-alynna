@@ -1,274 +1,231 @@
 import type { I18nText, ServiceArt, SwatchColor, WeeklyHours } from '../db/types';
 
 /**
- * Starter catalog. Names, descriptions and prices are placeholders for the studio to edit
- * in Admin → Services; nothing here is a published price list.
+ * The studio's default catalog: the published Nails by Alynna price list (September 2026).
+ * It is applied as "managed defaults" (see ./defaults.ts): new versions update whatever the
+ * studio has not edited in Admin → Services, and never touch what it has.
+ * Durations are the studio's starting estimates; staff adjust them per service.
  */
 
-export interface SeedService {
+export interface DefaultService {
+  /** Stable identity across versions; never reuse a key for a different service. */
   key: string;
   name: I18nText;
   description: I18nText;
   durationMin: number;
   price: number;
+  /** "from" pricing: the final price depends on the material or the number of nails. */
   priceFrom?: boolean;
   art: ServiceArt;
   isPopular?: boolean;
 }
 
-export interface SeedCategory {
+export interface DefaultCategory {
   key: string;
   name: I18nText;
+  description?: I18nText;
+  /** Options of one thing (lengths): a booking takes at most one service from here. */
+  singleChoice?: boolean;
   color: SwatchColor;
-  services: SeedService[];
+  services: DefaultService[];
 }
 
-export const SEED_CATALOG: SeedCategory[] = [
+/** Bump whenever DEFAULT_CATALOG changes, so existing databases pick the change up. */
+export const CATALOG_DEFAULTS_VERSION = 2;
+
+const SIZE_PRICES = { extension: [400, 450, 500, 550, 600, 650], correction: [370, 420, 470, 520, 570, 620] };
+const SIZE_MINUTES = { extension: [120, 130, 140, 150, 165, 180], correction: [105, 115, 125, 135, 150, 165] };
+
+function sizes(kind: 'extension' | 'correction', popularSize: number): DefaultService[] {
+  return SIZE_PRICES[kind].map((price, index) => {
+    const size = index + 1;
+    return {
+      key: `${kind}-size-${size}`,
+      art: 'extension',
+      price,
+      durationMin: SIZE_MINUTES[kind][index]!,
+      isPopular: size === popularSize,
+      name: { ro: `Mărimea ${size}`, ru: `Размер ${size}`, en: `Size ${size}` },
+      description:
+        kind === 'extension'
+          ? {
+              ro: `Alungire cu gel, mărimea ${size} din 6.`,
+              ru: `Наращивание гелем, размер ${size} из 6.`,
+              en: `Gel extensions, size ${size} of 6.`,
+            }
+          : {
+              ro: `Corecția alungirii, mărimea ${size} din 6.`,
+              ru: `Коррекция наращивания, размер ${size} из 6.`,
+              en: `Extension refill, size ${size} of 6.`,
+            },
+    };
+  });
+}
+
+export const DEFAULT_CATALOG: DefaultCategory[] = [
   {
-    key: 'manicure',
-    color: 'blush',
-    name: { ro: 'Manichiură', ru: 'Маникюр', en: 'Manicure' },
-    services: [
-      {
-        key: 'manicure-classic',
-        art: 'care',
-        durationMin: 45,
-        price: 200,
-        name: { ro: 'Manichiură clasică', ru: 'Классический маникюр', en: 'Classic manicure' },
-        description: {
-          ro: 'Forma unghiilor, îngrijirea cuticulelor și hidratare. Fără ojă.',
-          ru: 'Форма ногтей, обработка кутикулы и увлажнение. Без покрытия.',
-          en: 'Nail shaping, cuticle care and hydration. No polish.',
-        },
-      },
-      {
-        key: 'manicure-gel',
-        art: 'gel',
-        durationMin: 90,
-        price: 350,
-        isPopular: true,
-        name: {
-          ro: 'Manichiură cu ojă semipermanentă',
-          ru: 'Маникюр с покрытием гель-лак',
-          en: 'Gel polish manicure',
-        },
-        description: {
-          ro: 'Manichiură completă și ojă semipermanentă într-o singură culoare, cu luciu care rezistă până la trei săptămâni.',
-          ru: 'Полный маникюр и однотонное покрытие гель-лаком с блеском до трёх недель.',
-          en: 'Full manicure with a single-colour gel polish that keeps its shine for up to three weeks.',
-        },
-      },
-      {
-        key: 'manicure-strengthening',
-        art: 'gel',
-        durationMin: 105,
-        price: 420,
-        name: {
-          ro: 'Manichiură cu întărire gel',
-          ru: 'Маникюр с укреплением гелем',
-          en: 'Gel strengthening manicure',
-        },
-        description: {
-          ro: 'Un strat de gel pe unghia naturală pentru rezistență, apoi culoarea preferată.',
-          ru: 'Укрепление натуральных ногтей гелем и покрытие любимым цветом.',
-          en: 'A gel layer on the natural nail for strength, then your favourite colour.',
-        },
-      },
-      {
-        key: 'manicure-french',
-        art: 'french',
-        durationMin: 105,
-        price: 400,
-        name: { ro: 'Manichiură French', ru: 'Френч-маникюр', en: 'French manicure' },
-        description: {
-          ro: 'French clasic sau colorat, cu linia zâmbetului trasată de mână.',
-          ru: 'Классический или цветной френч с аккуратной линией улыбки, нарисованной вручную.',
-          en: 'Classic or colourful French with a hand-drawn smile line.',
-        },
-      },
-    ],
-  },
-  {
-    key: 'extensions',
+    key: 'extension',
     color: 'lilac',
-    name: { ro: 'Extensii', ru: 'Наращивание', en: 'Extensions' },
-    services: [
-      {
-        key: 'extensions-gel',
-        art: 'extension',
-        durationMin: 150,
-        price: 600,
-        isPopular: true,
-        name: { ro: 'Extensii cu gel', ru: 'Наращивание гелем', en: 'Gel extensions' },
-        description: {
-          ro: 'Unghii noi, cu lungimea și forma alese de tine, plus acoperire într-o singură culoare.',
-          ru: 'Новые ногти нужной длины и формы с однотонным покрытием.',
-          en: 'A new set in the length and shape you choose, with single-colour polish.',
-        },
-      },
-      {
-        key: 'extensions-long',
-        art: 'extension',
-        durationMin: 180,
-        price: 700,
-        priceFrom: true,
-        name: { ro: 'Extensii lungi', ru: 'Длинное наращивание', en: 'Long extensions' },
-        description: {
-          ro: 'Lungimi de la M în sus, forme migdală, stiletto sau coffin. Prețul final depinde de lungime.',
-          ru: 'Длина от M и больше, формы миндаль, стилет или балерина. Итоговая цена зависит от длины.',
-          en: 'Length M and up in almond, stiletto or coffin shape. Final price depends on length.',
-        },
-      },
-      {
-        key: 'extensions-refill',
-        art: 'extension',
-        durationMin: 120,
-        price: 500,
-        name: { ro: 'Corecție extensii', ru: 'Коррекция наращивания', en: 'Extension refill' },
-        description: {
-          ro: 'Umplerea zonei crescute, reechilibrarea formei și culoare nouă.',
-          ru: 'Заполнение отросшей зоны, выравнивание формы и новое покрытие.',
-          en: 'Fill-in of the regrowth, rebalanced shape and fresh colour.',
-        },
-      },
-    ],
+    singleChoice: true,
+    name: { ro: 'Alungire', ru: 'Наращивание', en: 'Extensions' },
+    description: {
+      ro: 'Mărimea arată lungimea: 1 este cea mai scurtă, 6 cea mai lungă. Nu ești sigură? Alege mărimea cea mai apropiată și o stabilim împreună la salon.',
+      ru: 'Размер означает длину: 1 самая короткая, 6 самая длинная. Не уверены? Выберите ближайший размер, и мы уточним его вместе в салоне.',
+      en: "Size means length: 1 is the shortest, 6 the longest. Not sure? Pick the closest size and we'll settle it together at the studio.",
+    },
+    services: sizes('extension', 1),
   },
   {
-    key: 'pedicure',
-    color: 'cyan',
-    name: { ro: 'Pedichiură', ru: 'Педикюр', en: 'Pedicure' },
-    services: [
-      {
-        key: 'pedicure-classic',
-        art: 'pedicure',
-        durationMin: 60,
-        price: 300,
-        name: { ro: 'Pedichiură clasică', ru: 'Классический педикюр', en: 'Classic pedicure' },
-        description: {
-          ro: 'Îngrijirea tălpilor și a unghiilor, cuticule și hidratare. Fără ojă.',
-          ru: 'Обработка стоп и ногтей, кутикула и увлажнение. Без покрытия.',
-          en: 'Feet and nail care, cuticles and hydration. No polish.',
-        },
-      },
-      {
-        key: 'pedicure-gel',
-        art: 'pedicure',
-        durationMin: 90,
-        price: 400,
-        isPopular: true,
-        name: {
-          ro: 'Pedichiură cu ojă semipermanentă',
-          ru: 'Педикюр с покрытием гель-лак',
-          en: 'Gel polish pedicure',
-        },
-        description: {
-          ro: 'Pedichiură completă și ojă semipermanentă cu luciu de lungă durată.',
-          ru: 'Полный педикюр и стойкое покрытие гель-лаком.',
-          en: 'Full pedicure with long-lasting gel polish.',
-        },
-      },
-    ],
+    key: 'correction',
+    color: 'blush',
+    singleChoice: true,
+    name: { ro: 'Corecție', ru: 'Коррекция', en: 'Refill' },
+    description: {
+      ro: 'Întreținerea alungirii: completăm zona crescută și refacem forma. Mărimile sunt aceleași ca la alungire.',
+      ru: 'Уход за наращиванием: заполняем отросшую зону и восстанавливаем форму. Размеры те же, что и при наращивании.',
+      en: 'Keeps extensions fresh: we fill the grown-out area and reshape. Sizes match the extension sizes.',
+    },
+    services: sizes('correction', 1),
   },
   {
-    key: 'nail-art',
+    key: 'other',
     color: 'peach',
-    name: { ro: 'Design', ru: 'Дизайн', en: 'Nail art' },
+    name: { ro: 'Altele', ru: 'Другие услуги', en: 'Other services' },
     services: [
       {
-        key: 'art-simple',
-        art: 'design',
-        durationMin: 15,
-        price: 50,
-        name: { ro: 'Design simplu', ru: 'Простой дизайн', en: 'Simple nail art' },
+        key: 'gel-polish',
+        art: 'gel',
+        durationMin: 90,
+        price: 300,
+        isPopular: true,
+        name: { ro: 'Acoperire cu lac gel', ru: 'Покрытие гель-лаком', en: 'Gel polish' },
         description: {
-          ro: 'Linii, puncte, folie sau sclipici pe câteva unghii.',
-          ru: 'Линии, точки, фольга или блёстки на нескольких ногтях.',
-          en: 'Lines, dots, foil or glitter on a few nails.',
+          ro: 'Lac gel pe unghiile naturale, într-o culoare la alegere.',
+          ru: 'Гель-лак на натуральные ногти, один цвет на выбор.',
+          en: 'Gel polish on natural nails, one colour of your choice.',
         },
       },
       {
-        key: 'art-painted',
-        art: 'design',
-        durationMin: 30,
-        price: 100,
-        priceFrom: true,
-        name: { ro: 'Pictură pe unghii', ru: 'Роспись ногтей', en: 'Hand-painted art' },
-        description: {
-          ro: 'Desen realizat de mână, după ideea sau poza ta. Prețul depinde de complexitate.',
-          ru: 'Ручная роспись по вашей идее или фото. Цена зависит от сложности.',
-          en: 'Hand-drawn art from your idea or photo. Price depends on complexity.',
-        },
-      },
-      {
-        key: 'art-crystals',
-        art: 'design',
-        durationMin: 15,
+        key: 'french',
+        art: 'french',
+        durationMin: 20,
         price: 30,
+        name: { ro: 'French', ru: 'Френч', en: 'French tips' },
+        description: {
+          ro: 'Se adaugă la acoperire sau la alungire.',
+          ru: 'Добавляется к покрытию или наращиванию.',
+          en: 'Added to gel polish or extensions.',
+        },
+      },
+      {
+        key: 'design-complex',
+        art: 'design',
+        durationMin: 30,
+        price: 50,
+        name: { ro: 'Design complicat', ru: 'Сложный дизайн', en: 'Complex design' },
+        description: {
+          ro: 'Design elaborat, adăugat la acoperire sau la alungire.',
+          ru: 'Сложный дизайн, добавляется к покрытию или наращиванию.',
+          en: 'An elaborate design, added to gel polish or extensions.',
+        },
+      },
+      {
+        key: 'design-3d-gel',
+        art: 'design',
+        durationMin: 15,
+        price: 5,
         priceFrom: true,
-        name: { ro: 'Cristale și decor', ru: 'Стразы и декор', en: 'Crystals & decor' },
+        name: { ro: 'Design 3D din gel, per unghie', ru: '3D-дизайн гелем, за ноготь', en: '3D gel design, per nail' },
         description: {
-          ro: 'Cristale, perle sau decor 3D pentru un accent strălucitor.',
-          ru: 'Стразы, жемчуг или 3D-декор для яркого акцента.',
-          en: 'Crystals, pearls or 3D decor for a sparkling accent.',
-        },
-      },
-    ],
-  },
-  {
-    key: 'care',
-    color: 'mint',
-    name: { ro: 'Îngrijire și îndepărtare', ru: 'Уход и снятие', en: 'Care & removal' },
-    services: [
-      {
-        key: 'removal-gel',
-        art: 'removal',
-        durationMin: 20,
-        price: 80,
-        name: {
-          ro: 'Îndepărtare ojă semipermanentă',
-          ru: 'Снятие гель-лака',
-          en: 'Gel polish removal',
-        },
-        description: {
-          ro: 'Îndepărtare delicată, fără a deteriora unghia naturală.',
-          ru: 'Бережное снятие без повреждения натуральной ногтевой пластины.',
-          en: 'Gentle removal that keeps the natural nail healthy.',
+          ro: '5 MDL pentru fiecare unghie cu design 3D.',
+          ru: '5 MDL за каждый ноготь с 3D-дизайном.',
+          en: '5 MDL for each nail with 3D design.',
         },
       },
       {
-        key: 'removal-extensions',
+        key: 'design-extra',
+        art: 'design',
+        durationMin: 45,
+        price: 100,
+        name: { ro: 'Design extra', ru: 'Экстра-дизайн', en: 'Extra design' },
+        description: {
+          ro: 'Pentru seturile cu mult design.',
+          ru: 'Для сетов с большим количеством дизайна.',
+          en: 'For sets with a lot of design.',
+        },
+      },
+      {
+        key: 'removal-foreign',
         art: 'removal',
         durationMin: 30,
-        price: 150,
-        name: { ro: 'Îndepărtare extensii', ru: 'Снятие наращивания', en: 'Extension removal' },
+        price: 50,
+        priceFrom: true,
+        name: {
+          ro: 'Scoaterea materialului străin',
+          ru: 'Снятие чужого материала',
+          en: "Removing another salon's work",
+        },
         description: {
-          ro: 'Îndepărtarea completă a extensiilor și îngrijirea unghiei naturale.',
-          ru: 'Полное снятие наращенных ногтей и уход за натуральными.',
-          en: 'Complete removal of extensions with care for the natural nail.',
+          ro: 'Îndepărtăm materialul aplicat în alt salon: 50 sau 100 MDL, în funcție de material.',
+          ru: 'Снимаем материал, нанесённый в другом салоне: 50 или 100 MDL в зависимости от материала.',
+          en: 'We remove product applied at another salon: 50 or 100 MDL depending on the material.',
         },
       },
       {
-        key: 'care-paraffin',
-        art: 'care',
+        key: 'removal',
+        art: 'removal',
         durationMin: 20,
-        price: 120,
-        name: {
-          ro: 'Parafinoterapie pentru mâini',
-          ru: 'Парафинотерапия для рук',
-          en: 'Paraffin hand treatment',
-        },
+        price: 50,
+        name: { ro: 'Scoatere', ru: 'Снятие', en: 'Removal' },
         description: {
-          ro: 'Tratament cald cu parafină pentru piele fină și catifelată.',
-          ru: 'Тёплая парафиновая процедура для мягкой и бархатистой кожи.',
-          en: 'A warm paraffin treatment for soft, smooth skin.',
+          ro: 'Îndepărtarea lacului gel sau a alungirii.',
+          ru: 'Снятие гель-лака или наращивания.',
+          en: 'Removal of gel polish or extensions.',
+        },
+      },
+      {
+        key: 'hygiene',
+        art: 'care',
+        durationMin: 30,
+        price: 50,
+        name: { ro: 'Igienă după scoatere', ru: 'Гигиена после снятия', en: 'Hygienic care after removal' },
+        description: {
+          ro: 'Se adaugă la scoatere: forma unghiilor și îngrijirea cuticulelor.',
+          ru: 'Добавляется к снятию: форма ногтей и обработка кутикулы.',
+          en: 'Added to a removal: nail shaping and cuticle care.',
         },
       },
     ],
   },
 ];
 
+/**
+ * Keys of the first starter catalog (placeholders, version 1). Untouched leftovers from it are
+ * retired when a database moves to version 2; anything the studio edited stays.
+ */
+export const LEGACY_CATALOG_KEYS = {
+  categories: ['manicure', 'extensions', 'pedicure', 'nail-art', 'care'],
+  services: [
+    'manicure-classic',
+    'manicure-gel',
+    'manicure-strengthening',
+    'manicure-french',
+    'extensions-gel',
+    'extensions-long',
+    'extensions-refill',
+    'pedicure-classic',
+    'pedicure-gel',
+    'art-simple',
+    'art-painted',
+    'art-crystals',
+    'removal-gel',
+    'removal-extensions',
+    'care-paraffin',
+  ],
+};
+
 const WORKDAY = [{ start: '10:00', end: '19:00' }];
-/** Mon–Fri 10–19, Sat 10–16, Sunday off. */
+/** Monday to Friday 10:00 to 19:00, Saturday 10:00 to 16:00, Sunday off. */
 export const DEFAULT_WEEKLY: WeeklyHours = [
   WORKDAY,
   WORKDAY,
