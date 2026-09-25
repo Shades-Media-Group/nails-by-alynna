@@ -27,31 +27,63 @@ export const weeklySchema = z
     ),
   );
 
-export const categoryInputSchema = z.object({
-  name: i18nTextSchema(60),
-  color: swatchColorSchema,
-  isActive: z.boolean().default(true),
-});
+/*
+ * Each resource has a create schema (with defaults) and an edit schema built from the same
+ * fields WITHOUT defaults: zod fills `.default()` values in even under `.partial()`, so an
+ * edit that sends only a price would otherwise also reset every defaulted field.
+ */
 
-export const serviceInputSchema = z.object({
+const categoryFields = {
+  name: i18nTextSchema(60),
+  description: i18nOptionalTextSchema(300).nullable(),
+  singleChoice: z.boolean(),
+  color: swatchColorSchema,
+  isActive: z.boolean(),
+};
+export const categoryInputSchema = z.object({
+  ...categoryFields,
+  description: categoryFields.description.default(null),
+  singleChoice: categoryFields.singleChoice.default(false),
+  isActive: categoryFields.isActive.default(true),
+});
+export const categoryPatchSchema = z.object(categoryFields).partial();
+
+const serviceFields = {
   categoryId: objectIdSchema,
   name: i18nTextSchema(80),
   description: i18nOptionalTextSchema(400),
   durationMin: z.number().int().min(5, 'too_short').max(480, 'too_long'),
   price: z.number().int().min(0, 'invalid').max(100_000, 'invalid'),
-  priceFrom: z.boolean().default(false),
-  art: serviceArtSchema.default('gel'),
-  isPopular: z.boolean().default(false),
-  isActive: z.boolean().default(true),
+  priceFrom: z.boolean(),
+  art: serviceArtSchema,
+  isPopular: z.boolean(),
+  isActive: z.boolean(),
+};
+export const serviceInputSchema = z.object({
+  ...serviceFields,
+  priceFrom: serviceFields.priceFrom.default(false),
+  art: serviceFields.art.default('gel'),
+  isPopular: serviceFields.isPopular.default(false),
+  isActive: serviceFields.isActive.default(true),
 });
+export const servicePatchSchema = z.object(serviceFields).partial();
 
-export const staffInputSchema = z.object({
+const staffFields = {
   name: z.string().trim().min(1, 'required').max(60, 'too_long'),
   title: i18nOptionalTextSchema(60),
-  color: swatchColorSchema.default('blush'),
+  color: swatchColorSchema,
   weekly: weeklySchema,
-  serviceIds: z.array(objectIdSchema).max(200).nullable().default(null),
-  isBookable: z.boolean().default(true),
-  isActive: z.boolean().default(true),
-  userId: objectIdSchema.nullable().default(null),
+  serviceIds: z.array(objectIdSchema).max(200).nullable(),
+  isBookable: z.boolean(),
+  isActive: z.boolean(),
+  userId: objectIdSchema.nullable(),
+};
+export const staffInputSchema = z.object({
+  ...staffFields,
+  color: staffFields.color.default('blush'),
+  serviceIds: staffFields.serviceIds.default(null),
+  isBookable: staffFields.isBookable.default(true),
+  isActive: staffFields.isActive.default(true),
+  userId: staffFields.userId.default(null),
 });
+export const staffPatchSchema = z.object(staffFields).partial();

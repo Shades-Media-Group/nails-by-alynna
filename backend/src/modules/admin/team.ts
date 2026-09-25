@@ -9,7 +9,7 @@ import { addDays, dayRange, zonedTimeToUtc } from '../../lib/time';
 import { dateSchema, objectIdSchema, paramId, parseJson, parseQuery, timeSchema } from '../../lib/validation';
 import { requireRole } from '../../middleware/auth';
 import { getSettings } from '../settings';
-import { staffInputSchema } from './schemas';
+import { staffInputSchema, staffPatchSchema } from './schemas';
 
 function toStaff(s: StaffDoc) {
   return {
@@ -59,7 +59,7 @@ export function adminTeamRoutes(deps: AppDeps) {
 
   app.patch('/staff/:id', owner, async (c) => {
     const id = paramId(c);
-    const input = await parseJson(c, staffInputSchema.partial());
+    const input = await parseJson(c, staffPatchSchema);
     const updated = await deps.col.staff.findOneAndUpdate(
       { _id: id },
       { $set: { ...input, updatedAt: deps.now() } },
