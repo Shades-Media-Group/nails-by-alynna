@@ -58,13 +58,16 @@ export interface RequestOptions {
   noRefresh?: boolean;
 }
 
-async function parseError(response: Response): Promise<ApiError> {
-  let body: Partial<ApiErrorBody> | null = null;
+async function readErrorBody(response: Response): Promise<Partial<ApiErrorBody> | null> {
   try {
-    body = (await response.json()) as ApiErrorBody;
+    return (await response.json()) as ApiErrorBody;
   } catch {
-    body = null;
+    return null;
   }
+}
+
+async function parseError(response: Response): Promise<ApiError> {
+  const body = await readErrorBody(response);
   const code = body?.error?.code ?? (response.status === 0 ? 'NETWORK' : 'HTTP_' + response.status);
   return new ApiError(response.status, code, body?.error?.message ?? response.statusText, body?.error?.fields ?? {});
 }

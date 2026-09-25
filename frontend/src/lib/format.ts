@@ -20,7 +20,7 @@ function dtf(locale: Locale, timeZone: string, options: Intl.DateTimeFormatOptio
 }
 
 export function formatPrice(t: TFunction, amount: number, currency = 'MDL', from = false): string {
-  const number = new Intl.NumberFormat('ro-MD', { maximumFractionDigits: 0 }).format(amount).replace(/ /g, ' ');
+  const number = new Intl.NumberFormat('ro-MD', { maximumFractionDigits: 0 }).format(amount).replace(/[\u00a0\u202f]/g, ' ');
   const value =
     currency === 'MDL'
       ? t('common:price.currencyMdl', { amount: number })
