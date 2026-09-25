@@ -37,7 +37,8 @@ export default function DashboardPage() {
   const [reason, setReason] = useState('');
 
   const minutes = zonedParts(new Date(now), timeZone).minutes;
-  const greeting = minutes < 12 * 60 ? 'morning' : minutes < 18 * 60 ? 'afternoon' : 'evening';
+  // Before 5:00 it's still the evening before (nobody says "good morning" at midnight).
+  const greeting = minutes < 5 * 60 ? 'evening' : minutes < 12 * 60 ? 'morning' : minutes < 18 * 60 ? 'afternoon' : 'evening';
 
   const setStatus = useStatusChange(() => setDeclining(null));
   const busy = (id: string, status: string) => setStatus.isPending && setStatus.variables?.id === id && setStatus.variables.status === status;
