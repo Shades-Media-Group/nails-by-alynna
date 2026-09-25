@@ -13,6 +13,7 @@ export { default as CalendarAddIcon } from '@mui/icons-material/EventAvailableRo
 export { default as CalendarIcon } from '@mui/icons-material/CalendarMonthRounded';
 export { default as CallIcon } from '@mui/icons-material/CallRounded';
 export { default as CategoryIcon } from '@mui/icons-material/CategoryRounded';
+export { default as ChatIcon } from '@mui/icons-material/ChatRounded';
 export { default as CheckCircleIcon } from '@mui/icons-material/CheckCircleRounded';
 export { default as CheckIcon } from '@mui/icons-material/CheckRounded';
 export { default as ChevronLeftIcon } from '@mui/icons-material/ChevronLeftRounded';
