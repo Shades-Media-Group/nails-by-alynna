@@ -33,7 +33,11 @@ const schema = z.object({
   PROXY_SECRET: z.string().min(32, 'PROXY_SECRET must be at least 32 characters').optional(),
   RATE_LIMITS: z.enum(['on', 'off']).default('on'),
   /** One-tap demo sign-in buttons (demo accounts are read-only either way). */
-  DEMO_LOGIN: z.enum(['on', 'off']).optional(),
+  // off (default) | on (every role) | a comma-separated list, e.g. "client" or "client,admin".
+  DEMO_LOGIN: z
+    .string()
+    .regex(/^(on|off|(client|admin|administrator)(,(client|admin|administrator))*)$/, 'use off, on or roles like client,admin')
+    .optional(),
   PORT: z.coerce.number().int().min(1).max(65535).default(8787),
 });
 
@@ -60,7 +64,8 @@ export interface AppConfig {
   trustProxy: boolean;
   proxySecret?: string;
   rateLimits: boolean;
-  demoLogin: boolean;
+  /** Roles whose shared demo account may sign in. Empty = demo switched off (the default). */
+  demoRoles: Role[];
   port: number;
 }
 
@@ -142,8 +147,16 @@ export function loadConfig(source: Record<string, unknown>): AppConfig {
     trustProxy: e.TRUST_PROXY,
     proxySecret: e.PROXY_SECRET,
     rateLimits: e.RATE_LIMITS === 'on',
-    // Off in production unless explicitly enabled.
-    demoLogin: e.DEMO_LOGIN ? e.DEMO_LOGIN === 'on' : !isProd,
+    demoRoles: parseDemoRoles(e.DEMO_LOGIN),
     port: e.PORT,
   };
+}
+
+const DEMO_ROLES: Role[] = ['client', 'admin', 'administrator'];
+
+function parseDemoRoles(value: string | undefined): Role[] {
+  if (!value || value === 'off') return [];
+  if (value === 'on') return [...DEMO_ROLES];
+  const roles = new Set(value.split(','));
+  return DEMO_ROLES.filter((role) => roles.has(role));
 }

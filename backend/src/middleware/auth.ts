@@ -2,6 +2,7 @@ import { ObjectId } from 'mongodb';
 import { createMiddleware } from 'hono/factory';
 import type { Role } from '../config';
 import type { AppDeps, AppEnv } from '../context';
+import type { UserDoc } from '../db/types';
 import { AppError } from '../lib/errors';
 import { verifyAccessToken } from '../lib/jwt';
 import { readAccessToken } from '../modules/auth/cookies';
@@ -21,7 +22,7 @@ export function requireAuth(deps: AppDeps) {
     }
 
     const user = await deps.col.users.findOne({ _id: new ObjectId(claims.sub) });
-    if (!user || !user.isActive || user.deletedAt || user.tokenVersion !== claims.tv) {
+    if (!user || !user.isActive || user.deletedAt || user.tokenVersion !== claims.tv || demoSwitchedOff(deps, user)) {
       throw new AppError(401, 'SESSION_REVOKED', 'Session is no longer valid');
     }
 
@@ -37,6 +38,11 @@ export function requireAuth(deps: AppDeps) {
 }
 
 const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+/** A demo account whose role is not enabled in DEMO_LOGIN: its sessions stop working at once. */
+export function demoSwitchedOff(deps: AppDeps, user: Pick<UserDoc, 'isDemo' | 'role'>): boolean {
+  return user.isDemo === true && !deps.config.demoRoles.includes(user.role);
+}
 
 export function requireRole(...roles: Role[]) {
   const allowed = new Set(roles);

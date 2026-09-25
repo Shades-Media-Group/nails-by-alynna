@@ -43,7 +43,9 @@ export function publicRoutes(deps: AppDeps) {
     const s = await getSettings(deps);
     const [bookable, demoRoles] = await Promise.all([
       deps.col.staff.countDocuments({ isActive: true, isBookable: true }),
-      deps.config.demoLogin ? deps.col.users.distinct('role', { isDemo: true, isActive: true, deletedAt: null }) : [],
+      deps.config.demoRoles.length > 0
+        ? deps.col.users.distinct('role', { isDemo: true, isActive: true, deletedAt: null, role: { $in: deps.config.demoRoles } })
+        : [],
     ]);
     c.header('Cache-Control', 'public, max-age=60');
     return c.json({

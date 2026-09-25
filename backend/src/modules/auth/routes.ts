@@ -24,7 +24,7 @@ import {
   phoneSchema,
   type Locale,
 } from '../../lib/validation';
-import { requireAuth } from '../../middleware/auth';
+import { demoSwitchedOff, requireAuth } from '../../middleware/auth';
 import {
   OAUTH_PATH,
   clearSessionCookies,
@@ -145,7 +145,7 @@ export function authRoutes(deps: AppDeps) {
     ]);
 
     const user = await col.users.findOne({ email: input.email });
-    if (!user || !user.passwordHash || user.deletedAt) {
+    if (!user || !user.passwordHash || user.deletedAt || demoSwitchedOff(deps, user)) {
       await deps.passwords.burn();
       throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
     }
@@ -177,6 +177,11 @@ export function authRoutes(deps: AppDeps) {
       throw new AppError(409, 'REFRESH_RACE', 'Session was refreshed concurrently; retry');
     }
     if (result.status === 'invalid') {
+      clearSessionCookies(c, config);
+      throw new AppError(401, 'SESSION_REVOKED', 'Session expired');
+    }
+    if (demoSwitchedOff(deps, result.user)) {
+      await revokeSessionByToken(deps, result.tokens.refreshToken);
       clearSessionCookies(c, config);
       throw new AppError(401, 'SESSION_REVOKED', 'Session expired');
     }
@@ -237,12 +242,13 @@ export function authRoutes(deps: AppDeps) {
     return c.json({ ok: true });
   });
 
-  // ── Demo sign-in (one tap, read-only shared accounts; DEMO_LOGIN) ─────────────
+  // ── Demo sign-in (one tap, read-only shared accounts; DEMO_LOGIN, off by default) ──
   app.post('/demo', async (c) => {
-    if (!config.demoLogin) throw new AppError(404, 'NOT_FOUND', 'Not found');
+    if (config.demoRoles.length === 0) throw new AppError(404, 'NOT_FOUND', 'Not found');
     const ip = c.get('ip');
     await enforceRateLimits(deps, [{ key: `demo:ip:${ip}`, limit: 30, windowSec: 900 }]);
     const input = await parseJson(c, z.object({ role: z.enum(['client', 'admin', 'administrator']) }));
+    if (!config.demoRoles.includes(input.role)) throw new AppError(404, 'NOT_FOUND', 'Demo account not available');
     const user = await col.users.findOne({ isDemo: true, role: input.role, isActive: true, deletedAt: null });
     if (!user) throw new AppError(404, 'NOT_FOUND', 'Demo account not available');
     const tokens = await createSession(deps, user, { remember: false, ...meta(c, ip) });

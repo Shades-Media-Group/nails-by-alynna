@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { maskPersonalData } from '../src/middleware/demo-mask';
+import { createSession } from '../src/modules/auth/session';
 import { DEMO_ACCOUNTS } from '../src/seed/run';
 import { createTestContext, loginAs, strongPassword, type TestContext } from './helpers';
 
@@ -8,7 +9,7 @@ let ctx: TestContext;
 let gelId: string;
 
 beforeAll(async () => {
-  ctx = await createTestContext();
+  ctx = await createTestContext({ DEMO_LOGIN: 'on' });
   await ctx.seed({
     admin: { email: 'owner@example.com', password: strongPassword, name: 'Alina', surname: 'Owner' },
     demoUsers: { password: DEMO_PASSWORD },
@@ -96,6 +97,50 @@ describe('demo accounts', () => {
     } finally {
       await off.close();
     }
+  });
+});
+
+describe('demo switched off', () => {
+  it('is off unless DEMO_LOGIN enables it: no button, no password login, no old sessions', async () => {
+    const off = await createTestContext();
+    try {
+      await off.seed({ demoUsers: { password: DEMO_PASSWORD } });
+      expect((await off.client().get('/api/config')).body.auth.demo).toEqual([]);
+      expect((await off.client().post('/api/auth/demo', { role: 'client' })).status).toBe(404);
+
+      // The shared password is known, so the email form must refuse it too.
+      const login = await off.client().post('/api/auth/login', { email: 'client.demo@example.com', password: DEMO_PASSWORD });
+      expect(login.status).toBe(401);
+      expect(login.body.error.code).toBe('INVALID_CREDENTIALS');
+
+      // A session opened while the demo was on stops working.
+      const demoUser = await off.deps.col.users.findOne({ email: 'client.demo@example.com' });
+      const tokens = await createSession(off.deps, demoUser!, { remember: false });
+      const client = off.client();
+      client.cookies.set('nba_at', tokens.accessToken);
+      client.cookies.set('nba_rt', tokens.refreshToken);
+      expect((await client.get('/api/auth/me')).status).toBe(401);
+      expect((await client.post('/api/auth/refresh')).status).toBe(401);
+    } finally {
+      await off.close();
+    }
+  });
+
+  it('can be enabled for some roles only', async () => {
+    const some = await createTestContext({ DEMO_LOGIN: 'client' });
+    try {
+      await some.seed({ demoUsers: { password: DEMO_PASSWORD } });
+      expect((await some.client().get('/api/config')).body.auth.demo).toEqual(['client']);
+      expect((await some.client().post('/api/auth/demo', { role: 'client' })).status).toBe(200);
+      expect((await some.client().post('/api/auth/demo', { role: 'administrator' })).status).toBe(404);
+      await expect(loginAs(some, 'owner.demo@example.com', DEMO_PASSWORD)).rejects.toThrow(/401/);
+    } finally {
+      await some.close();
+    }
+  });
+
+  it('rejects an unknown DEMO_LOGIN value', async () => {
+    await expect(createTestContext({ DEMO_LOGIN: 'owner' })).rejects.toThrow(/DEMO_LOGIN/);
   });
 });
 
