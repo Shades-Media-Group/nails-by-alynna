@@ -80,6 +80,8 @@ export async function runSeed(deps: AppDeps, options: SeedOptions = {}): Promise
         locale: 'ro',
         passwordHash: await deps.passwords.hash(options.admin.password),
         googleId: null,
+        // Set up by whoever runs the server, so the owner can also sign in with Google.
+        emailVerifiedAt: now,
         isActive: true,
         bookingBlocked: false,
         tokenVersion: 0,

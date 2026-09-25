@@ -29,6 +29,13 @@ export interface UserDoc {
   locale: Locale;
   passwordHash: string | null;
   googleId: string | null;
+  /**
+   * When the user proved they own `email` (Google sign-in, a password-reset link, or an
+   * account set up by the studio). Missing/null = never proven.
+   */
+  emailVerifiedAt?: Date | null;
+  /** When the user accepted the Terms and Privacy policy (sign-up). */
+  termsAcceptedAt?: Date | null;
   isActive: boolean;
   /** Blocks online booking without disabling the account (e.g. repeated no-shows). */
   bookingBlocked: boolean;

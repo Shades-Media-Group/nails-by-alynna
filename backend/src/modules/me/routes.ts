@@ -147,6 +147,7 @@ export function meRoutes(deps: AppDeps) {
           phone: null,
           passwordHash: null,
           googleId: null,
+          emailVerifiedAt: null,
           isActive: false,
           notes: '',
           search: '',

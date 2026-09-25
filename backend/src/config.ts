@@ -93,6 +93,16 @@ export function loadConfig(source: Record<string, unknown>): AppConfig {
   if (isProd && e.RATE_LIMITS === 'off') {
     throw new Error('Invalid configuration: RATE_LIMITS=off is not allowed in production');
   }
+  // Secure cookies and Google's redirect rules both need the public HTTPS address.
+  if (isProd && !appUrl.startsWith('https://')) {
+    throw new Error('Invalid configuration: APP_URL must be the public https:// address of the app in production');
+  }
+  if (Boolean(e.GOOGLE_CLIENT_ID) !== Boolean(e.GOOGLE_CLIENT_SECRET)) {
+    throw new Error('Invalid configuration: set both GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET, or neither');
+  }
+  if (e.GOOGLE_CLIENT_ID && !e.GOOGLE_CLIENT_ID.endsWith('.apps.googleusercontent.com')) {
+    throw new Error('Invalid configuration: GOOGLE_CLIENT_ID should end with .apps.googleusercontent.com');
+  }
 
   const allowedOrigins = new Set<string>([new URL(appUrl).origin]);
   for (const origin of (e.ALLOWED_ORIGINS ?? '').split(',')) {

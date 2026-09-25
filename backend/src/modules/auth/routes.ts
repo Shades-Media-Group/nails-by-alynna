@@ -11,7 +11,7 @@ import { passwordResetEmail } from '../../lib/emails';
 import { AppError, isDuplicateKey } from '../../lib/errors';
 import { openState, sealState } from '../../lib/jwt';
 import { enforceRateLimits } from '../../lib/rate-limit';
-import { truncate, userSearch } from '../../lib/text';
+import { userSearch } from '../../lib/text';
 import {
   LOCALES,
   emailSchema,
@@ -32,6 +32,7 @@ import {
   readRefreshToken,
   setSessionCookies,
 } from './cookies';
+import { signInWithGoogle } from './google';
 import {
   createSession,
   revokeAllSessions,
@@ -101,6 +102,8 @@ export function authRoutes(deps: AppDeps) {
       locale: input.locale,
       passwordHash: await deps.passwords.hash(input.password),
       googleId: null,
+      emailVerifiedAt: null,
+      termsAcceptedAt: now,
       isActive: true,
       bookingBlocked: false,
       tokenVersion: 0,
@@ -304,7 +307,14 @@ export function authRoutes(deps: AppDeps) {
 
     await col.users.updateOne(
       { _id: user._id },
-      { $set: { passwordHash: await deps.passwords.hash(input.password), updatedAt: now } },
+      {
+        $set: {
+          passwordHash: await deps.passwords.hash(input.password),
+          // Opening the emailed link proves the inbox belongs to this user.
+          emailVerifiedAt: user.emailVerifiedAt ?? now,
+          updatedAt: now,
+        },
+      },
     );
     await col.passwordResets.updateMany({ userId: user._id, usedAt: null }, { $set: { usedAt: now } });
     await revokeAllSessions(deps, user._id);
@@ -389,8 +399,13 @@ export function authRoutes(deps: AppDeps) {
           grant_type: 'authorization_code',
           code_verifier: String(saved.verifier),
         }),
+        signal: AbortSignal.timeout(10_000),
       });
-      if (!tokenResponse.ok) return fail('google');
+      if (!tokenResponse.ok) {
+        // e.g. redirect_uri_mismatch / invalid_client: a console setting, worth a log line.
+        console.error('[auth] google token exchange failed', tokenResponse.status, await tokenResponse.text());
+        return fail('google');
+      }
       const tokenBody = (await tokenResponse.json()) as { id_token?: string };
       if (!tokenBody.id_token) return fail('google');
 
@@ -408,53 +423,18 @@ export function authRoutes(deps: AppDeps) {
         return fail('google');
       }
 
-      const googleId = payload.sub;
-      const email = payload.email.toLowerCase();
-      const now = deps.now();
-      let user = await col.users.findOne({ googleId });
-      if (!user) {
-        const byEmail = await col.users.findOne({ email });
-        if (byEmail) {
-          if (byEmail.googleId && byEmail.googleId !== googleId) return fail('google_conflict');
-          await col.users.updateOne({ _id: byEmail._id }, { $set: { googleId, updatedAt: now } });
-          user = { ...byEmail, googleId };
-        } else {
-          const given = typeof payload.given_name === 'string' ? payload.given_name : '';
-          const family = typeof payload.family_name === 'string' ? payload.family_name : '';
-          const name = truncate(given || email.split('@')[0] || 'Client', 60);
-          const surname = truncate(family, 60);
-          user = {
-            _id: new ObjectId(),
-            email,
-            name,
-            surname,
-            phone: null,
-            role: 'client',
-            locale: lang,
-            passwordHash: null,
-            googleId,
-            isActive: true,
-            bookingBlocked: false,
-            tokenVersion: 0,
-            notes: '',
-            search: userSearch(name, surname, email, null),
-            lastLoginAt: now,
-            createdAt: now,
-            updatedAt: now,
-            deletedAt: null,
-          };
-          try {
-            await col.users.insertOne(user);
-          } catch (insertError) {
-            if (isDuplicateKey(insertError)) return fail('google');
-            throw insertError;
-          }
-          await audit(deps, { actorId: user._id, action: 'user.register_google', targetType: 'user', targetId: user._id });
-        }
-      }
-      if (!user.isActive || user.deletedAt) return fail('account_disabled');
-
-      await col.users.updateOne({ _id: user._id }, { $set: { lastLoginAt: now } });
+      const result = await signInWithGoogle(
+        deps,
+        {
+          sub: payload.sub,
+          email: payload.email.toLowerCase(),
+          givenName: typeof payload.given_name === 'string' ? payload.given_name : undefined,
+          familyName: typeof payload.family_name === 'string' ? payload.family_name : undefined,
+        },
+        lang,
+      );
+      if (!result.ok) return fail(result.reason);
+      const { user } = result;
       const tokens = await createSession(deps, user, {
         remember: saved.remember !== false,
         ...meta(c, c.get('ip')),
