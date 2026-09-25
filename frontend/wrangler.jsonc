@@ -13,9 +13,11 @@
     "run_worker_first": ["/api/*", "/health"]
   },
   "vars": {
-    // Backend on host.md (Plesk Node.js app). Use a hostname you control, e.g. api.your-domain.md.
-    // Leave empty and add the "services" binding below to run the API on Cloudflare instead.
-    "API_ORIGIN": "https://api.example.md"
+    // Backend on host.md (Plesk Node.js app): the https:// hostname of that app, one you control,
+    // e.g. "https://api.your-domain.md". Empty = the app loads but /api answers 503
+    // API_NOT_CONFIGURED (never point this at a domain you do not own: logins pass through it).
+    // Or leave it empty and add the "services" binding below to run the API on Cloudflare.
+    "API_ORIGIN": ""
   }
   // Secret shared with the backend (PROXY_SECRET): wrangler secret put PROXY_SECRET
   //
