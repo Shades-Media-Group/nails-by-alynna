@@ -1,0 +1,47 @@
+# ── Dependencies ────────────────────────────────────────────────
+node_modules/
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/releases
+
+# ── Builds & caches ─────────────────────────────────────────────
+dist/
+dist-ssr/
+build/
+.wrangler/
+.vite/
+coverage/
+*.tsbuildinfo
+.eslintcache
+
+# ── Environment & secrets (templates are committed) ────────────
+.env
+.env.*
+!.env.template
+!.env.*.template
+.dev.vars
+.dev.vars.*
+!.dev.vars.template
+
+# ── Logs ────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── OS / editors ────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+
+# ── Local data / tooling ────────────────────────────────────────
+.mongo-data/
+.impeccable/review/
+.impeccable/live/
+.claude/settings.local.json
+graphify-out/

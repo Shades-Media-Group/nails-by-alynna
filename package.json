@@ -1,0 +1,29 @@
+{
+  "name": "nails-by-alynna",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nails by Alynna — mobile-first booking PWA (React + Vite frontend, Node.js + MongoDB API, Cloudflare Workers)",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.22.0"
+  },
+  "scripts": {
+    "setup": "yarn install && yarn --cwd backend install && yarn --cwd frontend install",
+    "dev": "concurrently -k -n api,web -c magenta,cyan \"yarn --cwd backend dev\" \"yarn --cwd frontend dev\"",
+    "db:up": "docker compose up -d mongo",
+    "db:down": "docker compose down",
+    "seed": "yarn --cwd backend seed",
+    "typecheck": "yarn --cwd backend typecheck && yarn --cwd frontend typecheck",
+    "lint": "yarn --cwd backend lint && yarn --cwd frontend lint",
+    "test": "yarn --cwd backend test && yarn --cwd frontend test",
+    "build": "yarn --cwd backend build && yarn --cwd frontend build",
+    "check": "yarn typecheck && yarn lint && yarn test && yarn build",
+    "deploy": "node scripts/deploy.mjs",
+    "deploy:verify": "yarn --cwd backend deploy:verify",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5",
+    "prettier": "^3.9.9"
+  }
+}
