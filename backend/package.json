@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Nails by Alynna API — Hono on Node.js (local) and Cloudflare Workers (production), MongoDB",
+  "description": "Nails by Alynna API \u2014 Hono on Node.js (local) and Cloudflare Workers (production), MongoDB",
   "engines": {
     "node": ">=22.12.0"
   },
@@ -19,6 +19,7 @@
     "build": "wrangler deploy --dry-run --outdir .wrangler/build",
     "deploy": "wrangler deploy",
     "deploy:verify": "tsx scripts/verify-deploy.ts",
+    "check-env": "tsx scripts/check-env.ts",
     "build:node": "node scripts/build-node.mjs",
     "start:node": "node dist/node/app.js"
   },

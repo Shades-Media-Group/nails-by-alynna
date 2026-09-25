@@ -46,9 +46,20 @@ console.info(`Verifying ${base}${expectedVersion ? ` (expecting version ${expect
 
 await check('API health and database', async () => {
   const res = await fetch(`${base}/api/health`);
-  const body = (await res.json()) as { status?: string; db?: string };
-  assert(res.status === 200 && body.db === 'ok', `status ${res.status}, body ${JSON.stringify(body)}`);
-  return `db ${body.db}`;
+  const body = (await res.json()) as {
+    status?: string;
+    version?: string;
+    checks?: { database?: { status?: string; latencyMs?: number } };
+  };
+  const db = body.checks?.database;
+  assert(res.status === 200 && body.status === 'ok' && db?.status === 'ok', `status ${res.status}, body ${JSON.stringify(body).slice(0, 240)}`);
+  return `api ${body.version}, database ${db?.latencyMs} ms`;
+});
+
+await check('Combined /health for uptime monitors', async () => {
+  const res = await fetch(`${base}/health`);
+  const body = (await res.json()) as { status?: string };
+  assert(res.status === 200 && body.status === 'ok', `status ${res.status}, ${JSON.stringify(body).slice(0, 160)}`);
 });
 
 await check('API security headers', async () => {

@@ -1,0 +1,47 @@
+/**
+ * Pre-flight for a server settings file, validated exactly as the API will at start-up:
+ *   yarn check-env .env.production
+ * Prints a summary without secrets; exits non-zero when the server would refuse to start or
+ * placeholders (<…>) are still in the file.
+ */
+import { existsSync, readFileSync } from 'node:fs';
+import { loadConfig } from '../src/config';
+import { parseDotEnv } from '../src/lib/dotenv';
+
+const file = process.argv[2] ?? '.env.production';
+if (!existsSync(file)) {
+  console.error(`✗ ${file} not found (copy .env.production.template and fill it in)`);
+  process.exit(1);
+}
+const values = parseDotEnv(readFileSync(file, 'utf8'));
+const placeholders = Object.entries(values)
+  .filter(([key, value]) => /<[^>]+>/.test(value) && !key.startsWith('SEED_') && key !== 'MAIL_FROM')
+  .map(([key]) => key);
+
+let config;
+try {
+  config = loadConfig(values);
+} catch (error) {
+  console.error(`✗ ${file}: ${(error as Error).message}`);
+  process.exit(1);
+}
+
+const mongoHost = (() => {
+  try {
+    return new URL(config.mongo.uri.replace(/^mongodb(\+srv)?:/, 'http:')).hostname;
+  } catch {
+    return '(unparsable)';
+  }
+})();
+console.info(`✓ ${file} is valid for APP_ENV=${config.env}`);
+console.info(`  app            ${config.appUrl}`);
+console.info(`  database       ${mongoHost} / ${config.mongo.dbName}`);
+console.info(`  proxy secret   ${config.proxySecret ? 'set' : 'MISSING (required behind the Worker)'}`);
+console.info(`  Google sign-in ${config.google ? `on (redirect ${config.google.redirectUri})` : 'off'}`);
+console.info(`  email          ${config.mail ? 'on' : 'off (password-reset emails disabled)'}`);
+console.info(`  demo roles     ${config.demoRoles.join(', ') || 'none'}`);
+if (placeholders.length > 0) {
+  console.error(`✗ still placeholders in: ${placeholders.join(', ')}`);
+  process.exit(1);
+}
+if (config.isProd && !config.proxySecret) process.exit(1);
