@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
 import { GoogleMark } from '@/components/brand/GoogleMark';
+import { LegalLink } from '@/components/legal/LegalLink';
 import { Spinner } from '@/components/ui/Spinner';
 import { useLocale } from '@/i18n/useLocale';
 import { cx } from '@/lib/cx';
@@ -41,15 +41,14 @@ export function GoogleButton({ label, next, invite, className }: { label: string
 /** Consent line for the Google path, which has no terms checkbox of its own. */
 export function GoogleTerms({ className }: { className?: string }) {
   const { t } = useTranslation('auth');
-  const { lp } = useLocale();
   return (
     <p className={cx('text-center text-xs leading-relaxed text-ink-500', className)}>
       <Trans
         t={t}
         i18nKey="welcome.googleTerms"
         components={{
-          terms: <Link to={lp('/terms')} className="font-semibold text-ink-700 underline underline-offset-2" />,
-          privacy: <Link to={lp('/privacy')} className="font-semibold text-ink-700 underline underline-offset-2" />,
+          terms: <LegalLink doc="terms" className="font-semibold text-ink-700" />,
+          privacy: <LegalLink doc="privacy" className="font-semibold text-ink-700" />,
         }}
       />
     </p>

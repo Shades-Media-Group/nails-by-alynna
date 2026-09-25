@@ -6,6 +6,7 @@ import { homePathFor, useAuth } from '@/app/auth';
 import { GoogleButton, GoogleTerms, OrDivider } from '@/components/auth/GoogleButton';
 import { Alert } from '@/components/common/Alert';
 import { AuthLayout } from '@/components/layout/AuthLayout';
+import { LegalLink } from '@/components/legal/LegalLink';
 import { Button, Checkbox, PasswordField, TextField, toast } from '@/components/ui';
 import { CallIcon, EmailIcon, KeyIcon, PersonOutlineIcon } from '@/components/ui/icons';
 import { safeNextPath } from '@/i18n/routing';
@@ -209,8 +210,8 @@ export default function SignupPage() {
               t={t}
               i18nKey="signup.terms"
               components={{
-                terms: <Link to={lp('/terms')} target="_blank" className="font-semibold text-ink-900 underline" />,
-                privacy: <Link to={lp('/privacy')} target="_blank" className="font-semibold text-ink-900 underline" />,
+                terms: <LegalLink doc="terms" className="font-semibold text-ink-900" />,
+                privacy: <LegalLink doc="privacy" className="font-semibold text-ink-900" />,
               }}
             />
           }

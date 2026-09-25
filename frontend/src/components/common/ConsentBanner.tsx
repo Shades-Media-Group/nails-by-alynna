@@ -5,6 +5,7 @@ import { isSplashGone, onSplashGone } from '@/components/brand/splash';
 import { Button, Checkbox } from '@/components/ui';
 import { CloseIcon, CookieIcon } from '@/components/ui/icons';
 import { useLocale } from '@/i18n/useLocale';
+import { lockScroll } from '@/lib/scroll-lock';
 import {
   acceptAll,
   acceptMinimal,
@@ -28,6 +29,7 @@ export function ConsentBanner() {
   const [customLocal, setCustomLocal] = useState(false);
   const titleId = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const showCustom = customLocal || mode === 'custom';
   const visible = (mode !== 'hidden' || customLocal) && splashGone;
@@ -35,9 +37,16 @@ export function ConsentBanner() {
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    if (visible && !dialog.open) dialog.showModal();
+    if (visible && !dialog.open) {
+      dialog.showModal();
+      // Start on the message itself, not on its first link (no focus ring out of nowhere).
+      panelRef.current?.focus({ preventScroll: true });
+    }
     if (!visible && dialog.open) dialog.close();
   }, [visible]);
+
+  // While the choice is open, the page behind stays still.
+  useEffect(() => (visible ? lockScroll() : undefined), [visible]);
 
   if (!visible) return null;
 
@@ -57,9 +66,9 @@ export function ConsentBanner() {
         event.preventDefault();
         if (dismissible) close();
       }}
-      className="fixed inset-x-0 bottom-0 top-auto m-0 w-full max-w-none bg-transparent p-3 pb-[calc(var(--safe-bottom)+0.75rem)] backdrop:bg-ink-900/35 backdrop:backdrop-blur-[6px] open:animate-rise md:inset-0 md:m-auto md:h-fit md:w-[27rem] md:p-0"
+      className="fixed inset-x-0 bottom-0 top-auto m-0 w-full max-w-none bg-transparent p-3 pb-[calc(var(--safe-bottom)+0.75rem)] backdrop:bg-ink-900/35 open:animate-rise md:inset-0 md:m-auto md:h-fit md:w-[27rem] md:p-0"
     >
-      <div className="max-h-[85dvh] overflow-y-auto rounded-xl bg-white p-4 shadow-raised md:p-5">
+      <div ref={panelRef} tabIndex={-1} className="max-h-[85dvh] overflow-y-auto overscroll-contain rounded-xl bg-white p-4 shadow-raised outline-none md:p-5">
         <div className="flex gap-3">
           <span className="mt-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-pill bg-peach-50 text-[1.2rem] text-peach-700">
             <CookieIcon fontSize="inherit" />
@@ -70,7 +79,7 @@ export function ConsentBanner() {
             </h2>
             <p className="mt-1 text-sm leading-relaxed text-ink-600">
               {showCustom ? t('consent.settingsText') : t('consent.text')}{' '}
-              <Link to={lp('/privacy')} onClick={() => dismissible && close()} className="font-semibold text-ink-900 underline">
+              <Link to={lp('/privacy')} onClick={() => dismissible && close()} className="whitespace-nowrap font-semibold text-ink-900 underline">
                 {t('consent.policy')}
               </Link>
             </p>

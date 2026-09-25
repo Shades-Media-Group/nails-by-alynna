@@ -70,10 +70,10 @@ export default function LandingPage() {
       </main>
 
       <footer className="gutter-x relative flex flex-wrap items-center justify-center gap-x-4 gap-y-1 pb-[calc(var(--safe-bottom)+1rem)] pt-2 text-xs text-ink-600">
-        <Link to={lp('/privacy')} className="underline-offset-4 hover:underline">
+        <Link to={lp('/privacy')} className="whitespace-nowrap underline-offset-4 hover:underline">
           {t('common:footer.privacy')}
         </Link>
-        <Link to={lp('/terms')} className="underline-offset-4 hover:underline">
+        <Link to={lp('/terms')} className="whitespace-nowrap underline-offset-4 hover:underline">
           {t('common:footer.terms')}
         </Link>
         <button type="button" onClick={openConsentSettings} className="underline-offset-4 hover:underline">
