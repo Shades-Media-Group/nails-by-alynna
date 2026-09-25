@@ -16,11 +16,13 @@ import {
 } from '../../lib/validation';
 import { getSettings } from '../settings';
 import { staffSummaries, toStaffAppointment } from '../appointments/service';
+import { canBeClaimed, createInvite } from '../auth/invites';
+import { localePrefix } from '../auth/routes';
 import { placeholderEmail } from './appointments';
+import { isPlaceholderEmail } from '../../lib/placeholder-email';
 
-export function isPlaceholderEmail(email: string) {
-  return email.endsWith('@no-email.invalid');
-}
+export { isPlaceholderEmail };
+
 
 function toClientSummary(u: UserDoc) {
   return {
@@ -220,6 +222,21 @@ export function adminClientRoutes(deps: AppDeps) {
       });
     }
     return c.json({ client: { ...toClientSummary(next), notes: next.notes } });
+  });
+
+  /**
+   * A link (shown as a QR code at the desk) that lets a walk-in client create their account
+   * on this same record, so the bookings staff made are already there.
+   */
+  app.post('/:id/invite', async (c) => {
+    const actor = c.get('user');
+    const id = paramId(c);
+    const client = await deps.col.users.findOne({ _id: id, role: 'client', deletedAt: null });
+    if (!client) throw notFound('Client');
+    if (!canBeClaimed(client)) throw new AppError(409, 'ALREADY_REGISTERED', 'This client already has an account');
+    const { token, expiresAt } = await createInvite(deps, client, actor._id);
+    await audit(deps, { actorId: actor._id, action: 'client.invite', targetType: 'user', targetId: id });
+    return c.json({ url: `${deps.config.appUrl}${localePrefix(client.locale)}/signup?invite=${token}`, expiresAt: expiresAt.toISOString() }, 201);
   });
 
   return app;

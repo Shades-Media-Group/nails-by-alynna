@@ -33,6 +33,8 @@ export type ErrorCode =
   | 'SELF_ACTION'
   | 'IN_USE'
   | 'NOT_A_DEFAULT'
+  | 'INVITE_INVALID'
+  | 'ALREADY_REGISTERED'
   | 'ONE_PER_CATEGORY'
   | 'PAYLOAD_TOO_LARGE'
   | 'DEMO_READ_ONLY'

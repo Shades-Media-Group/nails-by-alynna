@@ -5,6 +5,7 @@ import type {
   AuditLogDoc,
   CategoryDoc,
   MetaDoc,
+  InviteDoc,
   PasswordResetDoc,
   RateLimitDoc,
   ServiceDoc,
@@ -19,6 +20,7 @@ export interface Collections {
   users: Collection<UserDoc>;
   sessions: Collection<SessionDoc>;
   passwordResets: Collection<PasswordResetDoc>;
+  invites: Collection<InviteDoc>;
   rateLimits: Collection<RateLimitDoc>;
   categories: Collection<CategoryDoc>;
   services: Collection<ServiceDoc>;
@@ -35,6 +37,7 @@ export function collections(db: Db): Collections {
     users: db.collection<UserDoc>('users'),
     sessions: db.collection<SessionDoc>('sessions'),
     passwordResets: db.collection<PasswordResetDoc>('password_resets'),
+    invites: db.collection<InviteDoc>('invites'),
     rateLimits: db.collection<RateLimitDoc>('rate_limits'),
     categories: db.collection<CategoryDoc>('categories'),
     services: db.collection<ServiceDoc>('services'),
@@ -48,7 +51,7 @@ export function collections(db: Db): Collections {
 }
 
 /** Bump when indexes change; the runtime re-applies them once per version. */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export async function ensureIndexes(db: Db): Promise<void> {
   const c = collections(db);
@@ -78,6 +81,12 @@ export async function ensureIndexes(db: Db): Promise<void> {
       { key: { expiresAt: 1 }, expireAfterSeconds: 0, name: 'ttl' },
     ]),
     c.rateLimits.createIndexes([{ key: { expiresAt: 1 }, expireAfterSeconds: 0, name: 'ttl' }]),
+    c.invites.createIndexes([
+      { key: { tokenHash: 1 }, unique: true, name: 'token_unique' },
+      { key: { userId: 1 }, name: 'user' },
+      // Expired links disappear a week after they stop working.
+      { key: { expiresAt: 1 }, expireAfterSeconds: 7 * 86_400, name: 'ttl' },
+    ]),
     c.categories.createIndexes([
       { key: { order: 1 }, name: 'order' },
       // One document per default entry, even if two processes sync at the same moment.

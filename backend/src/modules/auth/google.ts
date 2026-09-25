@@ -1,10 +1,11 @@
 import { ObjectId } from 'mongodb';
 import type { AppDeps } from '../../context';
-import type { UserDoc } from '../../db/types';
+import type { InviteDoc, UserDoc } from '../../db/types';
 import { audit } from '../../lib/audit';
 import { isDuplicateKey } from '../../lib/errors';
 import { truncate, userSearch } from '../../lib/text';
 import type { Locale } from '../../lib/validation';
+import { consumeInvite } from './invites';
 import { revokeAllSessions } from './session';
 
 /** The verified claims of a Google ID token that sign-in needs. */
@@ -28,7 +29,12 @@ export type GoogleSignIn =
  * password and every open session are dropped, as Firebase does; the owner keeps Google and
  * can set a new password through "Forgot password".
  */
-export async function signInWithGoogle(deps: AppDeps, identity: GoogleIdentity, locale: Locale): Promise<GoogleSignIn> {
+export async function signInWithGoogle(
+  deps: AppDeps,
+  identity: GoogleIdentity,
+  locale: Locale,
+  options: { claim?: { invite: InviteDoc; user: UserDoc } | null } = {},
+): Promise<GoogleSignIn> {
   const { col } = deps;
   const now = deps.now();
 
@@ -64,6 +70,26 @@ export async function signInWithGoogle(deps: AppDeps, identity: GoogleIdentity, 
     });
     const tokenVersion = unprovenPassword ? byEmail.tokenVersion + 1 : byEmail.tokenVersion;
     return { ok: true, user: { ...byEmail, ...set, tokenVersion }, created: false };
+  }
+
+  // Opened from a studio invite: the walk-in record becomes this Google account, bookings included.
+  if (options.claim && (await consumeInvite(deps, options.claim.invite))) {
+    const invited = options.claim.user;
+    const set: Partial<UserDoc> = {
+      email: identity.email,
+      googleId: identity.sub,
+      emailVerifiedAt: now,
+      termsAcceptedAt: now,
+      // Staff typed the name at the desk; Google fills it in only if it was left empty.
+      name: invited.name || truncate(identity.givenName?.trim() || 'Client', 60),
+      surname: invited.surname || truncate(identity.familyName?.trim() ?? '', 60),
+      lastLoginAt: now,
+      updatedAt: now,
+    };
+    set.search = userSearch(set.name!, set.surname!, identity.email, invited.phone);
+    await col.users.updateOne({ _id: invited._id }, { $set: set });
+    await audit(deps, { actorId: invited._id, action: 'user.claim_invite_google', targetType: 'user', targetId: invited._id });
+    return { ok: true, user: { ...invited, ...set }, created: false };
   }
 
   const name = truncate(identity.givenName?.trim() || identity.email.split('@')[0] || 'Client', 60);

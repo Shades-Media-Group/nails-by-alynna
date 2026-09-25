@@ -5,7 +5,7 @@ import { ObjectId } from 'mongodb';
 import { z } from 'zod';
 import type { Role } from '../../config';
 import type { AppDeps, AppEnv } from '../../context';
-import type { UserDoc } from '../../db/types';
+import { ACTIVE_STATUSES, type UserDoc } from '../../db/types';
 import { audit } from '../../lib/audit';
 import { randomToken, sha256Base64Url, sha256Hex, timingSafeEqualStr } from '../../lib/crypto';
 import { passwordResetEmail } from '../../lib/emails';
@@ -34,6 +34,8 @@ import {
   setSessionCookies,
 } from './cookies';
 import { signInWithGoogle } from './google';
+import { consumeInvite, findInvite } from './invites';
+import { isPlaceholderEmail } from '../../lib/placeholder-email';
 import {
   createSession,
   revokeAllSessions,
@@ -73,6 +75,8 @@ export function authRoutes(deps: AppDeps) {
     locale: localeSchema.default('ro'),
     remember: z.boolean().default(true),
     acceptTerms: z.literal(true, { error: 'required' }),
+    /** Token from a studio invite link: the account is created on the walk-in record. */
+    invite: z.string().trim().max(120).optional(),
   });
 
   app.post('/register', async (c) => {
@@ -86,6 +90,8 @@ export function authRoutes(deps: AppDeps) {
         fields: { password: 'contains_email' },
       });
     }
+
+    if (input.invite) return claimWithPassword(c, input);
 
     const exists = await col.users.findOne({ email: input.email }, { projection: { _id: 1 } });
     if (exists) {
@@ -128,6 +134,59 @@ export function authRoutes(deps: AppDeps) {
     setSessionCookies(c, config, tokens);
     await audit(deps, { actorId: user._id, action: 'user.register', targetType: 'user', targetId: user._id });
     return c.json({ user: toPublicUser(user) }, 201);
+  });
+
+  /** Sign-up through an invite: the walk-in record becomes the account, bookings included. */
+  async function claimWithPassword(c: Context<AppEnv>, input: z.infer<typeof registerSchema>) {
+    const found = await findInvite(deps, input.invite ?? '');
+    if (!found) throw new AppError(400, 'INVITE_INVALID', 'The invitation is invalid or has expired');
+    const { invite, user: invited } = found;
+    const taken = await col.users.findOne({ email: input.email, _id: { $ne: invited._id } }, { projection: { _id: 1 } });
+    if (taken) throw new AppError(409, 'EMAIL_TAKEN', 'Email already registered', { fields: { email: 'taken' } });
+    if (!(await consumeInvite(deps, invite))) throw new AppError(400, 'INVITE_INVALID', 'The invitation is invalid or has expired');
+
+    const now = deps.now();
+    const set: Partial<UserDoc> = {
+      email: input.email,
+      name: input.name,
+      surname: input.surname,
+      phone: input.phone,
+      locale: input.locale,
+      passwordHash: await deps.passwords.hash(input.password),
+      emailVerifiedAt: null,
+      termsAcceptedAt: now,
+      search: userSearch(input.name, input.surname, input.email, input.phone),
+      lastLoginAt: now,
+      updatedAt: now,
+    };
+    await col.users.updateOne({ _id: invited._id }, { $set: set });
+    const user = { ...invited, ...set };
+    const tokens = await createSession(deps, user, { remember: input.remember, ...meta(c, c.get('ip')) });
+    setSessionCookies(c, config, tokens);
+    await audit(deps, { actorId: user._id, action: 'user.claim_invite', targetType: 'user', targetId: user._id });
+    return c.json({ user: toPublicUser(user) }, 201);
+  }
+
+  /** What the sign-up screen shows for an invite link: who it is for and the next visit. */
+  app.get('/invite/:token', async (c) => {
+    await enforceRateLimits(deps, [{ key: `invite:ip:${c.get('ip')}`, limit: 30, windowSec: 900 }]);
+    const found = await findInvite(deps, c.req.param('token'));
+    if (!found) throw new AppError(404, 'INVITE_INVALID', 'The invitation is invalid or has expired');
+    const { user } = found;
+    const next = await col.appointments.findOne(
+      { clientId: user._id, status: { $in: ACTIVE_STATUSES }, start: { $gt: deps.now() } },
+      { sort: { start: 1 }, projection: { start: 1 } },
+    );
+    return c.json({
+      invite: {
+        name: user.name,
+        surname: user.surname,
+        phone: user.phone,
+        email: isPlaceholderEmail(user.email) ? null : user.email,
+        locale: user.locale,
+        nextVisit: next?.start.toISOString() ?? null,
+      },
+    });
   });
 
   // ── Log in ─────────────────────────────────────────────────────────────────
@@ -352,6 +411,7 @@ export function authRoutes(deps: AppDeps) {
         lang: localeSchema.catch('ro'),
         remember: z.enum(['0', '1']).catch('1'),
         next: z.string().max(200).optional(),
+        invite: z.string().trim().max(120).optional(),
       }),
     );
     if (!config.google) {
@@ -364,7 +424,7 @@ export function authRoutes(deps: AppDeps) {
     const verifier = randomToken(48);
     const sealed = await sealState(
       config,
-      { state, nonce, verifier, lang: q.lang, remember: q.remember === '1', next: safeNext(q.next) },
+      { state, nonce, verifier, lang: q.lang, remember: q.remember === '1', next: safeNext(q.next), invite: q.invite ?? null },
       600,
     );
     setCookie(c, names.oauth, sealed, {
@@ -442,6 +502,7 @@ export function authRoutes(deps: AppDeps) {
         return fail('google');
       }
 
+      const claim = typeof saved.invite === 'string' && saved.invite ? await findInvite(deps, saved.invite) : null;
       const result = await signInWithGoogle(
         deps,
         {
@@ -451,6 +512,7 @@ export function authRoutes(deps: AppDeps) {
           familyName: typeof payload.family_name === 'string' ? payload.family_name : undefined,
         },
         lang,
+        { claim },
       );
       if (!result.ok) return fail(result.reason);
       const { user } = result;

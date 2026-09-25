@@ -83,6 +83,21 @@ export interface SessionDoc {
   revokedAt: Date | null;
 }
 
+/**
+ * A one-time link staff give a client who was booked in person (walk-in record without a login):
+ * signing up through it turns that record into the client's account, bookings included.
+ */
+export interface InviteDoc {
+  _id: ObjectId;
+  userId: ObjectId;
+  /** sha256 of the token; the token itself only exists in the link. */
+  tokenHash: string;
+  createdBy: ObjectId;
+  createdAt: Date;
+  expiresAt: Date;
+  usedAt: Date | null;
+}
+
 export interface PasswordResetDoc {
   _id: ObjectId;
   userId: ObjectId;

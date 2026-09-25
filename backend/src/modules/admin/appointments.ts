@@ -26,6 +26,9 @@ import {
   staffSummaries,
   toStaffAppointment,
 } from '../appointments/service';
+import { placeholderEmail } from '../../lib/placeholder-email';
+
+export { placeholderEmail };
 
 const TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
   pending: ['confirmed', 'cancelled'],
@@ -37,9 +40,6 @@ const TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
 
 const STATUS = z.enum(['pending', 'confirmed', 'completed', 'cancelled', 'no_show']);
 
-export function placeholderEmail(id: ObjectId) {
-  return `client+${id.toHexString()}@no-email.invalid`;
-}
 
 /** Counts per client used for the "no-shows" / "visits" badges on staff views. */
 export async function clientBadges(deps: AppDeps, clientIds: ObjectId[]) {
