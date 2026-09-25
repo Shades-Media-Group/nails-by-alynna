@@ -11,6 +11,8 @@ export interface PendingCode {
   email: string;
   remember?: boolean;
   resendAfterSec?: number;
+  /** False when the email with the code did not go out. */
+  sent?: boolean;
   at: number;
 }
 

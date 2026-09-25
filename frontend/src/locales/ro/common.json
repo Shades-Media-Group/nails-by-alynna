@@ -112,6 +112,7 @@
       "INVITE_INVALID": "Invitația a expirat sau a fost deja folosită.",
       "ALREADY_REGISTERED": "Acest client are deja cont.",
       "EMAIL_NOT_VERIFIED": "Confirmă mai întâi emailul: ți-am trimis un cod.",
+      "EMAIL_NOT_SENT": "Nu am putut trimite emailul acum. Încearcă din nou peste câteva minute.",
       "CODE_INVALID": "Codul este greșit sau a expirat. Verifică-l sau cere unul nou.",
       "PUSH_UNAVAILABLE": "Notificările pe telefon nu sunt disponibile încă."
     }

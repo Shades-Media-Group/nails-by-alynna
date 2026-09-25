@@ -1,6 +1,5 @@
-import NotificationsIcon from '@mui/icons-material/NotificationsRounded';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useId, useState, type FormEvent } from 'react';
+import { useId, useState, type FormEvent } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { useAuth } from '@/app/auth';
@@ -8,6 +7,7 @@ import { BUILD } from '@/build-info';
 import { OtpInput } from '@/components/auth/OtpInput';
 import { ResendCodeButton } from '@/components/auth/ResendCodeButton';
 import { Alert } from '@/components/common/Alert';
+import { DataExportSheet } from '@/components/profile/DataExportSheet';
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
 import { Avatar, Button, ListGroup, ListRow, PasswordField, Sheet, Skeleton, TextField, toast } from '@/components/ui';
 import {
@@ -15,11 +15,14 @@ import {
   DeleteIcon,
   DevicesIcon,
   DownloadIcon,
-  EditIcon,
+  EmailIcon,
   InstallIcon,
   KeyIcon,
   LanguageIcon,
+  LockIcon,
   LogoutIcon,
+  LoyaltyIcon,
+  NotificationsIcon,
   PersonOutlineIcon,
   PrivacyIcon,
   ShieldIcon,
@@ -28,13 +31,14 @@ import { useLocale } from '@/i18n/useLocale';
 import { openConsentSettings } from '@/lib/consent';
 import { errorMessage, fieldErrors } from '@/lib/errors';
 import { formatDateTime } from '@/lib/format';
-import { disablePush, resyncPush } from '@/lib/push';
+import { signedOutStart } from '@/lib/platform';
+import { disablePush } from '@/lib/push';
 import { isEmail, nameIssue, normalizePhone, passwordIssue } from '@/lib/validation';
 import { isApiError } from '@/services/api/client';
 import { authApi, meApi } from '@/services/api/endpoints';
 import { useStudio } from '@/hooks/useStudio';
 
-type Panel = 'details' | 'password' | 'devices' | 'delete' | null;
+type Panel = 'details' | 'password' | 'devices' | 'delete' | 'export' | null;
 
 export default function ProfilePage() {
   // 'auth' too: the change-email code step uses its strings, loaded before the sheet opens.
@@ -44,12 +48,6 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const [panel, setPanel] = useState<Panel>(null);
   const close = () => setPanel(null);
-  const userId = user?.id;
-
-  // Signed in again on this phone: its notifications (if this person had them on) resume.
-  useEffect(() => {
-    if (userId) void resyncPush(userId);
-  }, [userId]);
 
   if (!user) return null;
   const memberSince = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(new Date(user.createdAt));
@@ -58,7 +56,7 @@ export default function ProfilePage() {
     // The next person using this phone must not get this account's notifications.
     await disablePush().catch(() => undefined);
     await logout().catch(() => undefined);
-    navigate(lp('/login'), { replace: true });
+    navigate(lp(signedOutStart()), { replace: true });
   };
 
   return (
@@ -84,16 +82,21 @@ export default function ProfilePage() {
               description={t('profile.notificationsText')}
               to={lp('/profile/notifications')}
             />
+            <ListRow icon={LoyaltyIcon} label={t('profile.loyalty')} description={t('profile.loyaltyText')} to={lp('/loyalty')} />
             <ListRow icon={LanguageIcon} label={t('profile.language')} trailing={<LanguageSwitcher compact />} />
           </ListGroup>
 
           <ListGroup title={t('profile.security')}>
-            <ListRow
-              icon={KeyIcon}
-              label={user.hasPassword ? t('profile.passwordChange') : t('profile.passwordSet')}
-              description={user.hasPassword ? undefined : user.hasGoogle ? t('profile.passwordSetText') : t('profile.passwordSetPlain')}
-              onClick={() => setPanel('password')}
-            />
+            {user.isDemo ? (
+              <ListRow icon={KeyIcon} label={t('profile.passwordChange')} description={t('profile.demoLocked')} trailing={<Locked />} />
+            ) : (
+              <ListRow
+                icon={KeyIcon}
+                label={user.hasPassword ? t('profile.passwordChange') : t('profile.passwordSet')}
+                description={user.hasPassword ? undefined : user.hasGoogle ? t('profile.passwordSetText') : t('profile.passwordSetPlain')}
+                onClick={() => setPanel('password')}
+              />
+            )}
             <ListRow icon={DevicesIcon} label={t('profile.devices')} description={t('profile.devicesText')} onClick={() => setPanel('devices')} />
           </ListGroup>
         </div>
@@ -101,7 +104,7 @@ export default function ProfilePage() {
         <div className="flex flex-col gap-6">
           <ListGroup title={t('profile.privacy')}>
             <ListRow icon={CookieIcon} label={t('profile.cookies')} onClick={openConsentSettings} />
-            <ListRow icon={DownloadIcon} label={t('profile.export')} description={t('profile.exportText')} href={meApi.exportUrl()} />
+            <ListRow icon={DownloadIcon} label={t('profile.export')} description={t('profile.exportText')} onClick={() => setPanel('export')} />
             <ListRow icon={PrivacyIcon} label={t('profile.privacyPolicy')} to={lp('/privacy')} />
             <ListRow icon={ShieldIcon} label={t('profile.terms')} to={lp('/terms')} />
           </ListGroup>
@@ -109,19 +112,24 @@ export default function ProfilePage() {
           <ListGroup title={t('profile.app')}>
             <ListRow icon={InstallIcon} label={t('profile.install')} to={lp('/app')} />
             <ListRow icon={LogoutIcon} label={t('profile.logout')} onClick={() => void signOut()} />
-            <ListRow icon={DeleteIcon} tone="danger" label={t('profile.delete')} onClick={() => setPanel('delete')} />
+            {user.isDemo ? (
+              <ListRow icon={DeleteIcon} label={t('profile.delete')} description={t('profile.demoLocked')} trailing={<Locked />} />
+            ) : (
+              <ListRow icon={DeleteIcon} tone="danger" label={t('profile.delete')} onClick={() => setPanel('delete')} />
+            )}
           </ListGroup>
         </div>
       </div>
 
       <footer className="gutter-x mt-10 text-center text-xs text-ink-500 lg:px-0">
-        <p>{t('profile.version', { version: `${BUILD.version} (${BUILD.commit})` })}</p>
+        <p>{t('profile.version', { version: BUILD.version })}</p>
         <a href="https://shades.md" target="_blank" rel="noopener noreferrer" className="mt-1 inline-block font-semibold text-ink-700 underline-offset-4 hover:underline">
           {t('profile.credit')}
         </a>
       </footer>
 
       <DetailsSheet open={panel === 'details'} onClose={close} />
+      <DataExportSheet open={panel === 'export'} onClose={close} />
       <PasswordSheet open={panel === 'password'} onClose={close} />
       <DevicesSheet open={panel === 'devices'} onClose={close} onSignedOutEverywhere={() => void signOut()} />
       <DeleteSheet open={panel === 'delete'} onClose={close} />
@@ -332,6 +340,7 @@ function DetailsForm({
 }) {
   const { t } = useTranslation(['account', 'common']);
   const { user, setUser } = useAuth();
+  const emailHintId = useId();
   const [touched, setTouched] = useState(false);
   const save = useMutation({
     mutationFn: () =>
@@ -364,27 +373,50 @@ function DetailsForm({
     <form id="details-form" className="flex flex-col gap-4 py-2" onSubmit={submit} noValidate>
       {changedTo ? <Alert tone="success">{t('profile.emailChange.changed', { email: changedTo })}</Alert> : null}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <TextField label={t('profile.name')} autoComplete="given-name" value={form.name} onChange={(e) => onForm({ ...form, name: e.target.value })} error={errors.name ?? server.name} />
-        <TextField label={t('profile.surname')} autoComplete="family-name" value={form.surname} onChange={(e) => onForm({ ...form, surname: e.target.value })} error={errors.surname ?? server.surname} />
+        <TextField label={t('profile.name')} autoComplete="given-name" autoCapitalize="words" disabled={user?.isDemo} value={form.name} onChange={(e) => onForm({ ...form, name: e.target.value })} error={errors.name ?? server.name} />
+        <TextField label={t('profile.surname')} autoComplete="family-name" autoCapitalize="words" disabled={user?.isDemo} value={form.surname} onChange={(e) => onForm({ ...form, surname: e.target.value })} error={errors.surname ?? server.surname} />
       </div>
-      <TextField label={t('profile.phone')} type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={(e) => onForm({ ...form, phone: e.target.value })} error={errors.phone ?? server.phone} />
-      {/* The address is not typed here: a static row, changed through its own confirmed flow. */}
-      <div className="flex items-center gap-3 rounded-xl bg-ink-50 px-4 py-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-ink-700">{t('profile.email')}</p>
-          <p className="break-all text-[0.9375rem] font-semibold text-ink-900">{user?.email}</p>
-          <p className="mt-0.5 text-sm text-ink-600">{t('profile.emailHint')}</p>
-        </div>
-        {user?.isDemo ? null : (
-          <Button variant="outline" size="md" icon={EditIcon} onClick={onChangeEmail} className="shrink-0 bg-white" aria-label={t('profile.emailChange.title')}>
-            {t('profile.changeEmail')}
-          </Button>
+      <TextField label={t('profile.phone')} type="tel" inputMode="tel" autoComplete="tel" disabled={user?.isDemo} value={form.phone} onChange={(e) => onForm({ ...form, phone: e.target.value })} error={errors.phone ?? server.phone} />
+      {/* Not typed here: the address changes through its own flow (a code to the new one). */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium text-ink-700">{t('profile.email')}</span>
+        {user?.isDemo ? (
+          <div className="flex min-h-14 items-center gap-3 rounded-[1.75rem] bg-ink-50 px-5 py-3">
+            <EmailIcon fontSize="inherit" className="shrink-0 text-[1.25rem] text-ink-400" />
+            <span className="min-w-0 flex-1 text-[0.9375rem] text-ink-900 [overflow-wrap:anywhere]">
+              <EmailText email={user.email} />
+            </span>
+            <Locked />
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onChangeEmail}
+            aria-label={`${t('profile.emailChange.title')}: ${user?.email ?? ''}`}
+            aria-describedby={emailHintId}
+            className="group flex min-h-14 w-full items-center gap-3 rounded-[1.75rem] bg-ink-50 px-5 py-3 text-left transition-colors hover:bg-ink-100 active:bg-ink-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-900"
+          >
+            <EmailIcon fontSize="inherit" className="shrink-0 text-[1.25rem] text-ink-400" />
+            <span className="min-w-0 flex-1 text-[0.9375rem] text-ink-900 [overflow-wrap:anywhere]">
+              <EmailText email={user?.email ?? ''} />
+            </span>
+            <span className="shrink-0 text-sm font-semibold text-rose-700 underline-offset-4 group-hover:underline">{t('profile.changeEmail')}</span>
+          </button>
         )}
+        <p id={emailHintId} className="pl-1 text-sm text-ink-600">
+          {user?.isDemo ? t('profile.emailDemo') : t('profile.emailHint')}
+        </p>
       </div>
-      {save.isError && Object.keys(server).length === 0 ? <Alert>{errorMessage(t, save.error)}</Alert> : null}
-      <Button type="submit" size="lg" fullWidth loading={save.isPending}>
-        {t('profile.save')}
-      </Button>
+      {user?.isDemo ? (
+        <Alert tone="info">{t('common:errors.codes.DEMO_READ_ONLY')}</Alert>
+      ) : (
+        <>
+          {save.isError && Object.keys(server).length === 0 ? <Alert>{errorMessage(t, save.error)}</Alert> : null}
+          <Button type="submit" size="lg" fullWidth loading={save.isPending}>
+            {t('profile.save')}
+          </Button>
+        </>
+      )}
     </form>
   );
 }
@@ -528,7 +560,7 @@ function DeleteSheet({ open, onClose }: { open: boolean; onClose: () => void }) 
       toast.success(t('profile.deleted'));
       await disablePush().catch(() => undefined);
       await logout().catch(() => undefined);
-      navigate(lp('/login'), { replace: true });
+      navigate(lp(signedOutStart()), { replace: true });
     },
   });
 
@@ -552,4 +584,21 @@ function DeleteSheet({ open, onClose }: { open: boolean; onClose: () => void }) 
       </div>
     </Sheet>
   );
+}
+
+/** A long address breaks after the @, not in the middle of a word. */
+function EmailText({ email }: { email: string }) {
+  const at = email.indexOf('@');
+  if (at < 0) return <>{email}</>;
+  return (
+    <>
+      {email.slice(0, at + 1)}
+      <wbr />
+      {email.slice(at + 1)}
+    </>
+  );
+}
+
+function Locked() {
+  return <LockIcon fontSize="inherit" className="shrink-0 text-[1.15rem] text-ink-400" />;
 }

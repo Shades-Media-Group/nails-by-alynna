@@ -112,6 +112,7 @@
       "INVITE_INVALID": "This invitation has expired or was already used.",
       "ALREADY_REGISTERED": "This client already has an account.",
       "EMAIL_NOT_VERIFIED": "Confirm your email first: we sent you a code.",
+      "EMAIL_NOT_SENT": "We couldn't send the email right now. Try again in a few minutes.",
       "CODE_INVALID": "The code is wrong or has expired. Check it or send a new one.",
       "PUSH_UNAVAILABLE": "Notifications on the phone aren't available yet."
     }

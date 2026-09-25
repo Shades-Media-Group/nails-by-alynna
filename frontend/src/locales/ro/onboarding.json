@@ -1,28 +1,44 @@
 {
   "label": "Bun venit la Nails by Alynna",
-  "skip": "Sari peste",
+  "skip": "Sari peste introducere",
   "next": "Continuă",
   "start": "Să începem",
   "step": "Pasul {{current}} din {{total}}",
   "visit": "vizită",
   "book": {
-    "title": "Te programezi într-un minut",
-    "text": "Alegi serviciile, ora potrivită și maestrul. Salonul vede programarea imediat."
+    "title": "Te programezi",
+    "accent": "în mai puțin de un minut.",
+    "text": "Alegi serviciile, maestrul și ora potrivită. Salonul vede programarea imediat."
   },
   "visits": {
-    "title": "Vizitele tale, în ordine",
-    "text": "Memento înainte de fiecare vizită, adăugare în calendar dintr-o atingere, iar mutarea sau anularea le faci din aplicație."
+    "title": "Vizitele tale,",
+    "accent": "mereu la îndemână.",
+    "text": "Un memento înainte de fiecare vizită, calendarul dintr-o atingere și schimbări oricând e nevoie."
   },
   "loyalty": {
-    "title": "Fiecare vizită contează",
+    "title": "Fiecare vizită",
+    "accent": "contează.",
     "text": "Fiecare vizită e o ștampilă pe cardul de fidelitate, iar unele vizite vin cu reducere."
   },
   "home": {
-    "title": "Mereu la o atingere",
-    "text": "Pune aplicația pe ecranul principal: se deschide pe tot ecranul și programările sunt mereu la îndemână."
+    "title": "Mereu",
+    "accent": "la o atingere.",
+    "text": "Pune aplicația pe ecranul principal: se deschide pe tot ecranul, ca orice aplicație."
   },
   "ready": {
-    "title": "Totul e gata",
+    "title": "Totul",
+    "accent": "e gata.",
     "text": "Servicii, programări, cardul de fidelitate și contactele salonului, într-un singur loc."
+  },
+  "scene": {
+    "time": "Mar · 12:00",
+    "reminder": "Memento cu 1 oră înainte",
+    "calendar": "În calendarul tău",
+    "change": "Mută sau anulează",
+    "card": "Card de fidelitate",
+    "stamps": "3 din 8",
+    "addHome": "Adaugă pe ecranul principal",
+    "appName": "Nails Alynna",
+    "selected": "Ales"
   }
 }

@@ -1,5 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { replayIntro } from '@/lib/intro';
+import { resyncPush } from '@/lib/push';
 import { ApiError, hasSessionHint, onSessionExpired } from '@/services/api/client';
 import { authApi } from '@/services/api/endpoints';
 import type { Role, User } from '@/types/api';
@@ -43,11 +45,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const setUser = useCallback(
     (user: User | null) => {
-      if (user) setSignedOut(false);
+      if (user) {
+        setSignedOut(false);
+        // Every new sign-in of the shared demo account shows the intro again.
+        if (user.isDemo && !queryClient.getQueryData<User | null>(ME_KEY)) replayIntro(user.id);
+      }
       queryClient.setQueryData(ME_KEY, user);
     },
     [queryClient],
   );
+
+  // Signed in on this device again: its notifications (if this person had them on) resume,
+  // whichever screen the app opens on.
+  const userId = me.data?.id;
+  useEffect(() => {
+    if (userId) void resyncPush(userId);
+  }, [userId]);
 
   useEffect(
     () =>

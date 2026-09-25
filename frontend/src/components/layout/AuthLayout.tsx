@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { Logo } from '@/components/brand/Logo';
 import { NailArt } from '@/components/brand/NailArt';
 import { ContactSheet } from '@/components/common/ContactSheet';
@@ -10,8 +10,8 @@ import { ArrowBackIcon, SupportAgentIcon } from '@/components/ui/icons';
 
 interface AuthLayoutProps {
   children: ReactNode;
-  /** Blush band pinned to the bottom (Figma: "Don't have an account? Sign Up"). */
-  footer?: ReactNode;
+  /** Blush band pinned to the bottom (Figma: "Don't have an account? Sign Up"): all of it is the link. */
+  footer?: { text: string; action: string; to: string };
   back?: string | boolean;
 }
 
@@ -60,8 +60,13 @@ export function AuthLayout({ children, footer, back }: AuthLayoutProps) {
         </main>
 
         {footer ? (
-          <footer className="rounded-t-2xl bg-blush-100 px-6 pb-[calc(var(--safe-bottom)+1.25rem)] pt-5 text-center text-sm text-ink-700 md:mx-auto md:mb-8 md:w-full md:max-w-[28rem] md:rounded-2xl md:pb-5">
-            {footer}
+          <footer className="rounded-t-2xl bg-blush-100 text-center text-sm text-ink-700 md:mx-auto md:mb-8 md:w-full md:max-w-[28rem] md:rounded-2xl">
+            <Link
+              to={footer.to}
+              className="group block rounded-[inherit] px-6 pb-[calc(var(--safe-bottom)+1.25rem)] pt-5 transition-colors hover:bg-blush-200/50 active:bg-blush-200/70 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-rose-700 md:pb-5"
+            >
+              {footer.text} <span className="font-bold text-rose-700 underline-offset-4 group-hover:underline">{footer.action}</span>
+            </Link>
           </footer>
         ) : null}
       </div>

@@ -30,7 +30,7 @@ export function AppShell() {
       </main>
       <TabBar />
       {/* First sign-in: a short intro to the app (clients only). */}
-      {user?.role === 'client' ? <Onboarding userId={user.id} demo={user.isDemo} /> : null}
+      {user?.role === 'client' ? <Onboarding key={user.id} user={user} /> : null}
     </div>
   );
 }

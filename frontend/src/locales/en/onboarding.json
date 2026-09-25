@@ -1,28 +1,44 @@
 {
   "label": "Welcome to Nails by Alynna",
-  "skip": "Skip",
+  "skip": "Skip the intro",
   "next": "Continue",
   "start": "Let's go",
   "step": "Step {{current}} of {{total}}",
   "visit": "visit",
   "book": {
-    "title": "Book in a minute",
-    "text": "Pick your services, a time that suits you and your master. The studio sees it right away."
+    "title": "Book your nails",
+    "accent": "in under a minute.",
+    "text": "Choose services, a master and a time that suits you. The studio sees your booking right away."
   },
   "visits": {
-    "title": "Your visits, sorted",
-    "text": "Reminders before each visit, one tap to add it to your calendar, and change or cancel it yourself."
+    "title": "Your visits,",
+    "accent": "always in hand.",
+    "text": "A reminder before each visit, one tap to your calendar, and changes whenever you need them."
   },
   "loyalty": {
-    "title": "Every visit counts",
+    "title": "Every visit",
+    "accent": "counts.",
     "text": "Each visit is a stamp on your loyalty card, and some visits come with a discount."
   },
   "home": {
-    "title": "Always one tap away",
-    "text": "Add the app to your home screen: it opens full screen and your bookings are always at hand."
+    "title": "Keep us",
+    "accent": "one tap away.",
+    "text": "Add the app to your Home Screen: it opens full screen, like any app on your phone."
   },
   "ready": {
-    "title": "You're all set",
+    "title": "You're",
+    "accent": "all set.",
     "text": "Services, bookings, your loyalty card and the studio's contacts, all in one place."
+  },
+  "scene": {
+    "time": "Tue · 12:00",
+    "reminder": "Reminder 1 h before",
+    "calendar": "In your calendar",
+    "change": "Change or cancel",
+    "card": "Loyalty card",
+    "stamps": "3 of 8",
+    "addHome": "Add to Home Screen",
+    "appName": "Nails Alynna",
+    "selected": "Selected"
   }
 }

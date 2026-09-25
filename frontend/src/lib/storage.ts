@@ -53,6 +53,13 @@ export const session = {
       // Ignore.
     }
   },
+  remove(key: string): void {
+    try {
+      window.sessionStorage.removeItem(key);
+    } catch {
+      // Ignore.
+    }
+  },
 };
 
 export const STORAGE_KEYS = {

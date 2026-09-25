@@ -91,14 +91,7 @@ export default function LoginPage() {
   return (
     <AuthLayout
       back={`${lp('/login')}${carry}`}
-      footer={
-        <>
-          {t('welcome.noAccount')}{' '}
-          <Link to={`${lp('/signup')}${carry}`} className="font-bold text-rose-700 underline-offset-4 hover:underline">
-            {t('welcome.signUp')}
-          </Link>
-        </>
-      }
+      footer={{ text: t('welcome.noAccount'), action: t('welcome.signUp'), to: `${lp('/signup')}${carry}` }}
     >
       <h1 className="text-[1.875rem] font-extrabold uppercase leading-[0.95] tracking-[-0.03em]">
         <span className="block text-ink-900">{t('common:brand.tagline1')}</span>
@@ -121,7 +114,7 @@ export default function LoginPage() {
           name="email"
           type="email"
           inputMode="email"
-          autoComplete="username email"
+          autoComplete="username"
           autoCapitalize="none"
           spellCheck={false}
           placeholder={t('login.emailPlaceholder')}

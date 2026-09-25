@@ -40,6 +40,8 @@ export interface User {
   bookingBlocked: boolean;
   /** Shared read-only demo account (nothing it does is saved). */
   isDemo: boolean;
+  /** Saw the first-run intro (the demo account replays it on every sign-in). */
+  onboarded?: boolean;
   createdAt: string;
 }
 

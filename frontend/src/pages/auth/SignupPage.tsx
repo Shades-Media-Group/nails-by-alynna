@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { homePathFor, useAuth } from '@/app/auth';
 import { GoogleButton, GoogleTerms, OrDivider } from '@/components/auth/GoogleButton';
 import { VerifyEmailStep } from '@/components/auth/VerifyEmailStep';
@@ -60,15 +60,15 @@ export default function SignupPage() {
   const [remember, setRemember] = useState(restored?.remember ?? true);
   const [touched, setTouched] = useState(false);
   // After the form: the emailed code confirms the address and opens the session.
-  const [pending, setPending] = useState<Pick<PendingVerification, 'email' | 'resendAfterSec'> | null>(
-    restored ? { email: restored.email, resendAfterSec: restored.resendAfterSec ?? 60 } : null,
+  const [pending, setPending] = useState<Pick<PendingVerification, 'email' | 'resendAfterSec' | 'sent'> | null>(
+    restored ? { email: restored.email, resendAfterSec: restored.resendAfterSec ?? 60, sent: restored.sent } : null,
   );
 
   // The address this tab just signed up with: submitting it again means "back to my code".
   const [registered, setRegistered] = useState<string | null>(restored?.email ?? null);
-  const showCodeStep = (email: string, resendAfterSec = 60) => {
-    setPending({ email, resendAfterSec });
-    savePendingCode({ flow: 'signup', email, remember, resendAfterSec });
+  const showCodeStep = (email: string, resendAfterSec = 60, sent = true) => {
+    setPending({ email, resendAfterSec, sent });
+    savePendingCode({ flow: 'signup', email, remember, resendAfterSec, sent });
     window.scrollTo({ top: 0 });
   };
 
@@ -76,7 +76,7 @@ export default function SignupPage() {
     mutationFn: authApi.register,
     onSuccess: (verification) => {
       setRegistered(verification.email);
-      showCodeStep(verification.email, verification.resendAfterSec);
+      showCodeStep(verification.email, verification.resendAfterSec, verification.sent !== false);
     },
     onError: (error, input) => {
       if (isApiError(error, 'EMAIL_TAKEN') && registered === input.email.trim().toLowerCase()) showCodeStep(registered);
@@ -137,6 +137,8 @@ export default function SignupPage() {
           remember={remember}
           reason="signup"
           resendAfterSec={pending.resendAfterSec}
+          sent={pending.sent !== false}
+          onResent={() => savePendingCode({ flow: 'signup', email: pending.email, remember, resendAfterSec: pending.resendAfterSec, sent: true })}
           sentAt={restored?.email === pending.email ? restored.at : undefined}
           onVerified={onVerified}
           onChangeEmail={() => {
@@ -152,14 +154,7 @@ export default function SignupPage() {
   return (
     <AuthLayout
       back={`${lp('/login')}${carry}`}
-      footer={
-        <>
-          {t('signup.haveAccount')}{' '}
-          <Link to={`${lp('/login/email')}${carry}`} className="font-bold text-rose-700 underline-offset-4 hover:underline">
-            {t('signup.logIn')}
-          </Link>
-        </>
-      }
+      footer={{ text: t('signup.haveAccount'), action: t('signup.logIn'), to: `${lp('/login/email')}${carry}` }}
     >
       <h1 className="text-h1 font-extrabold">{invite.data ? t('signup.inviteTitle', { name: invite.data.name }) : t('signup.title')}</h1>
       <p className="mt-2 text-ink-600">
@@ -190,6 +185,7 @@ export default function SignupPage() {
             label={t('signup.name')}
             name="given-name"
             autoComplete="given-name"
+            autoCapitalize="words"
             icon={PersonOutlineIcon}
             value={form.name}
             onChange={set('name')}
@@ -200,6 +196,7 @@ export default function SignupPage() {
             label={t('signup.surname')}
             name="family-name"
             autoComplete="family-name"
+            autoCapitalize="words"
             value={form.surname}
             onChange={set('surname')}
             error={errors.surname}
@@ -211,7 +208,7 @@ export default function SignupPage() {
           name="email"
           type="email"
           inputMode="email"
-          autoComplete="username email"
+          autoComplete="email"
           autoCapitalize="none"
           spellCheck={false}
           placeholder={t('login.emailPlaceholder')}

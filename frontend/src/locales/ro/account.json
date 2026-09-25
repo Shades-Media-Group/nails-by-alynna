@@ -48,6 +48,8 @@
     "email": "Email",
     "emailHint": "Aici primești codurile de acces, mementourile și noutățile despre programări.",
     "changeEmail": "Schimbă",
+    "demoLocked": "Indisponibil în demo",
+    "emailDemo": "Emailul contului demo nu poate fi schimbat.",
     "emailChange": {
       "title": "Schimbă emailul",
       "text": "Îți trimitem un cod din 6 cifre pe noua adresă. Emailul se schimbă după ce îl introduci.",
@@ -97,7 +99,13 @@
     "logoutAll": "Ieși de pe toate dispozitivele",
     "loggedOutAll": "Toate dispozitivele au fost deconectate.",
     "version": "Versiunea {{version}}",
-    "credit": "Design și dezvoltare: SHADES Media Group"
+    "credit": "Design și dezvoltare: SHADES Media Group",
+    "exportPreparing": "Pregătim fișierul…",
+    "exportReady": "Fișierul e gata. Salvează-l în Fișiere, trimite-l ție sau păstrează-l pe acest dispozitiv.",
+    "exportSave": "Salvează fișierul",
+    "exportSaved": "Fișier salvat",
+    "loyalty": "Card de fidelitate",
+    "loyaltyText": "Ștampilele tale și codul QR pentru recepție"
   },
   "notifications": {
     "title": "Notificări",

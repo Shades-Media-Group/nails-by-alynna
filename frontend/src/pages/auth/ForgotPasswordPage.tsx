@@ -68,7 +68,7 @@ export default function ForgotPasswordPage() {
           name="email"
           type="email"
           inputMode="email"
-          autoComplete="username email"
+          autoComplete="username"
           autoCapitalize="none"
           icon={EmailIcon}
           placeholder={t('login.emailPlaceholder')}

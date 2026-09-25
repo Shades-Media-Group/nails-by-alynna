@@ -48,6 +48,8 @@
     "email": "Email",
     "emailHint": "Sign-in codes, reminders and booking updates go here.",
     "changeEmail": "Change",
+    "demoLocked": "Not available in the demo",
+    "emailDemo": "The demo account's email can't be changed.",
     "emailChange": {
       "title": "Change email",
       "text": "We'll send a 6-digit code to the new address. Your email changes once you enter it.",
@@ -97,7 +99,13 @@
     "logoutAll": "Log out on all devices",
     "loggedOutAll": "You were signed out on all devices.",
     "version": "Version {{version}}",
-    "credit": "Designed and built by SHADES Media Group"
+    "credit": "Designed and built by SHADES Media Group",
+    "exportPreparing": "Preparing your file…",
+    "exportReady": "Your file is ready. Save it to Files, send it to yourself, or keep it on this device.",
+    "exportSave": "Save the file",
+    "exportSaved": "File saved",
+    "loyalty": "Loyalty card",
+    "loyaltyText": "Your stamps and the QR code for the desk"
   },
   "notifications": {
     "title": "Notifications",

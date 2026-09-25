@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { homePathFor, useAuth } from '@/app/auth';
 import { GoogleButton, GoogleTerms, OrDivider } from '@/components/auth/GoogleButton';
 import { Logo } from '@/components/brand/Logo';
@@ -40,14 +40,7 @@ export default function WelcomePage() {
 
   return (
     <AuthLayout
-      footer={
-        <>
-          {t('welcome.noAccount')}{' '}
-          <Link to={`${lp('/signup')}${carry}`} className="font-bold text-rose-700 underline-offset-4 hover:underline">
-            {t('welcome.signUp')}
-          </Link>
-        </>
-      }
+      footer={{ text: t('welcome.noAccount'), action: t('welcome.signUp'), to: `${lp('/signup')}${carry}` }}
     >
       <Logo className="mx-auto w-[7.25rem] lg:hidden" />
 

@@ -69,6 +69,7 @@ export const meApi = {
     api.patch<{ user: User }>('/me', input).then((r) => r.user),
   changePassword: (input: { currentPassword?: string; newPassword: string }) => api.post<{ ok: true }>('/me/password', input),
   deleteAccount: (password?: string) => api.delete<{ ok: true }>('/me', { password }),
+  markOnboarded: () => api.post<{ ok: true }>('/me/onboarded'),
   exportUrl: () => '/api/me/export',
   /** Change email, step 1: a code goes to the new address (password when the account has one). */
   startEmailChange: (input: { email: string; password?: string; locale: Locale }) =>
@@ -81,6 +82,8 @@ export const meApi = {
 /** What the "enter the code" screen needs after sign-up, login or an email change. */
 export interface PendingVerification {
   email: string;
+  /** False when the email with the code could not be sent (the account exists anyway). */
+  sent?: boolean;
   expiresInSec: number;
   resendAfterSec: number;
 }

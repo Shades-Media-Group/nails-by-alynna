@@ -3,7 +3,8 @@ import { useId, useState, type FormEvent } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Alert } from '@/components/common/Alert';
 import { Button } from '@/components/ui';
-import { EmailIcon } from '@/components/ui/icons';
+import { EmailIcon, WarningIcon } from '@/components/ui/icons';
+import { cx } from '@/lib/cx';
 import { useLocale } from '@/i18n/useLocale';
 import { errorMessage } from '@/lib/errors';
 import { isApiError } from '@/services/api/client';
@@ -18,6 +19,10 @@ interface VerifyEmailStepProps {
   /** After sign-up, or after a login with an address that was never confirmed. */
   reason: 'signup' | 'login';
   resendAfterSec?: number;
+  /** False when the email with the code did not go out: the step says so and offers to resend. */
+  sent?: boolean;
+  /** A new code went out (the step now reads "check your email"). */
+  onResent?: () => void;
   /** When the code was sent, if this step was restored after a reload. */
   sentAt?: number;
   onVerified: (user: User) => void;
@@ -26,12 +31,23 @@ interface VerifyEmailStepProps {
 }
 
 /** "Check your email": the 6-digit code confirms the address and signs in. */
-export function VerifyEmailStep({ email, remember, reason, resendAfterSec = 60, sentAt, onVerified, onChangeEmail }: VerifyEmailStepProps) {
+export function VerifyEmailStep({
+  email,
+  remember,
+  reason,
+  resendAfterSec = 60,
+  sent = true,
+  onResent,
+  sentAt,
+  onVerified,
+  onChangeEmail,
+}: VerifyEmailStepProps) {
   const { t } = useTranslation(['auth', 'common']);
   const { locale } = useLocale();
   const errorId = useId();
   const [code, setCode] = useState('');
   const [errorKey, setErrorKey] = useState(0);
+  const [delivered, setDelivered] = useState(sent);
 
   const verify = useMutation({
     mutationFn: (value: string) => authApi.verifyEmail({ email, code: value, remember }),
@@ -55,19 +71,30 @@ export function VerifyEmailStep({ email, remember, reason, resendAfterSec = 60, 
 
   return (
     <div className="animate-rise">
-      <span className="inline-flex size-14 items-center justify-center rounded-pill bg-blush-100 text-[1.75rem] text-ink-900" aria-hidden="true">
-        <EmailIcon fontSize="inherit" />
+      <span
+        className={cx(
+          'inline-flex size-14 items-center justify-center rounded-pill text-[1.75rem] text-ink-900',
+          delivered ? 'bg-blush-100' : 'bg-peach-100',
+        )}
+        aria-hidden="true"
+      >
+        {delivered ? <EmailIcon fontSize="inherit" /> : <WarningIcon fontSize="inherit" />}
       </span>
-      <h1 className="mt-5 text-h1 font-extrabold">{reason === 'login' ? t('verify.loginTitle') : t('verify.title')}</h1>
-      <p className="mt-2 text-ink-600">
+      <h1 className="mt-5 text-h1 font-extrabold">
+        {!delivered ? t('verify.notSentTitle') : reason === 'login' ? t('verify.loginTitle') : t('verify.title')}
+      </h1>
+      <p className="mt-2 text-ink-600" role={delivered ? undefined : 'alert'}>
         <Trans
           t={t}
-          i18nKey={reason === 'login' ? 'verify.loginText' : 'verify.text'}
+          i18nKey={!delivered ? 'verify.notSentText' : reason === 'login' ? 'verify.loginText' : 'verify.text'}
           values={{ email }}
           components={{ email: <strong className="break-all font-semibold text-ink-900" /> }}
         />
       </p>
-      <p className="mt-2 text-sm text-ink-600">{t('verify.spam')}</p>
+      {delivered ? <p className="mt-2 text-sm text-ink-600">{t('verify.spam')}</p> : null}
+      {!delivered && import.meta.env.DEV ? (
+        <p className="mt-2 font-mono text-xs text-ink-600">Development: the code is printed in the API terminal.</p>
+      ) : null}
 
       <form className="mt-7 flex flex-col gap-5" noValidate onSubmit={onSubmit}>
         {verify.isError ? (
@@ -95,7 +122,15 @@ export function VerifyEmailStep({ email, remember, reason, resendAfterSec = 60, 
       </form>
 
       <div className="mt-3 flex flex-col">
-        <ResendCodeButton seconds={resendAfterSec} sentAt={sentAt} onResend={() => authApi.resendVerification(email, locale)} />
+        <ResendCodeButton
+          seconds={resendAfterSec}
+          sentAt={sentAt}
+          onResend={async () => {
+            await authApi.resendVerification(email, locale);
+            setDelivered(true);
+            onResent?.();
+          }}
+        />
         <Button variant="ghost" size="md" fullWidth onClick={onChangeEmail}>
           {t('verify.otherEmail')}
         </Button>
