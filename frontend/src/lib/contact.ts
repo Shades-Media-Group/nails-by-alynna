@@ -30,7 +30,8 @@ export function contactLinks(studio: PublicConfig['studio'], t: (key: string) =>
   if (studio.telegram)
     links.push({ key: 'telegram', label: t('contact.telegram'), href: `https://t.me/${encodeURIComponent(studio.telegram)}`, icon: TelegramIcon, external: true });
   if (studio.instagram)
-    links.push({ key: 'instagram', label: t('contact.instagram'), href: `https://instagram.com/${encodeURIComponent(studio.instagram)}`, icon: InstagramIcon, external: true });
+    // ig.me/m opens a Direct chat with the studio (the Instagram app on phones, the web on computers).
+    links.push({ key: 'instagram', label: t('contact.instagram'), href: `https://ig.me/m/${encodeURIComponent(studio.instagram)}`, icon: InstagramIcon, external: true });
   if (studio.email) links.push({ key: 'email', label: t('contact.email'), href: `mailto:${studio.email}`, icon: EmailIcon, external: false });
   if (studio.mapsUrl) links.push({ key: 'directions', label: t('contact.directions'), href: studio.mapsUrl, icon: DirectionsIcon, external: true });
   return links;

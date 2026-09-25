@@ -6,7 +6,7 @@ import { toast } from '@/components/ui';
 
 const CHECK_EVERY_MS = 30 * 60_000;
 /** Screens where a reload could lose what the user is typing. */
-const BUSY_PATHS = /\/(book|signup|reset-password|admin\/(services|team|settings|appointments\/new))/;
+const BUSY_PATHS = /\/(book|login|signup|forgot-password|reset-password|profile|admin\/(services|team|settings|appointments\/new))/;
 
 /**
  * Keeps the app current after every deploy, without signing anyone out (the session lives in

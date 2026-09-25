@@ -72,3 +72,33 @@ export function currentPlatform(): Platform {
   }
   return cached;
 }
+
+const LANDING_SEEN = 'nba:landing-seen';
+
+/**
+ * A phone or tablet browser that has not been offered "web or app" yet. Remembered per browser,
+ * so a link opened in Telegram's or Instagram's own browser and then in Safari or Chrome gets
+ * the choice in each (their storage is separate).
+ */
+export function needsLanding(): boolean {
+  const platform = currentPlatform();
+  if (!platform.mobile || platform.standalone) return false;
+  try {
+    return window.localStorage.getItem(LANDING_SEEN) === null;
+  } catch {
+    return true;
+  }
+}
+
+export function markLandingSeen(): void {
+  try {
+    window.localStorage.setItem(LANDING_SEEN, new Date().toISOString());
+  } catch {
+    // Storage blocked: the choice simply shows again next time.
+  }
+}
+
+/** Where a signed-out visitor starts: the web-or-app choice the first time on a phone, else sign-in. */
+export function signedOutStart(): '/' | '/login' {
+  return needsLanding() ? '/' : '/login';
+}

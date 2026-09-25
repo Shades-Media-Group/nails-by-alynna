@@ -143,7 +143,7 @@ function versionPlugin(info: BuildInfo): Plugin {
 const MANIFEST: Partial<ManifestOptions> = {
   id: '/',
   name: 'Nails by Alynna',
-  short_name: 'Nails Alynna',
+  short_name: 'Nails by Alynna',
   description: 'Book your nails at Nails by Alynna, Chișinău: manicure, pedicure, extensions and nail art.',
   lang: 'ro',
   dir: 'ltr',

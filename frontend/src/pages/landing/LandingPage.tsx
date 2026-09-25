@@ -9,7 +9,7 @@ import { CheckIcon, InstallIcon, LanguageIcon } from '@/components/ui/icons';
 import { splitLocale, localizePath, preferredLocale } from '@/i18n/routing';
 import { useLocale } from '@/i18n/useLocale';
 import { openConsentSettings } from '@/lib/consent';
-import { currentPlatform } from '@/lib/platform';
+import { currentPlatform, markLandingSeen } from '@/lib/platform';
 import { storage, STORAGE_KEYS } from '@/lib/storage';
 
 /**
@@ -58,11 +58,12 @@ export default function LandingPage() {
         </ul>
 
         <div className="mt-10 flex flex-col gap-3">
-          <ButtonLink to={destination} icon={LanguageIcon} fullWidth>
+          {/* Either choice is remembered: this browser goes straight in next time. */}
+          <ButtonLink to={lp('/login')} icon={LanguageIcon} fullWidth onClick={markLandingSeen}>
             {t('landing.web')}
           </ButtonLink>
           <p className="-mt-1 text-center text-xs text-ink-600">{t('landing.webHint')}</p>
-          <ButtonLink to={lp('/app')} variant="outline" icon={InstallIcon} fullWidth className="mt-2 bg-white/80">
+          <ButtonLink to={lp('/app')} variant="outline" icon={InstallIcon} fullWidth className="mt-2 bg-white/80" onClick={markLandingSeen}>
             {t('landing.app')}
           </ButtonLink>
           <p className="-mt-1 text-center text-xs text-ink-600">{t('landing.appHint')}</p>
