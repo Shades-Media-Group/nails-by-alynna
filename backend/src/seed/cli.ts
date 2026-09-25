@@ -8,10 +8,11 @@ import { runSeed } from './run';
  *   --demo        demo accounts + sample clients/appointments (refused on production)
  *   --demo-users  only the read-only demo accounts (fine on production)
  * Reads .env (or the real environment). Safe to run repeatedly; also works against Atlas:
+ *   ENV_FILE=.env.production yarn seed          (uses the production settings file)
  *   MONGODB_URI="mongodb+srv://…" SEED_ADMIN_EMAIL=… SEED_ADMIN_PASSWORD=… yarn seed
  */
 
-loadDotEnv('.env');
+loadDotEnv(process.env.ENV_FILE ?? '.env');
 
 const args = new Set(process.argv.slice(2));
 const config = loadConfig(process.env);

@@ -33,7 +33,7 @@ function clientIpResolver(config: AppConfig) {
 }
 
 async function main() {
-  loadDotEnv('.env');
+  loadDotEnv(process.env.ENV_FILE ?? '.env');
   const config = loadConfig(process.env);
   const mongo = createMongo(config);
   const deps = createDeps(config, mongo, {
