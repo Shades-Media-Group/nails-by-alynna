@@ -45,3 +45,12 @@ Thumbs.db
 .impeccable/live/
 .claude/settings.local.json
 graphify-out/
+
+# ── Generated at build time from frontend/brand/logo.svg ───────
+frontend/public/icons/
+frontend/public/splash/
+frontend/public/favicon.svg
+frontend/public/favicon.ico
+
+# ── Local deploy credentials (host.md FTP etc.) ────────────────
+.env.deploy

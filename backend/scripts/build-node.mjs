@@ -12,6 +12,9 @@ const pkg = JSON.parse(await readFile('package.json', 'utf8'));
 
 await rm(OUT, { recursive: true, force: true });
 await mkdir(`${OUT}/tmp`, { recursive: true });
+// Plesk needs a document root inside the application root; keep it empty of app files.
+await mkdir(`${OUT}/public`, { recursive: true });
+await writeFile(`${OUT}/public/robots.txt`, 'User-agent: *\nDisallow: /\n');
 
 await build({
   entryPoints: ['src/server.ts'],
