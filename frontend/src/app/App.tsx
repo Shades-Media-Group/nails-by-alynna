@@ -6,7 +6,7 @@ import { Button, Toaster } from '@/components/ui';
 import { RefreshIcon, WarningIcon } from '@/components/ui/icons';
 import { queryClient } from '@/services/queries';
 import { AuthProvider, useAuth } from './auth';
-import { router } from './router';
+import { getRouter } from './router';
 
 /** Waits for the session check (under the splash) so guards never flash the wrong screen. */
 function AuthGate() {
@@ -31,7 +31,7 @@ function AuthGate() {
       </main>
     );
   }
-  return <RouterProvider router={router} />;
+  return <RouterProvider router={getRouter()} />;
 }
 
 export function App() {

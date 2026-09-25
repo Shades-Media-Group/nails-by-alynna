@@ -105,7 +105,8 @@
       "RATE_LIMITED": "Too many attempts. Please wait a few minutes and try again.",
       "CSRF_REJECTED": "Request blocked for your security. Reload the page and try again.",
       "VALIDATION_ERROR": "Please check the highlighted fields.",
-      "NETWORK": "No connection. Check your internet and try again."
+      "NETWORK": "No connection. Check your internet and try again.",
+      "DEMO_READ_ONLY": "This is a demo account — changes aren't saved."
     }
   },
   "validation": {
@@ -176,5 +177,9 @@
     "cookies": "Cookie settings",
     "rights": "© {{year}} Nails by Alynna, Chișinău",
     "credit": "Crafted by SHADES Media Group"
+  },
+  "demo": {
+    "badge": "Demo",
+    "text": "Demo account — explore freely, nothing is saved."
   }
 }

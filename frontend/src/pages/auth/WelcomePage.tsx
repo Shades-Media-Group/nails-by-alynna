@@ -1,13 +1,15 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Link, useSearchParams } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
+import { homePathFor, useAuth } from '@/app/auth';
 import { GoogleMark } from '@/components/brand/GoogleMark';
 import { Logo } from '@/components/brand/Logo';
 import { Alert } from '@/components/common/Alert';
 import { AuthLayout } from '@/components/layout/AuthLayout';
-import { ButtonLink } from '@/components/ui';
+import { Button, ButtonLink } from '@/components/ui';
 import { ArrowForwardIcon } from '@/components/ui/icons';
 import { safeNextPath } from '@/i18n/routing';
+import { errorMessage } from '@/lib/errors';
 import { useLocale } from '@/i18n/useLocale';
 import { authApi } from '@/services/api/endpoints';
 import { queries } from '@/services/queries';
@@ -23,6 +25,16 @@ export default function WelcomePage() {
   const next = safeNextPath(params.get('next'));
   const error = params.get('error');
   const carry = next ? `?next=${encodeURIComponent(next)}` : '';
+  const navigate = useNavigate();
+  const { setUser } = useAuth();
+  const demo = useMutation({
+    mutationFn: authApi.demo,
+    onSuccess: (user) => {
+      setUser(user);
+      navigate(lp(homePathFor(user)), { replace: true });
+    },
+  });
+  const demoRoles = config.data?.auth.demo ?? [];
 
   return (
     <AuthLayout
@@ -69,6 +81,33 @@ export default function WelcomePage() {
           </>
         ) : null}
       </div>
+
+      {demoRoles.length > 0 ? (
+        <section aria-labelledby="demo-title" className="mt-8 rounded-xl bg-peach-50 p-4">
+          <h2 id="demo-title" className="text-sm font-bold text-peach-800">
+            {t('demo.title')}
+          </h2>
+          <p className="mt-1 text-sm text-peach-800">{t('demo.text')}</p>
+          {demo.isError ? <Alert className="mt-3">{errorMessage(t, demo.error)}</Alert> : null}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {(['client', 'admin', 'administrator'] as const)
+              .filter((role) => demoRoles.includes(role))
+              .map((role) => (
+                <Button
+                  key={role}
+                  size="sm"
+                  variant="outline"
+                  className="bg-white"
+                  loading={demo.isPending && demo.variables === role}
+                  disabled={demo.isPending}
+                  onClick={() => demo.mutate(role)}
+                >
+                  {t(`demo.${role}`)}
+                </Button>
+              ))}
+          </div>
+        </section>
+      ) : null}
     </AuthLayout>
   );
 }

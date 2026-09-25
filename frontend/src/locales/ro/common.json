@@ -105,7 +105,8 @@
       "RATE_LIMITED": "Prea multe încercări. Așteaptă câteva minute și încearcă din nou.",
       "CSRF_REJECTED": "Cerere blocată pentru siguranța ta. Reîncarcă pagina și încearcă din nou.",
       "VALIDATION_ERROR": "Verifică câmpurile marcate.",
-      "NETWORK": "Nu există conexiune. Verifică internetul și încearcă din nou."
+      "NETWORK": "Nu există conexiune. Verifică internetul și încearcă din nou.",
+      "DEMO_READ_ONLY": "Acesta este un cont demo — modificările nu se salvează."
     }
   },
   "validation": {
@@ -176,5 +177,9 @@
     "cookies": "Setări cookie",
     "rights": "© {{year}} Nails by Alynna, Chișinău",
     "credit": "Creat de SHADES Media Group"
+  },
+  "demo": {
+    "badge": "Demo",
+    "text": "Cont demo — explorează liber, nimic nu se salvează."
   }
 }

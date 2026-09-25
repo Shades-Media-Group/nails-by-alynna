@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation } from 'react-router';
+import { DemoRibbon } from '@/components/common/DemoRibbon';
 import { TabBar } from './TabBar';
 import { TopNav } from './TopNav';
 
@@ -22,6 +23,7 @@ export function AppShell() {
       >
         {t('a11y.skipToContent')}
       </a>
+      <DemoRibbon />
       <TopNav />
       <main id="main" className="mx-auto w-full max-w-6xl pb-[calc(var(--safe-bottom)+7rem)] lg:px-8 lg:pb-16">
         <Outlet />

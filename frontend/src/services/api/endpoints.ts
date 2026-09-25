@@ -36,6 +36,7 @@ export const authApi = {
     api.post<{ user: User }>('/auth/login', input).then((r) => r.user),
   register: (input: RegisterInput) => api.post<{ user: User }>('/auth/register', input).then((r) => r.user),
   logout: () => api.post<{ ok: true }>('/auth/logout'),
+  demo: (role: 'client' | 'admin' | 'administrator') => api.post<{ user: User }>('/auth/demo', { role }).then((r) => r.user),
   logoutAll: () => api.post<{ ok: true }>('/auth/logout-all'),
   forgotPassword: (email: string, locale: Locale) => api.post<{ ok: true }>('/auth/forgot-password', { email, locale }),
   resetPassword: (token: string, password: string) => api.post<{ ok: true }>('/auth/reset-password', { token, password }),

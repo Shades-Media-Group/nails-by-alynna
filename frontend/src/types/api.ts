@@ -19,11 +19,13 @@ export interface User {
   hasPassword: boolean;
   hasGoogle: boolean;
   bookingBlocked: boolean;
+  /** Shared read-only demo account (nothing it does is saved). */
+  isDemo: boolean;
   createdAt: string;
 }
 
 export interface PublicConfig {
-  auth: { google: boolean };
+  auth: { google: boolean; demo: Role[] };
   studio: {
     name: string;
     tagline: I18nText;

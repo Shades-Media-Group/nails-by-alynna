@@ -5,7 +5,7 @@ import { RouteError } from '@/components/common/RouteError';
 import { LOCALES, type Locale } from '@/i18n/config';
 import { canonicalDefaultPath } from '@/i18n/routing';
 import { GuestOnly, RequireAuth, RequireRole } from './guards';
-import { LocaleLayout } from './LocaleLayout';
+import { LocaleLayout, localeLoader } from './LocaleLayout';
 
 /** Route modules are code-split; each page downloads only when first visited. */
 const page = (load: () => Promise<{ default: ComponentType }>) => async () => ({ Component: (await load()).default });
@@ -52,6 +52,11 @@ function localeTree(locale: Locale): RouteObject {
   return {
     path: locale === 'ro' ? '/' : `/${locale}`,
     element: <LocaleLayout locale={locale} />,
+    loader: () => localeLoader(locale),
+    // The static splash covers the first load; nothing to render meanwhile.
+    HydrateFallback: () => null,
+    // Only a language change needs the loader again.
+    shouldRevalidate: ({ currentUrl, nextUrl }) => currentUrl.pathname.split('/')[1] !== nextUrl.pathname.split('/')[1],
     errorElement: <RouteError />,
     children: [
       { index: true, lazy: page(() => import('@/pages/landing/LandingPage')) },
@@ -103,4 +108,10 @@ const routes: RouteObject[] = [
   localeTree('ro'),
 ];
 
-export const router = createBrowserRouter(routes);
+let router: ReturnType<typeof createBrowserRouter> | null = null;
+
+/** Created on first use — after i18next is initialised, because route loaders use it. */
+export function getRouter() {
+  router ??= createBrowserRouter(routes);
+  return router;
+}

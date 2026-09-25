@@ -1,4 +1,4 @@
-import { Suspense, use, useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { ConsentBanner } from '@/components/common/ConsentBanner';
 import { DelayedSpinner } from '@/components/common/DelayedSpinner';
@@ -8,44 +8,30 @@ import { i18n } from '@/i18n';
 import type { Locale } from '@/i18n/config';
 import { storage, STORAGE_KEYS } from '@/lib/storage';
 
-const ready = new Map<Locale, Promise<unknown>>();
-/** One cached promise per language, so rendering can suspend until its strings are loaded. */
-function languageReady(locale: Locale): Promise<unknown> {
-  let promise = ready.get(locale);
-  if (!promise) {
-    promise = i18n.language === locale && i18n.hasLoadedNamespace('common')
-      ? Promise.resolve()
-      : i18n.changeLanguage(locale);
-    ready.set(locale, promise);
-  }
-  return promise;
+/**
+ * Route loader for each language tree: switches i18next *before* React renders the route,
+ * so no component ever re-renders another during render.
+ */
+export async function localeLoader(locale: Locale): Promise<null> {
+  if (i18n.language !== locale) await i18n.changeLanguage(locale);
+  return null;
 }
 
-function LocaleContent({ locale }: { locale: Locale }) {
-  use(languageReady(locale));
+export function LocaleLayout({ locale }: { locale: Locale }) {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    if (i18n.language !== locale) void i18n.changeLanguage(locale);
     document.documentElement.lang = locale;
     // The bare "/" only decides the language; any other page means the visitor chose it.
     if (pathname !== '/') storage.set(STORAGE_KEYS.locale, locale);
   }, [locale, pathname]);
 
   return (
-    <>
+    <Suspense fallback={<DelayedSpinner />}>
       <Outlet />
       <SplashDone />
       <ConsentBanner />
       <UpdatePrompt />
-    </>
-  );
-}
-
-export function LocaleLayout({ locale }: { locale: Locale }) {
-  return (
-    <Suspense fallback={<DelayedSpinner />}>
-      <LocaleContent locale={locale} />
     </Suspense>
   );
 }
