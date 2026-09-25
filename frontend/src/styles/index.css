@@ -1,0 +1,291 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/onest/wght.css';
+
+/*
+ * Nails by Alynna — design tokens.
+ * Brand colors supplied by the studio: primary #F0AEF0, secondary #FDE7FC, text #252726,
+ * cyan #3DBFCC / #EDFDFE, orange #FD9B1D / #FFF6E9, logo pink #FD2578. The rest of each
+ * scale is derived so every text pairing meets WCAG AA (see DESIGN.md).
+ */
+@theme {
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* Ink — text and the single action color (pills, tab bar). */
+  --color-ink-50: #f7f7f6;
+  --color-ink-100: #efefee;
+  --color-ink-200: #e3e4e3;
+  --color-ink-300: #cbcdcc;
+  --color-ink-400: #a3a6a4;
+  --color-ink-500: #737775;
+  --color-ink-600: #5c605e;
+  --color-ink-700: #434745;
+  --color-ink-800: #333634;
+  --color-ink-900: #252726;
+
+  /* Blush — secondary #FDE7FC: soft fields, splash, soft buttons. */
+  --color-blush-50: #fff6fe;
+  --color-blush-100: #fde7fc;
+  --color-blush-200: #fad2f8;
+  --color-blush-300: #f5bdf2;
+
+  /* Orchid — primary #F0AEF0: brand fields and highlights (never small text). */
+  --color-orchid-200: #f7d3f7;
+  --color-orchid-300: #f0aef0;
+  --color-orchid-400: #e58ae6;
+  --color-orchid-600: #b048b4;
+  --color-orchid-700: #8e3294;
+
+  /* Rose — the logo pink #FD2578: brand accents; 600+ for small text. */
+  --color-rose-50: #fff0f5;
+  --color-rose-100: #ffdce8;
+  --color-rose-200: #ffb3cd;
+  --color-rose-400: #fe4b8e;
+  --color-rose-500: #fd2578;
+  --color-rose-600: #e0115f;
+  --color-rose-700: #b80c4d;
+
+  /* Cyan — #3DBFCC / #EDFDFE. */
+  --color-cyan-50: #edfdfe;
+  --color-cyan-100: #d3f6f9;
+  --color-cyan-200: #a9eef3;
+  --color-cyan-500: #3dbfcc;
+  --color-cyan-700: #1d7780;
+  --color-cyan-800: #155c63;
+
+  /* Peach — orange #FD9B1D / #FFF6E9. */
+  --color-peach-50: #fff6e9;
+  --color-peach-100: #ffe9c8;
+  --color-peach-200: #ffd699;
+  --color-peach-500: #fd9b1d;
+  --color-peach-700: #9c5700;
+  --color-peach-800: #7a4400;
+
+  /* Mint — success and the fourth swatch. */
+  --color-mint-50: #edfbf3;
+  --color-mint-100: #d3f5e2;
+  --color-mint-500: #2ebd7a;
+  --color-mint-700: #157a4a;
+
+  /* Lilac — fifth swatch (extensions). */
+  --color-lilac-50: #f4f0ff;
+  --color-lilac-100: #e8e0ff;
+  --color-lilac-500: #8b6cf0;
+  --color-lilac-700: #5a3ec2;
+
+  /* Red — errors and destructive actions. */
+  --color-red-50: #fff1f1;
+  --color-red-100: #ffdcdc;
+  --color-red-500: #e5484d;
+  --color-red-600: #d13035;
+  --color-red-700: #b42329;
+
+  /* Typography: one family, fixed rem scale (Operate surfaces), heavy tight display. */
+  --font-sans: 'Onest Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --text-display: 2.75rem;
+  --text-display--line-height: 0.98;
+  --text-display--letter-spacing: -0.035em;
+  --text-h1: 2rem;
+  --text-h1--line-height: 1.05;
+  --text-h1--letter-spacing: -0.03em;
+  --text-h2: 1.5rem;
+  --text-h2--line-height: 1.15;
+  --text-h2--letter-spacing: -0.02em;
+  --text-h3: 1.1875rem;
+  --text-h3--line-height: 1.3;
+  --text-h3--letter-spacing: -0.012em;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.45;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.35;
+  --text-caps: 0.6875rem;
+  --text-caps--line-height: 1.2;
+  --text-caps--letter-spacing: 0.22em;
+
+  /* Shape: soft, large radii for fields; pills for controls. */
+  --radius-xs: 0.5rem;
+  --radius-sm: 0.75rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.5rem;
+  --radius-2xl: 1.75rem;
+  --radius-pill: 999px;
+
+  /* Depth: offset, soft blur — never a halo. */
+  --shadow-card: 0 1px 2px rgb(37 39 38 / 0.04), 0 10px 28px -14px rgb(37 39 38 / 0.18);
+  --shadow-raised: 0 2px 6px rgb(37 39 38 / 0.06), 0 18px 40px -18px rgb(37 39 38 / 0.28);
+  --shadow-float: 0 12px 32px -10px rgb(37 39 38 / 0.45);
+  --shadow-sheet: 0 -12px 48px -16px rgb(37 39 38 / 0.3);
+
+  /* Motion: exponential ease-out; spring only for press feedback. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+
+  --animate-fade-in: fade-in 220ms var(--ease-out) both;
+  --animate-rise: rise 360ms var(--ease-out) both;
+  --animate-sheet-in: sheet-in 380ms var(--ease-out) both;
+  --animate-shimmer: shimmer 1.4s linear infinite;
+  --animate-gloss: gloss 1100ms 120ms var(--ease-in-out) both;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes sheet-in {
+    from { transform: translateY(100%); }
+    to { transform: none; }
+  }
+  @keyframes shimmer {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+  }
+  @keyframes gloss {
+    from { transform: translateX(-120%) skewX(-18deg); }
+    to { transform: translateX(260%) skewX(-18deg); }
+  }
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --gutter: 1.25rem;
+    --tabbar-h: 4.25rem;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  html {
+    background: var(--color-white);
+    color: var(--color-ink-900);
+    font-family: var(--font-sans);
+    font-feature-settings: 'ss01', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+    scroll-padding-top: 5rem;
+  }
+
+  body {
+    min-height: 100dvh;
+    background: var(--color-white);
+    overscroll-behavior-y: none;
+  }
+
+  #root {
+    isolation: isolate;
+    min-height: 100dvh;
+  }
+
+  /* Browser surfaces carry the brand too. */
+  ::selection {
+    background: var(--color-rose-100);
+    color: var(--color-ink-900);
+  }
+  input,
+  textarea {
+    caret-color: var(--color-rose-500);
+  }
+  a {
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: 1px;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-rose-600);
+    outline-offset: 2px;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-ink-300) transparent;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']) {
+    cursor: pointer;
+  }
+  dialog::backdrop {
+    background: rgb(37 39 38 / 0.36);
+    backdrop-filter: blur(2px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 1ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Letter-spaced small caps for brand marks and meta (never as a heading eyebrow). */
+@utility caps {
+  font-size: var(--text-caps);
+  line-height: var(--text-caps--line-height);
+  letter-spacing: var(--text-caps--letter-spacing);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+@utility gutter-x {
+  padding-inline: max(var(--gutter), env(safe-area-inset-left, 0px));
+}
+
+@utility safe-top {
+  padding-top: var(--safe-top);
+}
+
+@utility safe-bottom {
+  padding-bottom: var(--safe-bottom);
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility press {
+  transition: transform 160ms var(--ease-spring), background-color 160ms var(--ease-out),
+    box-shadow 160ms var(--ease-out), color 160ms var(--ease-out), opacity 160ms var(--ease-out);
+  &:active:not(:disabled):not([aria-disabled='true']) {
+    transform: scale(0.97);
+  }
+}
+
+@utility skeleton {
+  background: linear-gradient(90deg, var(--color-ink-100) 25%, var(--color-ink-50) 50%, var(--color-ink-100) 75%);
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+  border-radius: var(--radius-sm);
+}
