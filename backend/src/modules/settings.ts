@@ -36,6 +36,12 @@ export const DEFAULT_SETTINGS: StudioSettings = {
   cancellationWindowHours: 12,
   requireApproval: false,
   bufferMin: 0,
+  // Smart slots: online clients are offered times that keep each master's day compact —
+  // back to back, at most 10 free minutes beside a visit, no gap shorter than 1 h 30 min that
+  // nobody could book (a gel polish, the shortest main visit, takes 1 h 30 min).
+  smartSlots: true,
+  maxGapMin: 10,
+  minBookableGapMin: 90,
   maxActiveBookings: 3,
   policy: {
     ro: 'Poți anula sau reprograma gratuit până la termenul indicat. După aceea, te rugăm să ne contactezi.',

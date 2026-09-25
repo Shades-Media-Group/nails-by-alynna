@@ -44,7 +44,8 @@ describe('availability', () => {
     expect(await slots(client, '2026-05-31')).toEqual([]); // past
 
     const days = await client.get(`/api/availability/days?serviceIds=${gelId}&days=7`);
-    expect(days.body.days.map((d: { slots: number }) => d.slots)).toEqual([27, 31, 31, 31, 31, 19, 0]);
+    // Smart slots (on by default) count only times that leave no dead gap in the day.
+    expect(days.body.days.map((d: { slots: number }) => d.slots)).toEqual([21, 21, 21, 21, 21, 9, 0]);
   });
 
   it('adds up the duration of several services', async () => {
@@ -105,10 +106,11 @@ describe('booking', () => {
   it('limits upcoming bookings per client', async () => {
     const { client } = await registerClient(ctx);
     const day = await slots(client, '2026-06-04');
-    for (const i of [0, 8, 16]) {
+    // 10:00, 11:30, 13:00: back to back, so each is still offered after the one before.
+    for (const i of [0, 1, 7]) {
       expect((await client.post('/api/appointments', { serviceIds: [gelId], start: day[i]!.start })).status).toBe(201);
     }
-    const fourth = await client.post('/api/appointments', { serviceIds: [gelId], start: day[24]!.start });
+    const fourth = await client.post('/api/appointments', { serviceIds: [gelId], start: day.at(-1)!.start });
     expect(fourth.status).toBe(409);
     expect(fourth.body.error.code).toBe('BOOKING_LIMIT');
   });

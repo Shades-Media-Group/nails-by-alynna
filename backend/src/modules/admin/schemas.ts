@@ -93,6 +93,8 @@ const staffFields = {
   title: i18nOptionalTextSchema(60),
   color: swatchColorSchema,
   weekly: weeklySchema,
+  /** Free minutes after every client (see StaffDoc.bufferMin). */
+  bufferMin: z.number().int().min(0).max(30).multipleOf(5),
   serviceIds: z.array(objectIdSchema).max(200).nullable(),
   isBookable: z.boolean(),
   isActive: z.boolean(),
@@ -101,6 +103,7 @@ const staffFields = {
 export const staffInputSchema = z.object({
   ...staffFields,
   color: staffFields.color.default('blush'),
+  bufferMin: staffFields.bufferMin.default(0),
   serviceIds: staffFields.serviceIds.default(null),
   isBookable: staffFields.isBookable.default(true),
   isActive: staffFields.isActive.default(true),

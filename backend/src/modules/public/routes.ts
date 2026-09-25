@@ -128,6 +128,7 @@ export function publicRoutes(deps: AppDeps) {
         color: s.color,
         serviceIds: s.serviceIds?.map((id) => id.toHexString()) ?? null,
         weekly: s.weekly,
+        bufferMin: s.bufferMin ?? 0,
       })),
     });
   });

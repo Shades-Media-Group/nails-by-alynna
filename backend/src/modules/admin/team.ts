@@ -1,11 +1,11 @@
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { ObjectId } from 'mongodb';
 import { z } from 'zod';
 import type { AppDeps, AppEnv } from '../../context';
-import type { StaffDoc, TimeOffDoc } from '../../db/types';
+import { ACTIVE_STATUSES, type StaffDoc, type TimeOffDoc, type WeeklyHours } from '../../db/types';
 import { audit } from '../../lib/audit';
 import { AppError, notFound } from '../../lib/errors';
-import { addDays, dayRange, zonedTimeToUtc } from '../../lib/time';
+import { addDays, dayRange, timeToMinutes, toZonedParts, zonedTimeToUtc } from '../../lib/time';
 import { dateSchema, objectIdSchema, paramId, parseJson, parseQuery, timeSchema } from '../../lib/validation';
 import { requireRole } from '../../middleware/auth';
 import { getSettings } from '../settings';
@@ -20,6 +20,7 @@ function toStaff(s: StaffDoc) {
     userId: s.userId?.toHexString() ?? null,
     serviceIds: s.serviceIds?.map((id) => id.toHexString()) ?? null,
     weekly: s.weekly,
+    bufferMin: s.bufferMin ?? 0,
     isActive: s.isActive,
     isBookable: s.isBookable,
     order: s.order,
@@ -35,6 +36,33 @@ function toTimeOff(t: TimeOffDoc) {
     reason: t.reason,
     createdAt: t.createdAt.toISOString(),
   };
+}
+
+/** Whether a booking sits inside one stretch of the weekly hours (Monday first), in the studio's zone. */
+function coveredByWeek(weekly: WeeklyHours, start: Date, end: Date, timeZone: string): boolean {
+  const from = toZonedParts(start, timeZone);
+  const to = toZonedParts(end, timeZone);
+  const endMinutes = to.date === from.date ? to.minutes : to.date === addDays(from.date, 1) && to.minutes === 0 ? 24 * 60 : -1;
+  if (endMinutes < 0) return false;
+  return (weekly[from.weekday - 1] ?? []).some((i) => timeToMinutes(i.start) <= from.minutes && endMinutes <= timeToMinutes(i.end));
+}
+
+/** Upcoming bookings of a master that their new hours no longer cover: they stay booked, and the master is told. */
+async function bookingsOutsideHours(deps: AppDeps, staff: StaffDoc, timeZone: string) {
+  const upcoming = await deps.col.appointments
+    .find(
+      { staffId: staff._id, status: { $in: ACTIVE_STATUSES }, start: { $gte: deps.now() } },
+      { sort: { start: 1 }, limit: 300, projection: { start: 1, end: 1, client: 1 } },
+    )
+    .toArray();
+  return upcoming
+    .filter((a) => !coveredByWeek(staff.weekly, a.start, a.end, timeZone))
+    .map((a) => ({
+      id: a._id.toHexString(),
+      start: a.start.toISOString(),
+      end: a.end.toISOString(),
+      clientName: `${a.client.name} ${a.client.surname}`.trim(),
+    }));
 }
 
 export function adminTeamRoutes(deps: AppDeps) {
@@ -68,6 +96,32 @@ export function adminTeamRoutes(deps: AppDeps) {
     if (!updated) throw notFound('Master');
     await audit(deps, { actorId: c.get('user')._id, action: 'staff.update', targetType: 'staff', targetId: id });
     return c.json({ staff: toStaff(updated) });
+  });
+
+  // ── My schedule: a master sets their own week (hours, breaks, time between clients) ──
+  const ownProfile = async (c: Context<AppEnv>) => {
+    const profile = await deps.col.staff.findOne({ userId: c.get('user')._id, isActive: true });
+    if (!profile) throw notFound('Master');
+    return profile;
+  };
+
+  app.get('/me', async (c) => c.json({ staff: toStaff(await ownProfile(c)) }));
+
+  const ownWeekSchema = staffPatchSchema.pick({ weekly: true, bufferMin: true });
+
+  app.patch('/me', async (c) => {
+    const actor = c.get('user');
+    const profile = await ownProfile(c);
+    const input = await parseJson(c, ownWeekSchema);
+    const updated = await deps.col.staff.findOneAndUpdate(
+      { _id: profile._id },
+      { $set: { ...input, updatedAt: deps.now() } },
+      { returnDocument: 'after' },
+    );
+    if (!updated) throw notFound('Master');
+    await audit(deps, { actorId: actor._id, action: 'staff.update_own', targetType: 'staff', targetId: profile._id });
+    const settings = await getSettings(deps);
+    return c.json({ staff: toStaff(updated), outsideHours: await bookingsOutsideHours(deps, updated, settings.timezone) });
   });
 
   // ── Time off / closures ─────────────────────────────────────────────────────

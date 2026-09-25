@@ -73,6 +73,8 @@ export interface UserDoc {
   /** Staff-only notes about a client. */
   notes: string;
   search: string;
+  /** When the client finished (or closed) the first-run intro of the app. */
+  onboardedAt?: Date | null;
   lastLoginAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -185,6 +187,12 @@ export interface StaffDoc {
   /** null = can perform every service. */
   serviceIds: ObjectId[] | null;
   weekly: WeeklyHours;
+  /**
+   * Minutes this master keeps free after every client (cleanup, a coffee): 0–30 in 5-minute steps,
+   * missing = 0. Not needed when a visit ends exactly at the end of a working interval (the last
+   * client of a shift, or before a lunch break).
+   */
+  bufferMin?: number;
   isActive: boolean;
   isBookable: boolean;
   order: number;
@@ -279,6 +287,15 @@ export interface StudioSettings {
   cancellationWindowHours: number;
   requireApproval: boolean;
   bufferMin: number;
+  /**
+   * Smart slots: clients booking online see only start times that keep each master's day compact
+   * (visits back to back, no gap nobody can book). Staff always see every free time.
+   */
+  smartSlots: boolean;
+  /** Free minutes beside a visit that still count as back to back. */
+  maxGapMin: number;
+  /** A free gap at least this long can still take a visit; shorter ones (above maxGapMin) are dead time. */
+  minBookableGapMin: number;
   maxActiveBookings: number;
   policy: I18nText;
   /** Loyalty stamp card: every completed visit is a stamp; some visits of each card get a discount. */
@@ -347,6 +364,8 @@ export interface OtpCodeDoc {
   expiresAt: Date;
   /** Used, replaced by a newer code, or locked after too many wrong tries. */
   usedAt: Date | null;
+  /** Set when the email carrying this code could not be sent. */
+  deliveryFailedAt?: Date | null;
 }
 
 /** One browser/device that accepted Web Push; `_id` is the sha256 of the endpoint. */

@@ -126,6 +126,36 @@ describe('staff bookings & statuses', () => {
     expect(forced.status).toBe(201);
   });
 
+  it('restores a cancelled visit only if the master still has their break around it', async () => {
+    const me = await owner.get('/api/admin/team/me');
+    expect((await owner.patch('/api/admin/team/me', { bufferMin: 15 })).status).toBe(200);
+    try {
+      // Gel 12:00–13:30 (Chișinău), cancelled; then 13:40 is booked, inside the 15-minute break.
+      const first = await owner.post('/api/admin/appointments', {
+        newClient: { name: 'Irina', surname: 'Restored', phone: '079000444' },
+        serviceIds: [gelId],
+        start: '2026-06-04T09:00:00.000Z',
+      });
+      expect(first.status).toBe(201);
+      const id = first.body.appointment.id;
+      expect((await owner.patch(`/api/admin/appointments/${id}`, { status: 'cancelled' })).status).toBe(200);
+      const next = await owner.post('/api/admin/appointments', {
+        newClient: { name: 'Irina', surname: 'Next', phone: '079000555' },
+        serviceIds: [gelId],
+        start: '2026-06-04T10:40:00.000Z',
+        force: true,
+      });
+      expect(next.status).toBe(201);
+
+      const restore = await owner.patch(`/api/admin/appointments/${id}`, { status: 'confirmed' });
+      expect(restore.status).toBe(409);
+      expect(restore.body.error.code).toBe('SLOT_TAKEN');
+      expect((await owner.patch(`/api/admin/appointments/${id}`, { status: 'confirmed', force: true })).status).toBe(200);
+    } finally {
+      await owner.patch('/api/admin/team/me', { bufferMin: me.body.staff.bufferMin });
+    }
+  });
+
   it('time off removes availability', async () => {
     const staff = await owner.get('/api/admin/team/staff');
     const masterId = staff.body.staff[0].id;

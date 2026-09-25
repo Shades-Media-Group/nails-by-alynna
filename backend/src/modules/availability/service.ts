@@ -11,6 +11,8 @@ export interface AvailabilityContext {
   services: ServiceDoc[];
   durationMin: number;
   staff: StaffDoc[];
+  /** Shortest service each master performs that clients can book (minutes), by staff id; smart slots only. */
+  shortestServiceMin: Map<string, number>;
   appointments: Map<string, Interval[]>;
   timeOff: Map<string, Interval[]>;
   closures: Interval[];
@@ -83,7 +85,7 @@ export async function loadAvailabilityContext(
   const rangeEnd = zonedTimeToUtc(addDays(opts.to, 1), '00:00', settings.timezone);
   const staffIds = staff.map((s) => s._id);
 
-  const [appointmentDocs, timeOffDocs] = await Promise.all([
+  const [appointmentDocs, timeOffDocs, shortestServiceMin] = await Promise.all([
     deps.col.appointments
       .find(
         {
@@ -102,6 +104,7 @@ export async function loadAvailabilityContext(
         { projection: { staffId: 1, start: 1, end: 1 } },
       )
       .toArray(),
+    settings.smartSlots ? shortestServices(deps, staff) : new Map<string, number>(),
   ]);
 
   const appointments = new Map<string, Interval[]>();
@@ -125,7 +128,24 @@ export async function loadAvailabilityContext(
     timeOff.set(key, list);
   }
 
-  return { settings, services, durationMin, staff, appointments, timeOff, closures };
+  return { settings, services, durationMin, staff, shortestServiceMin, appointments, timeOff, closures };
+}
+
+/** Per master: the shortest active service they do, in an active category — no visit fits a shorter gap. */
+async function shortestServices(deps: AppDeps, staff: StaffDoc[]): Promise<Map<string, number>> {
+  const [services, categories] = await Promise.all([
+    deps.col.services.find({ isActive: true }, { projection: { categoryId: 1, durationMin: 1 } }).toArray(),
+    deps.col.categories.find({ isActive: true }, { projection: { _id: 1 } }).toArray(),
+  ]);
+  const listed = new Set(categories.map((c) => c._id.toHexString()));
+  const bookable = services.filter((s) => listed.has(s.categoryId.toHexString()));
+  const shortest = new Map<string, number>();
+  for (const member of staff) {
+    const own = member.serviceIds ? new Set(member.serviceIds.map((id) => id.toHexString())) : null;
+    const durations = bookable.filter((s) => !own || own.has(s._id.toHexString())).map((s) => s.durationMin);
+    if (durations.length > 0) shortest.set(member._id.toHexString(), Math.min(...durations));
+  }
+  return shortest;
 }
 
 /** How far ahead staff can see and book (clients are limited to the studio's horizon). */
@@ -137,22 +157,32 @@ export function bookingWindow(settings: StudioSettings, now: Date, staff = false
 }
 
 /**
- * Free start times on a date. Clients see the studio's rules (lead time, horizon); staff booking
- * at the desk or on the phone see every free time from now on.
+ * Free start times on a date. Clients see the studio's rules (lead time, horizon) and, with smart
+ * slots on, only the times that keep each master's day compact (see engine.ts); the booking then
+ * goes to the master it fits best. Staff booking at the desk or on the phone see every free time
+ * from now on, and can always override.
  */
 export function slotsForDate(ctx: AvailabilityContext, date: string, now: Date, opts: { staff?: boolean } = {}): Slot[] {
-  const { first, last } = bookingWindow(ctx.settings, now, opts.staff);
+  const { settings } = ctx;
+  const { first, last } = bookingWindow(settings, now, opts.staff);
   if (date < first || date > last) return [];
   return computeDaySlots({
     date,
-    timeZone: ctx.settings.timezone,
+    timeZone: settings.timezone,
     durationMin: ctx.durationMin,
-    stepMin: ctx.settings.slotStepMin,
-    bufferMin: ctx.settings.bufferMin,
-    earliestStart: now.getTime() + (opts.staff ? 0 : ctx.settings.leadTimeMin) * MINUTE,
-    staff: ctx.staff.map((s) => ({ id: s._id.toHexString(), weekly: s.weekly })),
+    stepMin: settings.slotStepMin,
+    bufferMin: settings.bufferMin,
+    earliestStart: now.getTime() + (opts.staff ? 0 : settings.leadTimeMin) * MINUTE,
+    staff: ctx.staff.map((s) => {
+      const id = s._id.toHexString();
+      return { id, weekly: s.weekly, bufferMin: s.bufferMin ?? 0, shortestServiceMin: ctx.shortestServiceMin.get(id) };
+    }),
     appointments: ctx.appointments,
     timeOff: ctx.timeOff,
     closures: ctx.closures,
+    smart:
+      settings.smartSlots && !opts.staff
+        ? { maxGapMin: settings.maxGapMin, minBookableGapMin: settings.minBookableGapMin }
+        : null,
   });
 }

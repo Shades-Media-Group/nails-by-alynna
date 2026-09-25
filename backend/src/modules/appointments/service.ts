@@ -16,9 +16,18 @@ import { canPerform, loadAvailabilityContext, loadServices, slotsForDate } from 
 import type { LoyaltyTag } from '../loyalty/service';
 
 /**
+ * Minutes kept free between two visits of a master: the studio's break or the master's own
+ * (StaffDoc.bufferMin), whichever is longer.
+ */
+export function breakBetween(settings: StudioSettings, master: Pick<StaffDoc, 'bufferMin'> | null | undefined): number {
+  return Math.max(settings.bufferMin, master?.bufferMin ?? 0);
+}
+
+/**
  * Double-booking protection without transactions: after writing a placement we look for an
- * overlapping active appointment of the same master that was placed earlier. The earliest
- * placement (placedAt, then _id) always wins; the later one rolls itself back.
+ * overlapping active appointment of the same master that was placed earlier (`bufferMin` apart
+ * at least, see breakBetween). The earliest placement (placedAt, then _id) always wins; the
+ * later one rolls itself back.
  */
 async function findEarlierOverlap(
   deps: AppDeps,
@@ -43,8 +52,8 @@ async function resolveStaff(
   deps: AppDeps,
   staffId: ObjectId | null,
   services: Awaited<ReturnType<typeof loadServices>>,
-  /** For "any master" at a chosen time: prefer a master who is free then. */
-  at?: { start: Date; end: Date; bufferMin: number },
+  /** For "any master" at a chosen time: prefer a master who is free then, breaks included. */
+  at?: { start: Date; end: Date; settings: StudioSettings },
 ): Promise<StaffDoc> {
   const staff = await deps.col.staff
     .find(staffId ? { _id: staffId, isActive: true } : { isActive: true, isBookable: true })
@@ -53,19 +62,39 @@ async function resolveStaff(
   const capable = staff.filter((s) => canPerform(s, services));
   let member = capable[0] ?? (staffId ? staff[0] : undefined);
   if (!staffId && at && capable.length > 1) {
-    const buffer = at.bufferMin * MINUTE;
-    const busy = await deps.col.appointments.distinct('staffId', {
-      staffId: { $in: capable.map((s) => s._id) },
-      status: { $in: ACTIVE_STATUSES },
-      start: { $lt: new Date(at.end.getTime() + buffer) },
-      end: { $gt: new Date(at.start.getTime() - buffer) },
-    });
-    const away = await deps.col.timeOff.distinct('staffId', {
-      staffId: { $in: capable.map((s) => s._id) },
-      start: { $lt: at.end },
-      end: { $gt: at.start },
-    });
-    const taken = new Set([...busy, ...away].map((id) => String(id)));
+    const start = at.start.getTime();
+    const end = at.end.getTime();
+    const between = new Map(capable.map((s) => [s._id.toHexString(), breakBetween(at.settings, s) * MINUTE]));
+    const own = new Map(capable.map((s) => [s._id.toHexString(), (s.bufferMin ?? 0) * MINUTE]));
+    const widest = Math.max(...between.values());
+    const [nearby, offs] = await Promise.all([
+      deps.col.appointments
+        .find(
+          {
+            staffId: { $in: capable.map((s) => s._id) },
+            status: { $in: ACTIVE_STATUSES },
+            start: { $lt: new Date(end + widest) },
+            end: { $gt: new Date(start - widest) },
+          },
+          { projection: { staffId: 1, start: 1, end: 1 } },
+        )
+        .toArray(),
+      deps.col.timeOff
+        .find(
+          { staffId: { $in: capable.map((s) => s._id) }, start: { $lt: new Date(end + widest) }, end: { $gt: at.start } },
+          { projection: { staffId: 1, start: 1, end: 1 } },
+        )
+        .toArray(),
+    ]);
+    const taken = new Set<string>();
+    for (const a of nearby) {
+      const gap = between.get(a.staffId.toHexString()) ?? 0;
+      if (a.start.getTime() < end + gap && a.end.getTime() > start - gap) taken.add(a.staffId.toHexString());
+    }
+    for (const t of offs) {
+      const key = String(t.staffId);
+      if (t.start.getTime() < end + (own.get(key) ?? 0)) taken.add(key);
+    }
     member = capable.find((s) => !taken.has(s._id.toHexString())) ?? member;
   }
   if (!member) {
@@ -96,6 +125,7 @@ export async function placeAppointment(deps: AppDeps, input: PlaceInput): Promis
 
   let services: Awaited<ReturnType<typeof loadServices>>;
   let staffId: ObjectId;
+  let master: StaffDoc | undefined;
   if (input.enforceSlots) {
     const ctx = await loadAvailabilityContext(deps, {
       serviceIds: input.serviceIds,
@@ -108,16 +138,16 @@ export async function placeAppointment(deps: AppDeps, input: PlaceInput): Promis
     if (!slot || !chosen) throw new AppError(409, 'SLOT_UNAVAILABLE', 'This time is no longer available');
     services = ctx.services;
     staffId = new ObjectId(chosen);
+    master = ctx.staff.find((s) => s._id.equals(staffId));
   } else {
     services = await loadServices(deps, input.serviceIds);
     const minutes = services.reduce((sum, s) => sum + s.durationMin, 0);
-    staffId = (
-      await resolveStaff(deps, input.staffId, services, {
-        start: input.start,
-        end: new Date(input.start.getTime() + minutes * MINUTE),
-        bufferMin: settings.bufferMin,
-      })
-    )._id;
+    master = await resolveStaff(deps, input.staffId, services, {
+      start: input.start,
+      end: new Date(input.start.getTime() + minutes * MINUTE),
+      settings,
+    });
+    staffId = master._id;
   }
 
   const durationMin = services.reduce((sum, s) => sum + s.durationMin, 0);
@@ -171,7 +201,7 @@ export async function placeAppointment(deps: AppDeps, input: PlaceInput): Promis
   if (!doc) throw new AppError(500, 'INTERNAL', 'Could not allocate a booking code');
 
   if (!input.force) {
-    const conflict = await findEarlierOverlap(deps, doc, settings.bufferMin);
+    const conflict = await findEarlierOverlap(deps, doc, breakBetween(settings, master));
     if (conflict) {
       await deps.col.appointments.deleteOne({ _id: doc._id });
       throw new AppError(409, 'SLOT_TAKEN', 'Someone just booked this time');
@@ -192,6 +222,7 @@ export async function rescheduleAppointment(
   const now = deps.now();
   const serviceIds = appointment.services.map((s) => s.serviceId);
   let staffId = opts.staffId ?? appointment.staffId;
+  let master: Pick<StaffDoc, 'bufferMin'> | null | undefined;
 
   if (opts.enforceSlots) {
     const date = toZonedParts(opts.start, settings.timezone).date;
@@ -206,6 +237,7 @@ export async function rescheduleAppointment(
     if (!slot) throw new AppError(409, 'SLOT_UNAVAILABLE', 'This time is no longer available');
     const keepSame = slot.staffIds.includes(appointment.staffId.toHexString()) && !opts.staffId;
     staffId = keepSame ? appointment.staffId : new ObjectId(slot.staffIds[0]);
+    master = ctx.staff.find((s) => s._id.equals(staffId));
   }
 
   const previous = {
@@ -225,7 +257,8 @@ export async function rescheduleAppointment(
   await deps.col.appointments.updateOne({ _id: appointment._id }, { $set: next });
 
   if (!opts.force) {
-    const conflict = await findEarlierOverlap(deps, { _id: appointment._id, ...next }, settings.bufferMin);
+    master ??= await deps.col.staff.findOne({ _id: staffId }, { projection: { bufferMin: 1 } });
+    const conflict = await findEarlierOverlap(deps, { _id: appointment._id, ...next }, breakBetween(settings, master));
     if (conflict) {
       await deps.col.appointments.updateOne({ _id: appointment._id }, { $set: previous });
       throw new AppError(409, 'SLOT_TAKEN', 'Someone just booked this time');
