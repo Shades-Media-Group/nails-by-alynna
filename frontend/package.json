@@ -3,12 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Nails by Alynna — mobile-first booking PWA (React + Vite)",
+  "description": "Nails by Alynna \u2014 mobile-first booking PWA (React + Vite)",
   "engines": {
     "node": ">=22.22.0"
   },
   "scripts": {
     "dev": "vite",
+    "dev:lan": "vite --host",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",

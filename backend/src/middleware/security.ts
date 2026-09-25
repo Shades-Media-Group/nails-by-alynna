@@ -60,6 +60,7 @@ export const noStore = createMiddleware<AppEnv>(async (c, next) => {
  */
 export function originGuard(deps: AppDeps) {
   const allowed = new Set(deps.config.allowedOrigins);
+  const isAllowed = (origin: string) => allowed.has(origin) || (deps.config.env === 'development' && isLanDevOrigin(origin, deps.config.appUrl));
   return createMiddleware<AppEnv>(async (c, next) => {
     if (UNSAFE_METHODS.has(c.req.method)) {
       const site = c.req.header('sec-fetch-site');
@@ -67,7 +68,7 @@ export function originGuard(deps: AppDeps) {
         throw new AppError(403, 'CSRF_REJECTED', 'Cross-site request rejected');
       }
       const origin = c.req.header('origin');
-      if (origin && !allowed.has(origin)) {
+      if (origin && !isAllowed(origin)) {
         throw new AppError(403, 'CSRF_REJECTED', 'Origin not allowed');
       }
       const hasBody = c.req.raw.body !== null;
@@ -78,6 +79,22 @@ export function originGuard(deps: AppDeps) {
     }
     await next();
   });
+}
+
+/**
+ * Development only: the dev server opened from a phone on the same network
+ * (`yarn dev:lan`, e.g. http://192.168.1.20:5180) — a private address on the dev server's port.
+ */
+export function isLanDevOrigin(origin: string, appUrl: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(origin);
+  } catch {
+    return false;
+  }
+  const port = new URL(appUrl).port;
+  const privateHost = /^(localhost|127\.0\.0\.1|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})$/;
+  return url.protocol === 'http:' && url.port === port && privateHost.test(url.hostname);
 }
 
 export const jsonBodyLimit = bodyLimit({
