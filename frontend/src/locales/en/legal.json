@@ -1,0 +1,202 @@
+{
+  "updated": "Last updated: {{date}}",
+  "contents": "On this page",
+  "operatorFull": "{{legalName}}, IDNO {{legalId}}",
+  "contactLine": "{{contact}}",
+  "privacy": {
+    "title": "Privacy policy",
+    "intro": "This policy explains what personal data {{studio}} collects through this booking app and website, why, for how long, and what your rights are. It follows Law no. 195/2024 on personal data protection of the Republic of Moldova.",
+    "sections": [
+      {
+        "id": "who",
+        "title": "Who is responsible",
+        "body": [
+          "Your data is controlled by {{operator}}, which runs the {{studio}} nail studio in {{city}}.",
+          "For any privacy question, contact {{contact}}."
+        ]
+      },
+      {
+        "id": "what",
+        "title": "What we collect",
+        "items": [
+          "Account details: first and last name, email address, phone number, preferred language, and your password in a one-way scrambled form (we never see or keep the password itself). If you sign in with Google: the identifier Google gives your account, and the name and email Google shares.",
+          "Bookings: the services, date and time, master, prices, status, the notes you write for the studio and, if you cancel, the reason you give.",
+          "Notes the studio keeps about your visits, such as preferences, so you get consistent service.",
+          "Technical and security data: IP address, browser and device type, sign-in times and a record of security-relevant actions.",
+          "Health information only if you choose to share it (for example an allergy in your notes). It is used solely to keep you safe during a service."
+        ]
+      },
+      {
+        "id": "why",
+        "title": "Why we use it",
+        "items": [
+          "To create and run your account and bookings: necessary to provide the service you ask for (contract).",
+          "To contact you about a visit, for example if it has to move: contract.",
+          "To keep the app secure, prevent abuse and record important actions: our legitimate interest in a safe service.",
+          "Health information you volunteer: your explicit consent, which you can withdraw at any time.",
+          "Optional preferences saved on your device: your consent (see Cookies).",
+          "Where the law requires us to keep or disclose data: legal obligation."
+        ],
+        "after": [
+          "We do not sell your data, do not use it for advertising and make no automated decisions about you."
+        ]
+      },
+      {
+        "id": "processors",
+        "title": "Who else handles it",
+        "body": [
+          "Only studio staff see your data, each as far as their work needs. We also use these providers, bound by data processing agreements:"
+        ],
+        "items": [
+          "Cloudflare, Inc.: delivers the app and protects it from attacks.",
+          "HOST.MD (Republic of Moldova): runs the booking server.",
+          "MongoDB, Inc. (MongoDB Atlas): stores the database in a data centre in the European Union.",
+          "Google: only if you choose to sign in with Google.",
+          "Resend, Inc.: sends password-reset emails."
+        ],
+        "after": [
+          "Some providers are based outside the Republic of Moldova. Data goes to them only with the safeguards the law requires, such as standard contractual clauses."
+        ]
+      },
+      {
+        "id": "retention",
+        "title": "How long we keep it",
+        "items": [
+          "Account and booking history: while your account exists. When you delete your account, your personal details are erased and past bookings are kept only in anonymous form for the studio's records.",
+          "Sign-in sessions: 12 hours, or up to one year if you choose to stay signed in.",
+          "Password-reset links: 30 minutes.",
+          "Security records: one year.",
+          "Anything the law obliges us to keep: for as long as the law requires."
+        ]
+      },
+      {
+        "id": "cookies",
+        "title": "Cookies and storage on your device",
+        "body": [
+          "There are no advertising or third-party tracking cookies. Essential cookies keep you signed in and protect sign-in:"
+        ],
+        "items": [
+          "__Host-nba_at (15 minutes) and __Secure-nba_rt (12 hours, or one year when you stay signed in): your secure sign-in session.",
+          "nba_sess: tells the app that a session may exist, so it opens faster.",
+          "__Secure-nba_oa (10 minutes): protects the Google sign-in step."
+        ],
+        "after": [
+          "With your consent (Preferences), the app also remembers your language, a booking in progress and whether you closed the install hint, in your browser's local storage. You can change your choice at any time in Profile → Cookie settings."
+        ]
+      },
+      {
+        "id": "rights",
+        "title": "Your rights",
+        "items": [
+          "Access and a copy: Profile → Download my data gives you everything we hold about you, in one file.",
+          "Correction: edit your details in Profile, or ask the studio.",
+          "Deletion: Profile → Delete account, or ask the studio.",
+          "Restriction, objection, portability, and withdrawing consent at any time."
+        ],
+        "after": [
+          "To use a right, write to {{contact}}. We answer within one month. You may also complain to the National Center for Personal Data Protection (CNPDCP), datepersonale.md."
+        ]
+      },
+      {
+        "id": "security",
+        "title": "How we protect it",
+        "body": [
+          "Connections are encrypted (HTTPS). Passwords are stored only as salted scrypt hashes. Sign-in cookies cannot be read by scripts. Staff access is limited by role, and important actions are logged."
+        ]
+      },
+      {
+        "id": "children",
+        "title": "Children",
+        "body": [
+          "The app is for people aged 16 and over. Younger clients book through a parent or guardian."
+        ]
+      },
+      {
+        "id": "changes",
+        "title": "Changes to this policy",
+        "body": [
+          "When this policy changes, the date above changes too; important changes are announced in the app."
+        ]
+      }
+    ]
+  },
+  "terms": {
+    "title": "Terms of use",
+    "intro": "These terms apply when you use the {{studio}} app and website to book visits. By creating an account or making a booking, you accept them.",
+    "sections": [
+      {
+        "id": "provider",
+        "title": "Who provides the service",
+        "body": [
+          "The app is operated by {{operator}} ({{studio}}, {{place}}). Contact: {{contact}}."
+        ]
+      },
+      {
+        "id": "account",
+        "title": "Your account",
+        "items": [
+          "You must be 16 or older and give true details, including a phone number the studio can reach you on.",
+          "Keep your password to yourself. You are responsible for bookings made from your account.",
+          "One account per person. You can delete your account at any time in Profile."
+        ]
+      },
+      {
+        "id": "bookings",
+        "title": "Bookings",
+        "items": [
+          "A booking reserves a time with a master for the services you chose. It is confirmed right away, or, when the studio reviews requests, once the studio accepts it.",
+          "Prices in the app are indicative. The final price depends on length, design and materials, and is confirmed at the studio before the work starts.",
+          "Durations are estimates used to plan the day.",
+          "You pay at the studio after the visit. The app does not take payments."
+        ]
+      },
+      {
+        "id": "changes",
+        "title": "Changes and cancellations",
+        "items": [
+          "You can change or cancel a booking for free in the app until {{hours}} hours before it starts. The exact deadline is shown on each booking.",
+          "After that, please call or write to the studio.",
+          "If you are late, the service may be shortened or moved so other clients are not kept waiting.",
+          "After repeated missed visits the studio may turn off online booking for your account; you can still book by contacting the studio.",
+          "If the studio has to move or cancel your visit, for example because of illness, it tells you as soon as possible and offers another time."
+        ]
+      },
+      {
+        "id": "health",
+        "title": "Health and safety",
+        "items": [
+          "Tell the studio about allergies, skin conditions or other sensitivities before your visit.",
+          "The studio may decline or stop a service when it would not be safe, for example with an infection."
+        ]
+      },
+      {
+        "id": "use",
+        "title": "Fair use",
+        "body": [
+          "Do not make bookings you do not intend to keep, try to reach other people's data, disrupt the app or use it through automated means."
+        ]
+      },
+      {
+        "id": "liability",
+        "title": "Responsibility",
+        "body": [
+          "The studio is responsible for its services under the consumer protection law of the Republic of Moldova (Law no. 105/2003). Nothing in these terms limits your rights as a consumer. The app is provided as it is: we work to keep it available and correct, but cannot promise it always will be."
+        ]
+      },
+      {
+        "id": "complaints",
+        "title": "Questions and complaints",
+        "body": [
+          "Talk to us first: {{contact}}. You can also contact the Agency for Consumer Protection and Market Surveillance (APCSP). These terms are governed by the law of the Republic of Moldova, and disputes go to its competent courts."
+        ]
+      },
+      {
+        "id": "updates",
+        "title": "Changes to these terms",
+        "body": [
+          "We may update these terms. The date above shows the current version, and important changes are announced in the app. A booking follows the terms in force when it was made."
+        ]
+      }
+    ]
+  }
+}

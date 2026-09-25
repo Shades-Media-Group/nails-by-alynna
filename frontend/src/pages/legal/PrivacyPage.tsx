@@ -1,6 +1,5 @@
-import { PageHeader } from '@/components/layout/PageHeader';
+import { LegalDocument } from '@/components/legal/LegalDocument';
 
-// Placeholder while the screen is being built.
 export default function PrivacyPage() {
-  return <PageHeader title="Privacy" />;
+  return <LegalDocument doc="privacy" />;
 }

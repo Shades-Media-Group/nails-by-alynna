@@ -1,0 +1,202 @@
+{
+  "updated": "Ultima actualizare: {{date}}",
+  "contents": "Pe această pagină",
+  "operatorFull": "{{legalName}}, IDNO {{legalId}}",
+  "contactLine": "{{contact}}",
+  "privacy": {
+    "title": "Politica de confidențialitate",
+    "intro": "Această politică explică ce date cu caracter personal colectează {{studio}} prin această aplicație și site de programări, de ce, cât timp le păstrăm și ce drepturi ai. Respectă Legea nr. 195/2024 privind protecția datelor cu caracter personal a Republicii Moldova.",
+    "sections": [
+      {
+        "id": "who",
+        "title": "Cine răspunde de date",
+        "body": [
+          "Operatorul datelor tale este {{operator}}, care administrează salonul de unghii {{studio}} din {{city}}.",
+          "Pentru orice întrebare despre date, contactează-ne: {{contact}}."
+        ]
+      },
+      {
+        "id": "what",
+        "title": "Ce date colectăm",
+        "items": [
+          "Datele contului: prenumele și numele, adresa de email, numărul de telefon, limba preferată și parola, păstrată doar într-o formă criptată ireversibil (nu vedem și nu păstrăm parola propriu-zisă). Dacă intri cu Google: identificatorul oferit de Google contului tău, numele și emailul transmise de Google.",
+          "Programările: serviciile, data și ora, maestrul, prețurile, statutul, notele pe care le scrii pentru salon și, dacă anulezi, motivul indicat.",
+          "Notele pe care salonul le păstrează despre vizitele tale, de exemplu preferințe, ca să primești un serviciu constant.",
+          "Date tehnice și de securitate: adresa IP, tipul de browser și dispozitiv, orele autentificării și evidența acțiunilor importante pentru securitate.",
+          "Informații despre sănătate doar dacă alegi să le spui (de exemplu o alergie în note). Le folosim exclusiv pentru siguranța ta în timpul serviciului."
+        ]
+      },
+      {
+        "id": "why",
+        "title": "De ce le folosim",
+        "items": [
+          "Pentru a crea și administra contul și programările: necesar pentru serviciul pe care îl ceri (contract).",
+          "Pentru a te contacta despre o vizită, de exemplu dacă trebuie mutată: contract.",
+          "Pentru securitatea aplicației, prevenirea abuzurilor și evidența acțiunilor importante: interesul nostru legitim pentru un serviciu sigur.",
+          "Informațiile despre sănătate oferite de tine: consimțământul tău explicit, pe care îl poți retrage oricând.",
+          "Preferințele opționale salvate pe dispozitiv: consimțământul tău (vezi Cookie).",
+          "Când legea ne obligă să păstrăm sau să comunicăm date: obligație legală."
+        ],
+        "after": [
+          "Nu vindem datele tale, nu le folosim pentru publicitate și nu luăm decizii automate despre tine."
+        ]
+      },
+      {
+        "id": "processors",
+        "title": "Cine mai prelucrează datele",
+        "body": [
+          "Datele tale le văd doar angajații salonului, fiecare în măsura în care are nevoie pentru lucru. Mai folosim acești furnizori, legați prin acorduri de prelucrare a datelor:"
+        ],
+        "items": [
+          "Cloudflare, Inc.: livrează aplicația și o protejează de atacuri.",
+          "HOST.MD (Republica Moldova): găzduiește serverul de programări.",
+          "MongoDB, Inc. (MongoDB Atlas): păstrează baza de date într-un centru de date din Uniunea Europeană.",
+          "Google: doar dacă alegi să intri cu Google.",
+          "Resend, Inc.: trimite emailurile pentru resetarea parolei."
+        ],
+        "after": [
+          "Unii furnizori se află în afara Republicii Moldova. Datele ajung la ei doar cu garanțiile cerute de lege, de exemplu clauze contractuale standard."
+        ]
+      },
+      {
+        "id": "retention",
+        "title": "Cât timp păstrăm datele",
+        "items": [
+          "Contul și istoricul programărilor: cât timp există contul. Când îți ștergi contul, datele personale se șterg, iar programările trecute rămân doar în formă anonimă, pentru evidența salonului.",
+          "Sesiunile de autentificare: 12 ore sau până la un an, dacă alegi să rămâi conectat.",
+          "Linkurile de resetare a parolei: 30 de minute.",
+          "Evidența de securitate: un an.",
+          "Ce ne obligă legea să păstrăm: atât cât cere legea."
+        ]
+      },
+      {
+        "id": "cookies",
+        "title": "Cookie și stocarea pe dispozitiv",
+        "body": [
+          "Nu folosim cookie de publicitate sau de urmărire ale terților. Cookie-urile esențiale te mențin autentificat și protejează autentificarea:"
+        ],
+        "items": [
+          "__Host-nba_at (15 minute) și __Secure-nba_rt (12 ore sau un an, dacă rămâi conectat): sesiunea ta securizată.",
+          "nba_sess: îi spune aplicației că ar putea exista o sesiune, ca să se deschidă mai repede.",
+          "__Secure-nba_oa (10 minute): protejează pasul de autentificare cu Google."
+        ],
+        "after": [
+          "Cu acordul tău (Preferințe), aplicația mai reține limba, o programare începută și dacă ai închis sfatul de instalare, în memoria locală a browserului. Îți poți schimba alegerea oricând în Profil → Setări cookie."
+        ]
+      },
+      {
+        "id": "rights",
+        "title": "Drepturile tale",
+        "items": [
+          "Acces și copie: Profil → Descarcă datele mele îți oferă tot ce păstrăm despre tine, într-un fișier.",
+          "Rectificare: modifică datele în Profil sau cere-o salonului.",
+          "Ștergere: Profil → Șterge contul sau cere-o salonului.",
+          "Restricționare, opoziție, portabilitate și retragerea oricând a consimțământului."
+        ],
+        "after": [
+          "Pentru a-ți exercita un drept, scrie-ne: {{contact}}. Răspundem în cel mult o lună. Poți depune și o plângere la Centrul Național pentru Protecția Datelor cu Caracter Personal (CNPDCP), datepersonale.md."
+        ]
+      },
+      {
+        "id": "security",
+        "title": "Cum protejăm datele",
+        "body": [
+          "Conexiunile sunt criptate (HTTPS). Parolele sunt păstrate doar ca hash-uri scrypt cu sare. Cookie-urile de autentificare nu pot fi citite de scripturi. Accesul angajaților este limitat după rol, iar acțiunile importante sunt înregistrate."
+        ]
+      },
+      {
+        "id": "children",
+        "title": "Copiii",
+        "body": [
+          "Aplicația este pentru persoane de la 16 ani. Clienții mai tineri se programează prin părinte sau tutore."
+        ]
+      },
+      {
+        "id": "changes",
+        "title": "Modificări ale politicii",
+        "body": [
+          "Când politica se schimbă, se schimbă și data de mai sus; modificările importante le anunțăm în aplicație."
+        ]
+      }
+    ]
+  },
+  "terms": {
+    "title": "Termeni de utilizare",
+    "intro": "Acești termeni se aplică atunci când folosești aplicația și site-ul {{studio}} pentru programări. Creând un cont sau făcând o programare, îi accepți.",
+    "sections": [
+      {
+        "id": "provider",
+        "title": "Cine oferă serviciul",
+        "body": [
+          "Aplicația este administrată de {{operator}} ({{studio}}, {{place}}). Contact: {{contact}}."
+        ]
+      },
+      {
+        "id": "account",
+        "title": "Contul tău",
+        "items": [
+          "Trebuie să ai cel puțin 16 ani și să oferi date reale, inclusiv un număr de telefon la care salonul te poate contacta.",
+          "Nu împărtăși parola. Ești responsabil de programările făcute din contul tău.",
+          "Un cont pentru o persoană. Îți poți șterge contul oricând din Profil."
+        ]
+      },
+      {
+        "id": "bookings",
+        "title": "Programările",
+        "items": [
+          "O programare rezervă o oră la un maestru pentru serviciile alese. Se confirmă imediat sau, când salonul verifică cererile, după ce salonul o acceptă.",
+          "Prețurile din aplicație sunt orientative. Prețul final depinde de lungime, design și materiale și se confirmă la salon înainte de începerea lucrului.",
+          "Duratele sunt estimări folosite pentru planificarea zilei.",
+          "Plătești la salon, după vizită. Aplicația nu primește plăți."
+        ]
+      },
+      {
+        "id": "changes",
+        "title": "Modificări și anulări",
+        "items": [
+          "Poți modifica sau anula gratuit o programare în aplicație cu până la {{hours}} ore înainte de începere. Termenul exact apare la fiecare programare.",
+          "După acest termen, te rugăm să suni sau să scrii salonului.",
+          "Dacă întârzii, serviciul poate fi scurtat sau mutat, ca ceilalți clienți să nu aștepte.",
+          "După mai multe vizite ratate, salonul poate opri programarea online pentru contul tău; te poți programa în continuare contactând salonul.",
+          "Dacă salonul trebuie să mute sau să anuleze vizita, de exemplu din cauza unei boli, te anunță cât mai repede și îți propune altă oră."
+        ]
+      },
+      {
+        "id": "health",
+        "title": "Sănătate și siguranță",
+        "items": [
+          "Spune-i salonului despre alergii, afecțiuni ale pielii sau alte sensibilități înainte de vizită.",
+          "Salonul poate refuza sau opri un serviciu care nu ar fi sigur, de exemplu în caz de infecție."
+        ]
+      },
+      {
+        "id": "use",
+        "title": "Utilizare corectă",
+        "body": [
+          "Nu face programări pe care nu intenționezi să le onorezi, nu încerca să accesezi datele altor persoane, nu perturba aplicația și nu o folosi prin mijloace automate."
+        ]
+      },
+      {
+        "id": "liability",
+        "title": "Răspundere",
+        "body": [
+          "Salonul răspunde pentru serviciile sale conform legislației privind protecția consumatorilor a Republicii Moldova (Legea nr. 105/2003). Nimic din acești termeni nu îți limitează drepturile de consumator. Aplicația este oferită așa cum este: ne străduim să fie disponibilă și corectă, dar nu putem garanta că va fi mereu așa."
+        ]
+      },
+      {
+        "id": "complaints",
+        "title": "Întrebări și reclamații",
+        "body": [
+          "Vorbește mai întâi cu noi: {{contact}}. Te poți adresa și Agenției pentru Protecția Consumatorilor și Supravegherea Pieței (APCSP). Acești termeni sunt guvernați de legea Republicii Moldova, iar litigiile se soluționează de instanțele ei competente."
+        ]
+      },
+      {
+        "id": "updates",
+        "title": "Modificări ale termenilor",
+        "body": [
+          "Putem actualiza acești termeni. Data de mai sus arată versiunea în vigoare, iar modificările importante le anunțăm în aplicație. O programare urmează termenii în vigoare la data la care a fost făcută."
+        ]
+      }
+    ]
+  }
+}

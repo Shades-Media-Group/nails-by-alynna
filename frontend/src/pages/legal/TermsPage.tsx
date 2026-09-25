@@ -1,6 +1,5 @@
-import { PageHeader } from '@/components/layout/PageHeader';
+import { LegalDocument } from '@/components/legal/LegalDocument';
 
-// Placeholder while the screen is being built.
 export default function TermsPage() {
-  return <PageHeader title="Terms" />;
+  return <LegalDocument doc="terms" />;
 }

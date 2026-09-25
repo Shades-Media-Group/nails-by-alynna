@@ -58,6 +58,9 @@ export interface PublicConfig {
     telegram: string;
     instagram: string;
     email: string;
+    /** Registered business name and IDNO, for Terms and Privacy. */
+    legalName: string;
+    legalId: string;
     timezone: string;
     currency: string;
   };
