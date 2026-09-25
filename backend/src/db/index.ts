@@ -6,7 +6,10 @@ import type {
   CategoryDoc,
   MetaDoc,
   InviteDoc,
+  NotificationLogDoc,
+  OtpCodeDoc,
   PasswordResetDoc,
+  PushSubscriptionDoc,
   RateLimitDoc,
   ServiceDoc,
   SessionDoc,
@@ -30,6 +33,9 @@ export interface Collections {
   settings: Collection<SettingsDoc>;
   auditLogs: Collection<AuditLogDoc>;
   meta: Collection<MetaDoc>;
+  otpCodes: Collection<OtpCodeDoc>;
+  pushSubscriptions: Collection<PushSubscriptionDoc>;
+  notificationLog: Collection<NotificationLogDoc>;
 }
 
 export function collections(db: Db): Collections {
@@ -47,6 +53,9 @@ export function collections(db: Db): Collections {
     settings: db.collection<SettingsDoc>('settings'),
     auditLogs: db.collection<AuditLogDoc>('audit_logs'),
     meta: db.collection<MetaDoc>('meta'),
+    otpCodes: db.collection<OtpCodeDoc>('otp_codes'),
+    pushSubscriptions: db.collection<PushSubscriptionDoc>('push_subscriptions'),
+    notificationLog: db.collection<NotificationLogDoc>('notification_log'),
   };
 }
 
@@ -109,6 +118,61 @@ export async function ensureIndexes(db: Db): Promise<void> {
     // Keep one year of audit history (the TTL index also serves newest-first sorting).
     c.auditLogs.createIndexes([{ key: { at: 1 }, expireAfterSeconds: 365 * 24 * 3600, name: 'ttl' }]),
   ]);
+}
+
+/** Indexes of the notification collections; tracked on its own, apart from SCHEMA_VERSION. */
+const NOTIFICATIONS_SCHEMA_VERSION = 1;
+const GRANDFATHER_ID = 'emailVerificationGrandfathered';
+
+/**
+ * Email codes, Web Push and reminders: creates their indexes, and once marks every account
+ * that existed before email codes as verified, so nobody is locked out. Idempotent; runs at
+ * server start after `migrate`. (Uniqueness never depends on these indexes: the notification
+ * log and push subscriptions use meaningful `_id`s.)
+ */
+export async function migrateNotifications(db: Db, now: Date = new Date()): Promise<void> {
+  const c = collections(db);
+  const schema = await c.meta.findOne({ _id: 'notificationsSchema' });
+  if (schema?.value !== NOTIFICATIONS_SCHEMA_VERSION) {
+    await Promise.all([
+      c.otpCodes.createIndexes([
+        { key: { purpose: 1, email: 1, createdAt: -1 }, name: 'purpose_email' },
+        { key: { userId: 1, purpose: 1, createdAt: -1 }, name: 'user_purpose' },
+        // Kept a day past expiry (resend cooldown, attempt history), then removed.
+        { key: { expiresAt: 1 }, expireAfterSeconds: 86_400, name: 'ttl' },
+      ]),
+      c.pushSubscriptions.createIndexes([{ key: { userId: 1 }, name: 'user' }]),
+      c.notificationLog.createIndexes([
+        { key: { status: 1, retryAt: 1 }, name: 'retry', partialFilterExpression: { status: 'failed' } },
+        { key: { createdAt: 1 }, expireAfterSeconds: 180 * 86_400, name: 'ttl' },
+      ]),
+    ]);
+    await c.meta.updateOne(
+      { _id: 'notificationsSchema' },
+      { $set: { value: NOTIFICATIONS_SCHEMA_VERSION, updatedAt: now } },
+      { upsert: true },
+    );
+  }
+
+  // The cutoff is claimed with one atomic insert, so a second server starting at the same
+  // moment cannot move it; a run interrupted halfway finishes on the next start.
+  let marker = await c.meta.findOne({ _id: GRANDFATHER_ID });
+  if (!marker) {
+    try {
+      await c.meta.insertOne({ _id: GRANDFATHER_ID, value: { cutoff: now, done: false }, updatedAt: now });
+    } catch (error) {
+      if ((error as { code?: number } | null)?.code !== 11000) throw error;
+    }
+    marker = await c.meta.findOne({ _id: GRANDFATHER_ID });
+  }
+  const state = marker?.value as { cutoff?: Date; done?: boolean } | undefined;
+  if (state?.cutoff && !state.done) {
+    await c.users.updateMany(
+      { emailVerifiedAt: null, createdAt: { $lte: state.cutoff } },
+      { $set: { emailVerifiedAt: state.cutoff, emailGrandfathered: true } },
+    );
+    await c.meta.updateOne({ _id: GRANDFATHER_ID }, { $set: { value: { cutoff: state.cutoff, done: true }, updatedAt: now } });
+  }
 }
 
 export interface MongoHandle {

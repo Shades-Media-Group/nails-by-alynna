@@ -37,14 +37,33 @@ import { signInWithGoogle } from './google';
 import { consumeInvite, findInvite } from './invites';
 import { isPlaceholderEmail } from '../../lib/placeholder-email';
 import {
+  OTP_RESEND_COOLDOWN_MS,
+  OTP_TTL_MS,
+  issueAndEmailCode,
+  issueOtp,
+  needsEmailVerification,
+  otpCodeSchema,
+  revokeOtps,
+  sendEmailCode,
+  verifyOtp,
+} from './otp';
+import {
   createSession,
   revokeAllSessions,
   revokeSessionByToken,
   rotateSession,
   toPublicUser,
 } from './session';
+import { getSettings } from '../settings';
 
 const RESET_TTL_MS = 30 * 60_000;
+
+/** What the app needs to show the "enter the code" screen. */
+const pendingVerification = (email: string) => ({
+  verification: { email, expiresInSec: OTP_TTL_MS / 1000, resendAfterSec: OTP_RESEND_COOLDOWN_MS / 1000 },
+});
+
+const codeInvalid = () => new AppError(400, 'CODE_INVALID', 'The code is wrong or has expired', { fields: { code: 'invalid_code' } });
 const GOOGLE_ISSUERS = ['https://accounts.google.com', 'accounts.google.com'];
 let googleJwks: ReturnType<typeof createRemoteJWKSet> | null = null;
 
@@ -109,6 +128,7 @@ export function authRoutes(deps: AppDeps) {
       locale: input.locale,
       passwordHash: await deps.passwords.hash(input.password),
       googleId: null,
+      // Proven with the emailed code (POST /verify-email), which also opens the first session.
       emailVerifiedAt: null,
       termsAcceptedAt: now,
       isActive: true,
@@ -116,7 +136,7 @@ export function authRoutes(deps: AppDeps) {
       tokenVersion: 0,
       notes: '',
       search: userSearch(input.name, input.surname, input.email, input.phone),
-      lastLoginAt: now,
+      lastLoginAt: null,
       createdAt: now,
       updatedAt: now,
       deletedAt: null,
@@ -130,10 +150,9 @@ export function authRoutes(deps: AppDeps) {
       throw error;
     }
 
-    const tokens = await createSession(deps, user, { remember: input.remember, ...meta(c, ip) });
-    setSessionCookies(c, config, tokens);
     await audit(deps, { actorId: user._id, action: 'user.register', targetType: 'user', targetId: user._id });
-    return c.json({ user: toPublicUser(user) }, 201);
+    await sendEmailCode(deps, { user, purpose: 'verify_email', email: user.email, locale: input.locale });
+    return c.json(pendingVerification(user.email), 201);
   });
 
   /** Sign-up through an invite: the walk-in record becomes the account, bookings included. */
@@ -153,18 +172,22 @@ export function authRoutes(deps: AppDeps) {
       phone: input.phone,
       locale: input.locale,
       passwordHash: await deps.passwords.hash(input.password),
+      // The studio typed the details at the desk; the address still has to be proven.
       emailVerifiedAt: null,
       termsAcceptedAt: now,
       search: userSearch(input.name, input.surname, input.email, input.phone),
-      lastLoginAt: now,
       updatedAt: now,
     };
-    await col.users.updateOne({ _id: invited._id }, { $set: set });
-    const user = { ...invited, ...set };
-    const tokens = await createSession(deps, user, { remember: input.remember, ...meta(c, c.get('ip')) });
-    setSessionCookies(c, config, tokens);
+    try {
+      await col.users.updateOne({ _id: invited._id }, { $set: set, $unset: { emailGrandfathered: '' } });
+    } catch (error) {
+      if (isDuplicateKey(error)) throw new AppError(409, 'EMAIL_TAKEN', 'Email already registered', { fields: { email: 'taken' } });
+      throw error;
+    }
+    const user: UserDoc = { ...invited, ...set };
     await audit(deps, { actorId: user._id, action: 'user.claim_invite', targetType: 'user', targetId: user._id });
-    return c.json({ user: toPublicUser(user) }, 201);
+    await sendEmailCode(deps, { user, purpose: 'verify_email', email: user.email, locale: input.locale });
+    return c.json(pendingVerification(user.email), 201);
   }
 
   /** What the sign-up screen shows for an invite link: who it is for and the next visit. */
@@ -228,6 +251,12 @@ export function authRoutes(deps: AppDeps) {
     const { ok, needsRehash } = await deps.passwords.verify(input.password, user.passwordHash);
     if (!ok) throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
     if (!user.isActive) throw new AppError(403, 'ACCOUNT_DISABLED', 'Account disabled');
+    if (needsEmailVerification(user)) {
+      // No session until the inbox is proven: a fresh code is on its way (at most one a minute),
+      // and POST /verify-email signs in.
+      await sendEmailCode(deps, { user, purpose: 'verify_email', email: user.email, locale: user.locale });
+      throw new AppError(403, 'EMAIL_NOT_VERIFIED', 'Confirm your email with the code we sent');
+    }
 
     const now = deps.now();
     const set: Partial<UserDoc> = { lastLoginAt: now, updatedAt: now };
@@ -237,6 +266,54 @@ export function authRoutes(deps: AppDeps) {
     const tokens = await createSession(deps, user, { remember: input.remember, ...meta(c, ip) });
     setSessionCookies(c, config, tokens);
     return c.json({ user: toPublicUser({ ...user, ...set }) });
+  });
+
+  // ── Email verification (after sign-up, or a login with an unproven address) ──────
+  const verifyEmailSchema = z.object({ email: emailSchema, code: otpCodeSchema, remember: z.boolean().default(true) });
+
+  /** The emailed code proves the address and signs in, like a login. */
+  app.post('/verify-email', async (c) => {
+    const ip = c.get('ip');
+    const input = await parseJson(c, verifyEmailSchema);
+    await enforceRateLimits(deps, [
+      { key: `otp:verify:ip:${ip}`, limit: 30, windowSec: 900 },
+      { key: `otp:verify:acct:${input.email}`, limit: 15, windowSec: 900 },
+    ]);
+
+    const result = await verifyOtp(deps, { purpose: 'verify_email', email: input.email, code: input.code });
+    if (!result.ok) throw codeInvalid();
+    const user = await col.users.findOne({ _id: result.otp.userId });
+    if (!user || user.deletedAt || user.email !== input.email || demoSwitchedOff(deps, user)) throw codeInvalid();
+    if (!user.isActive) throw new AppError(403, 'ACCOUNT_DISABLED', 'Account disabled');
+
+    const now = deps.now();
+    const set: Partial<UserDoc> = { emailVerifiedAt: user.emailVerifiedAt ?? now, lastLoginAt: now, updatedAt: now };
+    await col.users.updateOne({ _id: user._id }, { $set: set, $unset: { emailGrandfathered: '' } });
+    const verified: UserDoc = { ...user, ...set, emailGrandfathered: undefined };
+    const tokens = await createSession(deps, verified, { remember: input.remember, ...meta(c, ip) });
+    setSessionCookies(c, config, tokens);
+    await audit(deps, { actorId: user._id, action: 'user.verify_email', targetType: 'user', targetId: user._id });
+    return c.json({ user: toPublicUser(verified) });
+  });
+
+  /** Sends a new code. Answers the same whether or not such an account is waiting for one. */
+  app.post('/verify-email/resend', async (c) => {
+    const ip = c.get('ip');
+    const input = await parseJson(c, z.object({ email: emailSchema, locale: localeSchema.optional() }));
+    await enforceRateLimits(deps, [
+      { key: `otp:send:ip:${ip}`, limit: 20, windowSec: 3600 },
+      { key: `otp:send:verify:${input.email}`, limit: 6, windowSec: 3600 },
+    ]);
+    const user = await col.users.findOne({ email: input.email, isActive: true, deletedAt: null });
+    if (user && needsEmailVerification(user)) {
+      // After the response: its timing must not tell whether such an account is waiting.
+      deps.defer(
+        issueAndEmailCode(deps, { user, purpose: 'verify_email', email: user.email, locale: input.locale ?? user.locale }).catch(
+          (error: unknown) => console.error(`[mail] verify_email code email failed: ${(error as Error).message}`),
+        ),
+      );
+    }
+    return c.json({ ok: true, resendAfterSec: OTP_RESEND_COOLDOWN_MS / 1000 });
   });
 
   // ── Refresh (rotates the refresh token) ──────────────────────────────────────
@@ -336,32 +413,45 @@ export function authRoutes(deps: AppDeps) {
     const input = await parseJson(c, forgotSchema);
     await enforceRateLimits(deps, [
       { key: `forgot:ip:${ip}`, limit: 10, windowSec: 3600 },
-      { key: `forgot:acct:${input.email}`, limit: 3, windowSec: 3600 },
+      { key: `forgot:acct:${input.email}`, limit: 5, windowSec: 3600 },
     ]);
 
-    const user = await col.users.findOne({ email: input.email, isActive: true, deletedAt: null });
+    // Shared demo accounts never get mail (their password is public anyway).
+    const user = await col.users.findOne({ email: input.email, isActive: true, deletedAt: null, isDemo: { $ne: true } });
+    // Everything happens after the response, so its timing never tells whether the account exists.
     if (user) {
-      const now = deps.now();
-      const token = randomToken(32);
-      await col.passwordResets.insertOne({
-        _id: new ObjectId(),
-        userId: user._id,
-        tokenHash: await sha256Hex(token),
-        expiresAt: new Date(now.getTime() + RESET_TTL_MS),
-        usedAt: null,
-        createdAt: now,
-      });
-      const locale = input.locale ?? user.locale;
-      const link = `${config.appUrl}${localePrefix(locale)}/reset-password?token=${encodeURIComponent(token)}`;
-      // Sent after the response so timing does not reveal whether the account exists.
       deps.defer(
-        deps.mailer
-          .send(passwordResetEmail({ to: user.email, name: user.name, locale, link }))
-          .catch((error) => console.error('[mail] password reset email failed', error)),
+        sendPasswordReset(user, input.locale ?? user.locale).catch((error: unknown) =>
+          console.error(`[mail] password reset email failed: ${(error as Error).message}`),
+        ),
       );
     }
-    return c.json({ ok: true });
+    return c.json({ ok: true, resendAfterSec: OTP_RESEND_COOLDOWN_MS / 1000 });
   });
+
+  /**
+   * One email carries both: a 6-digit code for the app and a link for the browser. A second
+   * request within a minute sends nothing new (the first email is still on its way).
+   */
+  async function sendPasswordReset(user: UserDoc, locale: Locale) {
+    const issued = await issueOtp(deps, { userId: user._id, purpose: 'reset_password', email: user.email });
+    if (issued.status !== 'issued') return;
+    const now = deps.now();
+    const token = randomToken(32);
+    await col.passwordResets.insertOne({
+      _id: new ObjectId(),
+      userId: user._id,
+      tokenHash: await sha256Hex(token),
+      expiresAt: new Date(now.getTime() + RESET_TTL_MS),
+      usedAt: null,
+      createdAt: now,
+    });
+    const link = `${config.appUrl}${localePrefix(locale)}/reset-password?token=${encodeURIComponent(token)}`;
+    const settings = await getSettings(deps);
+    await deps.mailer.send(
+      passwordResetEmail({ to: user.email, name: user.name, locale, link, code: issued.code, replyTo: settings.email || undefined }),
+    );
+  }
 
   const resetSchema = z.object({
     token: z.string().min(20, 'invalid').max(200, 'invalid'),
@@ -383,23 +473,54 @@ export function authRoutes(deps: AppDeps) {
     const user = await col.users.findOne({ _id: reset.userId, isActive: true, deletedAt: null });
     if (!user) throw new AppError(400, 'RESET_TOKEN_INVALID', 'Reset link is invalid or expired');
 
+    await setNewPassword(user, input.password, now);
+    await revokeAllSessions(deps, user._id);
+    clearSessionCookies(c, config);
+    await audit(deps, { actorId: user._id, action: 'user.password_reset', targetType: 'user', targetId: user._id, meta: { via: 'link' } });
+    return c.json({ ok: true });
+  });
+
+  /** The same reset with the 6-digit code from the email instead of the link. */
+  const resetCodeSchema = z.object({ email: emailSchema, code: otpCodeSchema, password: passwordSchema });
+
+  app.post('/reset-password/code', async (c) => {
+    const ip = c.get('ip');
+    const input = await parseJson(c, resetCodeSchema);
+    await enforceRateLimits(deps, [
+      { key: `reset:ip:${ip}`, limit: 20, windowSec: 3600 },
+      { key: `otp:verify:acct:${input.email}`, limit: 15, windowSec: 900 },
+    ]);
+    const now = deps.now();
+
+    const result = await verifyOtp(deps, { purpose: 'reset_password', email: input.email, code: input.code });
+    if (!result.ok) throw codeInvalid();
+    const user = await col.users.findOne({ _id: result.otp.userId, isActive: true, deletedAt: null });
+    if (!user || user.email !== input.email || user.isDemo) throw codeInvalid();
+
+    await setNewPassword(user, input.password, now);
+    await revokeAllSessions(deps, user._id);
+    clearSessionCookies(c, config);
+    await audit(deps, { actorId: user._id, action: 'user.password_reset', targetType: 'user', targetId: user._id, meta: { via: 'code' } });
+    return c.json({ ok: true });
+  });
+
+  /** New password; the reset (link or code) came through the inbox, so the address is proven. */
+  async function setNewPassword(user: UserDoc, password: string, now: Date) {
     await col.users.updateOne(
       { _id: user._id },
       {
         $set: {
-          passwordHash: await deps.passwords.hash(input.password),
-          // Opening the emailed link proves the inbox belongs to this user.
-          emailVerifiedAt: user.emailVerifiedAt ?? now,
+          passwordHash: await deps.passwords.hash(password),
+          emailVerifiedAt: user.emailGrandfathered ? now : (user.emailVerifiedAt ?? now),
           updatedAt: now,
         },
+        $unset: { emailGrandfathered: '' },
       },
     );
+    // Every other link and code for a reset stops working.
     await col.passwordResets.updateMany({ userId: user._id, usedAt: null }, { $set: { usedAt: now } });
-    await revokeAllSessions(deps, user._id);
-    clearSessionCookies(c, config);
-    await audit(deps, { actorId: user._id, action: 'user.password_reset', targetType: 'user', targetId: user._id });
-    return c.json({ ok: true });
-  });
+    await revokeOtps(deps, user._id, 'reset_password');
+  }
 
   // ── Google (OpenID Connect, authorization code + PKCE) ──────────────────────
   const names = cookieNames(config);

@@ -162,20 +162,40 @@ describe('Google sign-in: account linking', () => {
   });
 
   it('drops an unproven password and its sessions when the real owner signs in with Google (pre-hijack guard)', async () => {
-    const { client, user } = await registerClient(ctx);
+    // An account from before email codes: let in by the migration, but its inbox was never proven.
+    const email = `early.${Date.now()}@example.com`;
+    const signup = await ctx.client().post('/api/auth/register', {
+      name: 'Early', surname: 'Bird', email, phone: '069 123 457', password: strongPassword, acceptTerms: true,
+    });
+    expect(signup.status).toBe(201);
+    await ctx.deps.col.users.updateOne({ email }, { $set: { emailVerifiedAt: ctx.now(), emailGrandfathered: true } });
+    const client = await loginAs(ctx, email, strongPassword);
     expect((await client.get('/api/auth/me')).status).toBe(200);
 
-    const result = await signInWithGoogle(ctx.deps, identity({ email: user.email }), 'ro');
+    const result = await signInWithGoogle(ctx.deps, identity({ email }), 'ro');
     expect(result.ok && !result.created).toBe(true);
 
     // The session opened with the password is gone, and the password no longer works.
     expect((await client.get('/api/auth/me')).status).toBe(401);
-    await expect(loginAs(ctx, user.email, strongPassword)).rejects.toThrow(/401/);
-    const stored = await ctx.deps.col.users.findOne({ email: user.email });
+    await expect(loginAs(ctx, email, strongPassword)).rejects.toThrow(/401/);
+    const stored = await ctx.deps.col.users.findOne({ email });
     expect(stored?.passwordHash).toBeNull();
     expect(stored?.emailVerifiedAt).toBeInstanceOf(Date);
+    expect(stored?.emailGrandfathered).toBeUndefined();
     const log = await ctx.deps.col.auditLogs.findOne({ action: 'user.link_google', targetId: String(stored?._id) });
     expect(log?.meta).toEqual({ passwordRemoved: true });
+  });
+
+  it('also drops the password of a sign-up that never confirmed its email', async () => {
+    const email = `pending.${Date.now()}@example.com`;
+    await ctx.client().post('/api/auth/register', {
+      name: 'Pending', surname: 'Code', email, phone: '069 123 458', password: strongPassword, acceptTerms: true,
+    });
+    const result = await signInWithGoogle(ctx.deps, identity({ email }), 'ro');
+    expect(result.ok).toBe(true);
+    const stored = await ctx.deps.col.users.findOne({ email });
+    expect(stored?.passwordHash).toBeNull();
+    expect(stored?.emailVerifiedAt).toBeInstanceOf(Date);
   });
 
   it('keeps the password when the email was already proven', async () => {

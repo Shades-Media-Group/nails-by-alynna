@@ -28,6 +28,19 @@ const schema = z.object({
   GOOGLE_CLIENT_SECRET: optionalString,
   RESEND_API_KEY: optionalString,
   MAIL_FROM: optionalString,
+  /** EmailJS (preferred when set): the three ids from the EmailJS dashboard, plus the optional private key. */
+  EMAILJS_SERVICE_ID: optionalString,
+  EMAILJS_TEMPLATE_ID: optionalString,
+  EMAILJS_PUBLIC_KEY: optionalString,
+  EMAILJS_PRIVATE_KEY: optionalString,
+  /** Web Push (VAPID). Generate a pair once: npx web-push generate-vapid-keys */
+  VAPID_PUBLIC_KEY: optionalString,
+  VAPID_PRIVATE_KEY: optionalString,
+  VAPID_SUBJECT: optionalString,
+  /** Secret for POST /api/internal/tick (external cron); PROXY_SECRET is used when empty. */
+  CRON_SECRET: z.string().min(24, 'CRON_SECRET must be at least 24 characters').optional(),
+  /** How often the server itself sends due reminders (seconds); 0 = only the external cron. */
+  NOTIFICATIONS_INTERVAL_SEC: z.coerce.number().int().min(0).max(3600).default(60),
   TRUST_PROXY: z.stringbool().default(false),
   /** Shared secret with the Cloudflare Worker proxy; when set, only proxied requests are served. */
   PROXY_SECRET: z.string().min(32, 'PROXY_SECRET must be at least 32 characters').optional(),
@@ -42,6 +55,10 @@ const schema = z.object({
 });
 
 export type Role = 'client' | 'admin' | 'administrator';
+
+export type MailConfig =
+  | { provider: 'emailjs'; serviceId: string; templateId: string; publicKey: string; privateKey?: string }
+  | { provider: 'resend'; resendApiKey: string; from: string };
 
 export interface AppConfig {
   env: 'development' | 'test' | 'production';
@@ -59,7 +76,12 @@ export interface AppConfig {
   session: { rememberDays: number; sessionHours: number };
   passwordHashCost: 'standard' | 'fast';
   google?: { clientId: string; clientSecret: string; redirectUri: string };
-  mail?: { resendApiKey: string; from: string };
+  /** Email transport: EmailJS wins when both it and Resend are configured. */
+  mail?: MailConfig;
+  push?: { publicKey: string; privateKey: string; subject: string };
+  /** Accepted in the x-nba-cron-key header of POST /api/internal/tick (none = endpoint off). */
+  cronSecret?: string;
+  notificationsIntervalSec: number;
   cookieSecure: boolean;
   trustProxy: boolean;
   proxySecret?: string;
@@ -108,6 +130,21 @@ export function loadConfig(source: Record<string, unknown>): AppConfig {
   if (e.GOOGLE_CLIENT_ID && !e.GOOGLE_CLIENT_ID.endsWith('.apps.googleusercontent.com')) {
     throw new Error('Invalid configuration: GOOGLE_CLIENT_ID should end with .apps.googleusercontent.com');
   }
+  const emailJsParts = [e.EMAILJS_SERVICE_ID, e.EMAILJS_TEMPLATE_ID, e.EMAILJS_PUBLIC_KEY];
+  if (emailJsParts.some(Boolean) && !emailJsParts.every(Boolean)) {
+    throw new Error('Invalid configuration: set EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID and EMAILJS_PUBLIC_KEY together, or none');
+  }
+  if (e.EMAILJS_PRIVATE_KEY && !e.EMAILJS_SERVICE_ID) {
+    throw new Error('Invalid configuration: EMAILJS_PRIVATE_KEY needs EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID and EMAILJS_PUBLIC_KEY');
+  }
+  if (Boolean(e.VAPID_PUBLIC_KEY) !== Boolean(e.VAPID_PRIVATE_KEY)) {
+    throw new Error('Invalid configuration: set both VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY, or neither');
+  }
+  // Push services (Apple's in particular) reject a VAPID subject that is not mailto: or https:.
+  const vapidSubject = e.VAPID_SUBJECT ?? (appUrl.startsWith('https://') ? appUrl : undefined);
+  if (e.VAPID_PUBLIC_KEY && !/^(mailto:[^\s@]+@[^\s@]+|https:\/\/\S+)$/.test(vapidSubject ?? '')) {
+    throw new Error('Invalid configuration: VAPID_SUBJECT must be a mailto: address or an https:// URL');
+  }
 
   const allowedOrigins = new Set<string>([new URL(appUrl).origin]);
   for (const origin of (e.ALLOWED_ORIGINS ?? '').split(',')) {
@@ -139,9 +176,23 @@ export function loadConfig(source: Record<string, unknown>): AppConfig {
           }
         : undefined,
     mail:
-      e.RESEND_API_KEY && e.MAIL_FROM
-        ? { resendApiKey: e.RESEND_API_KEY, from: e.MAIL_FROM }
+      e.EMAILJS_SERVICE_ID && e.EMAILJS_TEMPLATE_ID && e.EMAILJS_PUBLIC_KEY
+        ? {
+            provider: 'emailjs',
+            serviceId: e.EMAILJS_SERVICE_ID,
+            templateId: e.EMAILJS_TEMPLATE_ID,
+            publicKey: e.EMAILJS_PUBLIC_KEY,
+            privateKey: e.EMAILJS_PRIVATE_KEY,
+          }
+        : e.RESEND_API_KEY && e.MAIL_FROM
+          ? { provider: 'resend', resendApiKey: e.RESEND_API_KEY, from: e.MAIL_FROM }
+          : undefined,
+    push:
+      e.VAPID_PUBLIC_KEY && e.VAPID_PRIVATE_KEY && vapidSubject
+        ? { publicKey: e.VAPID_PUBLIC_KEY, privateKey: e.VAPID_PRIVATE_KEY, subject: vapidSubject }
         : undefined,
+    cronSecret: e.CRON_SECRET ?? e.PROXY_SECRET,
+    notificationsIntervalSec: e.NOTIFICATIONS_INTERVAL_SEC,
     // Secure cookies need HTTPS; local http://localhost development cannot use them.
     cookieSecure: appUrl.startsWith('https://'),
     trustProxy: e.TRUST_PROXY,

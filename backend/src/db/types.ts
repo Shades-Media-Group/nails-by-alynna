@@ -48,6 +48,13 @@ export interface UserDoc {
    * account set up by the studio). Missing/null = never proven.
    */
   emailVerifiedAt?: Date | null;
+  /**
+   * Marked verified only because the account predates email codes (migration). Still treated
+   * as unproven by the Google pre-hijack guard. Cleared once the address is really proven.
+   */
+  emailGrandfathered?: boolean;
+  /** What the user wants to be told and how (Profile → Notifications). Missing = defaults. */
+  notificationPrefs?: NotificationPrefs;
   /** When the user accepted the Terms and Privacy policy (sign-up). */
   termsAcceptedAt?: Date | null;
   isActive: boolean;
@@ -302,4 +309,77 @@ export interface MetaDoc {
   _id: string;
   value: unknown;
   updatedAt: Date;
+}
+
+// ── Notifications (email codes, reminders, Web Push) ─────────────────────────────
+
+/** Minutes before a visit when a reminder may be sent. */
+export const REMINDER_LEADS = [60, 120, 1440] as const;
+export type ReminderLead = (typeof REMINDER_LEADS)[number];
+
+export interface ChannelPrefs {
+  email: boolean;
+  push: boolean;
+}
+
+export interface NotificationPrefs {
+  reminders: ChannelPrefs & { enabled: boolean; leadMinutes: ReminderLead[] };
+  /** The studio confirmed, moved or cancelled a visit. */
+  bookingUpdates: ChannelPrefs;
+  loyalty: ChannelPrefs;
+  /** News and offers: opt-in only; `consentAt` records when it was last switched on. */
+  marketing: ChannelPrefs & { consentAt?: Date | null };
+  updatedAt?: Date;
+}
+
+export type OtpPurpose = 'verify_email' | 'reset_password' | 'change_email';
+
+/** A one-time 6-digit code sent by email. Only an HMAC of the code is stored. */
+export interface OtpCodeDoc {
+  _id: ObjectId;
+  purpose: OtpPurpose;
+  userId: ObjectId;
+  /** Where the code was sent (for change_email: the new address). */
+  email: string;
+  codeHash: string;
+  attempts: number;
+  createdAt: Date;
+  expiresAt: Date;
+  /** Used, replaced by a newer code, or locked after too many wrong tries. */
+  usedAt: Date | null;
+}
+
+/** One browser/device that accepted Web Push; `_id` is the sha256 of the endpoint. */
+export interface PushSubscriptionDoc {
+  _id: string;
+  userId: ObjectId;
+  /** The sign-in session on that device: signing out there stops its notifications. */
+  sessionId: ObjectId | null;
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+  userAgent: string;
+  createdAt: Date;
+  updatedAt: Date;
+  lastSuccessAt: Date | null;
+  failures: number;
+}
+
+/**
+ * Every notification the system decided to send, keyed by what it is about (e.g.
+ * `reminder:<appointment>:<start>:<lead>`), so each one goes out at most once even when
+ * several servers or the cron run at the same moment.
+ */
+export interface NotificationLogDoc {
+  _id: string;
+  kind: 'reminder' | 'booking_update' | 'custom';
+  userId: ObjectId;
+  appointmentId: ObjectId | null;
+  status: 'sending' | 'sent' | 'failed' | 'skipped';
+  channels: { email?: 'sent' | 'failed' | 'off'; push?: 'sent' | 'failed' | 'off' | 'no_device' };
+  attempts: number;
+  error: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  /** Failed sends may be retried after this moment (transient errors only). */
+  retryAt: Date | null;
 }

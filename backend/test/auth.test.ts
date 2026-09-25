@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { APP_ORIGIN, createTestContext, loginAs, registerClient, strongPassword, type TestContext } from './helpers';
+import { APP_ORIGIN, createTestContext, latestCode, loginAs, registerClient, strongPassword, type TestContext } from './helpers';
 
 let ctx: TestContext;
 
@@ -20,7 +20,7 @@ describe('registration', () => {
     expect(me.body.user.phone).toBe('+37369123456');
   });
 
-  it('sets hardened cookies', async () => {
+  it('signs in only after the emailed code, with hardened cookies', async () => {
     const client = ctx.client();
     const res = await client.post('/api/auth/register', {
       name: 'Irina',
@@ -31,8 +31,15 @@ describe('registration', () => {
       acceptTerms: true,
     });
     expect(res.status).toBe(201);
-    const access = res.setCookies.find((c) => c.startsWith('nba_at='))!;
-    const refresh = res.setCookies.find((c) => c.startsWith('nba_rt='))!;
+    expect(res.body).toEqual({ verification: { email: 'irina@example.com', expiresInSec: 600, resendAfterSec: 60 } });
+    expect(res.setCookies).toEqual([]);
+    expect((await client.get('/api/auth/me')).status).toBe(401);
+
+    const verified = await client.post('/api/auth/verify-email', { email: 'irina@example.com', code: await latestCode(ctx, 'irina@example.com') });
+    expect(verified.status).toBe(200);
+    expect(verified.body.user).toMatchObject({ email: 'irina@example.com', role: 'client' });
+    const access = verified.setCookies.find((c) => c.startsWith('nba_at='))!;
+    const refresh = verified.setCookies.find((c) => c.startsWith('nba_rt='))!;
     expect(access).toMatch(/HttpOnly/i);
     expect(access).toMatch(/SameSite=Strict/i);
     expect(access).toMatch(/Max-Age=900/);
@@ -67,7 +74,7 @@ describe('registration', () => {
       acceptTerms: true, role: 'administrator',
     });
     expect(res.status).toBe(201);
-    expect(res.body.user.role).toBe('client');
+    expect((await ctx.deps.col.users.findOne({ email: 'sly@example.com' }))?.role).toBe('client');
   });
 });
 
@@ -160,9 +167,10 @@ describe('password reset', () => {
     expect(unknown.status).toBe(200);
     const res = await ctx.client().post('/api/auth/forgot-password', { email: 'forgot@example.com', locale: 'ru' });
     expect(res.status).toBe(200);
+    expect(res.body).toEqual(unknown.body);
     await ctx.flush();
-    const mail = ctx.sentMail.find((m) => m.to === 'forgot@example.com')!;
-    expect(mail.subject).toContain('Сброс пароля');
+    const mail = ctx.sentMail.findLast((m) => m.to === 'forgot@example.com')!;
+    expect(mail.subject).toMatch(/^Сброс пароля: код \d{6}$/);
     const token = decodeURIComponent(/token=([^\s"&]+)/.exec(mail.text)![1]!);
     expect(mail.text).toContain(`${APP_ORIGIN}/ru/reset-password?token=`);
 

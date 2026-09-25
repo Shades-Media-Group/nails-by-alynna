@@ -1,6 +1,7 @@
 import { inject } from 'vitest';
 import { createApp } from '../src/app';
 import { loadConfig } from '../src/config';
+import { migrateNotifications } from '../src/db';
 import type { MailMessage } from '../src/lib/mailer';
 import { createDeps, createMongo, migrate } from '../src/runtime';
 import { runSeed } from '../src/seed/run';
@@ -38,6 +39,7 @@ export async function createTestContext(env: Record<string, string> = {}) {
   };
   await mongo.client.connect();
   await migrate(deps);
+  await migrateNotifications(deps.db, now);
   const app = createApp(deps);
 
   return {
@@ -52,7 +54,10 @@ export async function createTestContext(env: Record<string, string> = {}) {
     advance(ms: number) {
       now = new Date(now.getTime() + ms);
     },
-    flush: () => Promise.all(deferred.splice(0)),
+    /** Waits for work done after responses, including work that deferred more work. */
+    async flush() {
+      while (deferred.length > 0) await Promise.all(deferred.splice(0));
+    },
     client: (opts?: ClientOptions) => new TestClient(app, opts),
     seed: (options?: Parameters<typeof runSeed>[1]) => runSeed(deps, options),
     async close() {
@@ -164,7 +169,24 @@ export async function registerClient(
     ...overrides,
   });
   if (res.status !== 201) throw new Error(`register failed: ${res.status} ${JSON.stringify(res.body)}`);
-  return { client, user: res.body.user as { id: string; email: string } };
+  // Sign-up only sends a code; entering it proves the email and signs in.
+  const email = res.body.verification.email as string;
+  const verified = await client.post('/api/auth/verify-email', {
+    email,
+    code: await latestCode(ctx, email),
+    remember: overrides.remember ?? true,
+  });
+  if (verified.status !== 200) throw new Error(`verify failed: ${verified.status} ${JSON.stringify(verified.body)}`);
+  return { client, user: verified.body.user as { id: string; email: string } };
+}
+
+/** The 6-digit code of the newest email sent to `email` (codes go out after the response). */
+export async function latestCode(ctx: TestContext, email: string): Promise<string> {
+  await ctx.flush();
+  const mail = [...ctx.sentMail].reverse().find((m) => m.to === email.toLowerCase());
+  const code = mail ? /(\d{6})\s*$/.exec(mail.subject)?.[1] : undefined;
+  if (!code) throw new Error(`no code was emailed to ${email}`);
+  return code;
 }
 
 export async function loginAs(ctx: TestContext, email: string, password: string) {

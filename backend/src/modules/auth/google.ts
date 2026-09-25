@@ -51,16 +51,17 @@ export async function signInWithGoogle(
     if (byEmail.googleId) return { ok: false, reason: 'google_conflict' };
     if (!byEmail.isActive || byEmail.deletedAt) return { ok: false, reason: 'account_disabled' };
 
-    const unprovenPassword = byEmail.passwordHash !== null && !byEmail.emailVerifiedAt;
+    // Accounts marked verified only because they predate email codes are still unproven here.
+    const unprovenPassword = byEmail.passwordHash !== null && (!byEmail.emailVerifiedAt || byEmail.emailGrandfathered === true);
     if (unprovenPassword) await revokeAllSessions(deps, byEmail._id);
     const set: Partial<UserDoc> = {
       googleId: identity.sub,
-      emailVerifiedAt: byEmail.emailVerifiedAt ?? now,
+      emailVerifiedAt: byEmail.emailVerifiedAt && !byEmail.emailGrandfathered ? byEmail.emailVerifiedAt : now,
       lastLoginAt: now,
       updatedAt: now,
       ...(unprovenPassword ? { passwordHash: null } : {}),
     };
-    await col.users.updateOne({ _id: byEmail._id }, { $set: set });
+    await col.users.updateOne({ _id: byEmail._id }, { $set: set, $unset: { emailGrandfathered: '' } });
     await audit(deps, {
       actorId: byEmail._id,
       action: 'user.link_google',
@@ -69,7 +70,7 @@ export async function signInWithGoogle(
       meta: { passwordRemoved: unprovenPassword },
     });
     const tokenVersion = unprovenPassword ? byEmail.tokenVersion + 1 : byEmail.tokenVersion;
-    return { ok: true, user: { ...byEmail, ...set, tokenVersion }, created: false };
+    return { ok: true, user: { ...byEmail, ...set, emailGrandfathered: undefined, tokenVersion }, created: false };
   }
 
   // Opened from a studio invite: the walk-in record becomes this Google account, bookings included.
@@ -87,7 +88,7 @@ export async function signInWithGoogle(
       updatedAt: now,
     };
     set.search = userSearch(set.name!, set.surname!, identity.email, invited.phone);
-    await col.users.updateOne({ _id: invited._id }, { $set: set });
+    await col.users.updateOne({ _id: invited._id }, { $set: set, $unset: { emailGrandfathered: '' } });
     await audit(deps, { actorId: invited._id, action: 'user.claim_invite_google', targetType: 'user', targetId: invited._id });
     return { ok: true, user: { ...invited, ...set }, created: false };
   }

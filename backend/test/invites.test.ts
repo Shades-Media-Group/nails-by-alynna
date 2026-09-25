@@ -2,7 +2,7 @@ import { ObjectId } from 'mongodb';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { signInWithGoogle } from '../src/modules/auth/google';
 import { findInvite } from '../src/modules/auth/invites';
-import { createTestContext, loginAs, registerClient, strongPassword, type TestClient, type TestContext } from './helpers';
+import { createTestContext, latestCode, loginAs, registerClient, strongPassword, type TestClient, type TestContext } from './helpers';
 
 let ctx: TestContext;
 let owner: TestClient;
@@ -60,7 +60,14 @@ describe('invite a walk-in client', () => {
       invite: token,
     });
     expect(signup.status).toBe(201);
-    expect(signup.body.user.id).toBe(clientId);
+    expect(signup.body.verification.email).toBe('ioana.rusu@example.com');
+    // The email typed at sign-up is confirmed with a code, which also signs in.
+    const verified = await client.post('/api/auth/verify-email', {
+      email: 'ioana.rusu@example.com',
+      code: await latestCode(ctx, 'ioana.rusu@example.com'),
+    });
+    expect(verified.status).toBe(200);
+    expect(verified.body.user.id).toBe(clientId);
     const upcoming = await client.get('/api/appointments?scope=upcoming');
     expect(upcoming.body.appointments.map((a: { id: string }) => a.id)).toContain(appointmentId);
 

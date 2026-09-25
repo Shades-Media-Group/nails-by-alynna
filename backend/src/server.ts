@@ -3,8 +3,10 @@ import { getConnInfo } from '@hono/node-server/conninfo';
 import type { Context } from 'hono';
 import { createApp } from './app';
 import { loadConfig, type AppConfig } from './config';
+import { migrateNotifications } from './db';
 import { timingSafeEqualStr } from './lib/crypto';
 import { loadDotEnv } from './lib/dotenv';
+import { startNotificationScheduler } from './modules/notifications';
 import { createDeps, createMongo, migrate } from './runtime';
 
 /**
@@ -50,10 +52,20 @@ async function main() {
   const server = serve({ fetch: app.fetch, port: config.port, hostname }, (info) => {
     console.info(`[api] ${config.env} server on http://${hostname}:${info.port} (db: ${config.mongo.dbName})`);
   });
-  void prepareDatabase(() => mongo.client.connect().then(() => migrate(deps)));
+  let stopReminders: () => void = () => undefined;
+  void prepareDatabase(async () => {
+    await mongo.client.connect();
+    await migrate(deps);
+    await migrateNotifications(deps.db);
+  }).then(() => {
+    // Reminders go out from here every minute; the Cloudflare cron (POST /api/internal/tick)
+    // covers the times the host has put an idle app to sleep.
+    stopReminders = startNotificationScheduler(deps);
+  });
 
   const shutdown = async (signal: string) => {
     console.info(`[api] ${signal} received, shutting down`);
+    stopReminders();
     server.close();
     await mongo.client.close().catch(() => undefined);
     process.exit(0);

@@ -38,7 +38,20 @@ console.info(`  app            ${config.appUrl}`);
 console.info(`  database       ${mongoHost} / ${config.mongo.dbName}`);
 console.info(`  proxy secret   ${config.proxySecret ? 'set' : 'MISSING (required behind the Worker)'}`);
 console.info(`  Google sign-in ${config.google ? `on (redirect ${config.google.redirectUri})` : 'off'}`);
-console.info(`  email          ${config.mail ? 'on' : 'off (password-reset emails disabled)'}`);
+console.info(
+  `  email          ${
+    config.mail
+      ? config.mail.provider === 'emailjs'
+        ? `EmailJS (service ${config.mail.serviceId}, template ${config.mail.templateId}, private key ${config.mail.privateKey ? 'set' : 'not set'})`
+        : 'Resend'
+      : 'off (sign-up codes, password resets and reminders are NOT emailed)'
+  }`,
+);
+console.info(`  web push       ${config.push ? `on (subject ${config.push.subject})` : 'off (set VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY)'}`);
+console.info(
+  `  reminders      ${config.notificationsIntervalSec > 0 ? `every ${config.notificationsIntervalSec} s` : 'timer off'}` +
+    `; cron endpoint ${config.cronSecret ? 'on' : 'off (no CRON_SECRET / PROXY_SECRET)'}`,
+);
 console.info(`  demo roles     ${config.demoRoles.join(', ') || 'none'}`);
 if (placeholders.length > 0) {
   console.error(`✗ still placeholders in: ${placeholders.join(', ')}`);
