@@ -22,6 +22,14 @@ export type ServiceArt =
   | 'design'
   | 'removal'
   | 'care'
+  | 'ombre'
+  | 'chrome'
+  | 'glitter'
+  | 'design-complex'
+  | 'design-3d'
+  | 'design-extra'
+  | 'crystals'
+  | 'file'
   | `length-${LengthLevel}`
   | `refill-${LengthLevel}`;
 

@@ -31,7 +31,7 @@ export interface DefaultCategory {
 }
 
 /** Bump whenever DEFAULT_CATALOG changes, so existing databases pick the change up. */
-export const CATALOG_DEFAULTS_VERSION = 4;
+export const CATALOG_DEFAULTS_VERSION = 5;
 
 const SIZE_PRICES = { extension: [400, 450, 500, 550, 600, 650], correction: [370, 420, 470, 520, 570, 620] };
 const SIZE_MINUTES = { extension: [120, 130, 140, 150, 165, 180], correction: [105, 115, 125, 135, 150, 165] };
@@ -125,7 +125,7 @@ export const DEFAULT_CATALOG: DefaultCategory[] = [
       },
       {
         key: 'design-complex',
-        art: 'design',
+        art: 'design-complex',
         durationMin: 30,
         price: 50,
         name: { ro: 'Design complicat', ru: 'Сложный дизайн', en: 'Complex design' },
@@ -137,7 +137,7 @@ export const DEFAULT_CATALOG: DefaultCategory[] = [
       },
       {
         key: 'design-3d-gel',
-        art: 'design',
+        art: 'design-3d',
         durationMin: 15,
         price: 5,
         priceFrom: true,
@@ -150,7 +150,7 @@ export const DEFAULT_CATALOG: DefaultCategory[] = [
       },
       {
         key: 'design-extra',
-        art: 'design',
+        art: 'design-extra',
         durationMin: 45,
         price: 100,
         name: { ro: 'Design extra', ru: 'Экстра-дизайн', en: 'Extra design' },
@@ -162,7 +162,7 @@ export const DEFAULT_CATALOG: DefaultCategory[] = [
       },
       {
         key: 'removal-foreign',
-        art: 'removal',
+        art: 'file',
         durationMin: 30,
         price: 50,
         priceFrom: true,
