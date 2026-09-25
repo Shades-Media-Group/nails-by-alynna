@@ -73,7 +73,7 @@ export function ListRow({ icon: Icon, label, description, value, to, href, exter
 export function ListGroup({ title, children, className }: { title?: string; children: ReactNode; className?: string }) {
   return (
     <section className={cx('flex flex-col', className)}>
-      {title ? <h2 className="caps mb-2 px-4 text-ink-600">{title}</h2> : null}
+      {title ? <h2 className="mb-1.5 px-4 text-sm font-semibold text-ink-600">{title}</h2> : null}
       <div className="flex flex-col rounded-xl bg-white p-1 ring-1 ring-inset ring-ink-100">{children}</div>
     </section>
   );

@@ -19,10 +19,11 @@ const VARIANTS: Record<ButtonVariant, string> = {
   danger: 'bg-red-600 text-white hover:bg-red-700',
 };
 
+// 52 / 44 / 36 px: a full-width call to action, the everyday button, a compact inline one.
 const SIZES: Record<ButtonSize, string> = {
-  lg: 'h-14 px-6 text-base gap-2.5',
-  md: 'h-12 px-5 text-[0.9375rem] gap-2',
-  sm: 'h-10 px-4 text-sm gap-1.5',
+  lg: 'h-13 px-6 text-base gap-2.5',
+  md: 'h-11 px-5 text-[0.9375rem] gap-2',
+  sm: 'h-9 px-3.5 text-sm gap-1.5',
 };
 
 interface CommonProps {
@@ -36,7 +37,7 @@ interface CommonProps {
 
 function classes({ variant = 'primary', size = 'lg', fullWidth }: CommonProps, className?: string) {
   return cx(
-    'press relative inline-flex select-none items-center justify-center whitespace-nowrap rounded-pill font-semibold',
+    'press group/btn relative inline-flex select-none items-center justify-center whitespace-nowrap rounded-pill font-semibold',
     'disabled:cursor-not-allowed disabled:opacity-45 aria-disabled:cursor-not-allowed aria-disabled:opacity-45',
     VARIANTS[variant],
     SIZES[size],
@@ -46,12 +47,18 @@ function classes({ variant = 'primary', size = 'lg', fullWidth }: CommonProps, c
 }
 
 function Content({ icon: Icon, trailingIcon: Trailing, loading, children, size = 'lg' }: CommonProps & { loading?: boolean }) {
-  const iconSize = size === 'sm' ? 'text-lg' : 'text-[1.3rem]';
+  const iconSize = size === 'sm' ? 'text-lg' : 'text-[1.25rem]';
   return (
     <>
       {loading ? <Spinner className="size-5" /> : Icon ? <Icon className={iconSize} fontSize="inherit" /> : null}
       {children ? <span className="truncate">{children}</span> : null}
-      {Trailing && !loading ? <Trailing className={iconSize} fontSize="inherit" /> : null}
+      {Trailing && !loading ? (
+        // The arrow leans the way the button goes.
+        <Trailing
+          className={cx(iconSize, 'transition-transform duration-200 ease-(--ease-out) group-hover/btn:translate-x-1')}
+          fontSize="inherit"
+        />
+      ) : null}
     </>
   );
 }

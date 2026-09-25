@@ -28,7 +28,7 @@ export function GoogleButton({ label, next, className }: { label: string; next?:
       onClick={() => setLeaving(true)}
       aria-busy={leaving || undefined}
       className={cx(
-        'press flex h-12 items-center justify-center gap-3 rounded-pill bg-white px-6 text-[0.9375rem] font-semibold text-ink-900 ring-1 ring-inset ring-ink-200 hover:bg-ink-50 hover:ring-ink-300',
+        'press flex h-13 items-center justify-center gap-3 rounded-pill bg-white px-6 text-base font-semibold text-ink-900 ring-1 ring-inset ring-ink-200 hover:bg-ink-50 hover:ring-ink-300',
         className,
       )}
     >

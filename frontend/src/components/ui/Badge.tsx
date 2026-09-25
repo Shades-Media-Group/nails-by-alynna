@@ -14,26 +14,15 @@ const TONES: Record<BadgeTone, string> = {
   ink: 'bg-ink-900 text-white',
 };
 
-export function Badge({
-  tone = 'neutral',
-  dot,
-  className,
-  children,
-}: {
-  tone?: BadgeTone;
-  dot?: boolean;
-  className?: string;
-  children: ReactNode;
-}) {
+export function Badge({ tone = 'neutral', className, children }: { tone?: BadgeTone; className?: string; children: ReactNode }) {
   return (
     <span
       className={cx(
-        'inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-pill px-2.5 text-xs font-semibold',
+        'inline-flex h-6 items-center whitespace-nowrap rounded-pill px-2.5 text-xs font-semibold',
         TONES[tone],
         className,
       )}
     >
-      {dot ? <span aria-hidden="true" className="size-1.5 rounded-pill bg-current" /> : null}
       {children}
     </span>
   );

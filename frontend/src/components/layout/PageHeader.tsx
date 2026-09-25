@@ -22,7 +22,7 @@ export function PageHeader({ title, subtitle, back, backTo, actions, className }
   return (
     <header className={cx('gutter-x pt-[calc(var(--safe-top)+1rem)] lg:px-0 lg:pt-10', className)}>
       {back || actions ? (
-        <div className="mb-4 flex min-h-11 items-center justify-between gap-3">
+        <div className="mb-3 flex min-h-11 items-center justify-between gap-3">
           {back ? (
             <IconButton
               icon={ArrowBackIcon}
@@ -36,8 +36,8 @@ export function PageHeader({ title, subtitle, back, backTo, actions, className }
           {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
         </div>
       ) : null}
-      <h1 className="text-h1 font-extrabold">{title}</h1>
-      {subtitle ? <div className="mt-2 text-ink-600">{subtitle}</div> : null}
+      <h1 className="text-h1 font-extrabold lg:text-[2.25rem]">{title}</h1>
+      {subtitle ? <div className="mt-1.5 text-[0.9375rem] text-ink-600">{subtitle}</div> : null}
     </header>
   );
 }
@@ -45,7 +45,7 @@ export function PageHeader({ title, subtitle, back, backTo, actions, className }
 /** Section heading with an optional trailing action (e.g. "See all"). */
 export function SectionHeading({ title, action, className, id }: { title: string; action?: ReactNode; className?: string; id?: string }) {
   return (
-    <div className={cx('mb-4 flex items-end justify-between gap-4', className)}>
+    <div className={cx('mb-3 flex items-center justify-between gap-4', className)}>
       <h2 id={id} className="text-h2 font-extrabold">
         {title}
       </h2>

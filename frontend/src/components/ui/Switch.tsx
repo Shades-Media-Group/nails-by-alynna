@@ -41,7 +41,7 @@ export function Switch({ checked, onChange, label, description, disabled, classN
       >
         <span
           className={cx(
-            'block size-6 rounded-pill bg-white shadow-[0_2px_4px_rgb(37_39_38/0.25)] transition-transform duration-200 ease-(--ease-spring)',
+            'block size-6 rounded-pill bg-white shadow-[0_2px_4px_rgb(37_39_38/0.25)] transition-transform duration-200 ease-(--ease-press)',
             checked ? 'translate-x-5' : 'translate-x-0',
           )}
         />

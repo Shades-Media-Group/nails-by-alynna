@@ -33,7 +33,7 @@ export const SWATCH: Record<SwatchColor, { field: string; ink: string; accent: s
     field: 'bg-lilac-50',
     ink: 'text-lilac-700',
     accent: 'text-lilac-500',
-    hex: { field: '#F4F0FF', accent: '#8B6CF0', deep: '#5A3EC2' },
+    hex: { field: '#FBF0FB', accent: '#C85FCC', deep: '#8E3294' },
   },
 };
 

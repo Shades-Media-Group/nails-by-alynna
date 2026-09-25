@@ -62,7 +62,7 @@ export default function LoginPage() {
         </>
       }
     >
-      <h1 className="text-[2.1rem] font-extrabold uppercase leading-[0.95] tracking-[-0.03em]">
+      <h1 className="text-[1.875rem] font-extrabold uppercase leading-[0.95] tracking-[-0.03em]">
         <span className="block text-ink-900">{t('common:brand.tagline1')}</span>
         <span className="block text-rose-500">{t('common:brand.tagline2')}</span>
       </h1>

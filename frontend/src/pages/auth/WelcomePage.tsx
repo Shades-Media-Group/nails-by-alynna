@@ -47,9 +47,9 @@ export default function WelcomePage() {
         </>
       }
     >
-      <Logo className="mx-auto w-[9.5rem] lg:hidden" />
+      <Logo className="mx-auto w-[7.25rem] lg:hidden" />
 
-      <h1 className="mt-10 text-[2.4rem] font-extrabold uppercase leading-[0.95] tracking-[-0.03em] sm:text-display">
+      <h1 className="mt-8 text-[2rem] font-extrabold uppercase leading-[0.95] tracking-[-0.03em] sm:text-display">
         <span className="block text-ink-900">{t('common:brand.tagline1')}</span>
         <span className="block text-rose-500">{t('common:brand.tagline2')}</span>
       </h1>
@@ -59,7 +59,7 @@ export default function WelcomePage() {
         <Alert className="mt-6">{t(`oauthErrors.${error}`)}</Alert>
       ) : null}
 
-      <div className="mt-8 flex flex-col gap-3">
+      <div className="mt-7 flex flex-col gap-3">
         <ButtonLink to={`${lp('/login/email')}${carry}`} variant="soft" trailingIcon={ArrowForwardIcon} fullWidth>
           {t('welcome.email')}
         </ButtonLink>

@@ -13,7 +13,7 @@ const TONE: Record<AppointmentStatus, BadgeTone> = {
 export function StatusBadge({ status, className }: { status: AppointmentStatus; className?: string }) {
   const { t } = useTranslation('common');
   return (
-    <Badge tone={TONE[status]} dot className={className}>
+    <Badge tone={TONE[status]} className={className}>
       {t(`status.${status}`)}
     </Badge>
   );
