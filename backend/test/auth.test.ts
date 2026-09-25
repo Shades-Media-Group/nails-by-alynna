@@ -188,6 +188,29 @@ describe('CSRF defences', () => {
     });
     expect(form.status).toBe(415);
   });
+
+  it('accepts bodiless POST and DELETE the way Node delivers them (an empty body stream)', async () => {
+    await registerClient(ctx, { email: 'bodiless@example.com' });
+    const client = await loginAs(ctx, 'bodiless@example.com', strongPassword);
+    const cookie = client.cookieHeader();
+    const emptyStream = () => new ReadableStream({ start: (controller) => controller.close() });
+    const send = (method: string, path: string, headers: Record<string, string>) =>
+      ctx.app.request(path, {
+        method,
+        headers: { origin: APP_ORIGIN, 'sec-fetch-site': 'same-origin', cookie, ...headers },
+        body: emptyStream(),
+        duplex: 'half',
+      } as RequestInit);
+
+    const sessions = await client.get<{ sessions: Array<{ id: string; current: boolean }> }>('/api/auth/sessions');
+    const other = sessions.body.sessions.find((s) => !s.current);
+    // A browser DELETE without a body sends no Content-Length at all.
+    if (other) expect((await send('DELETE', `/api/auth/sessions/${other.id}`, {})).status).toBe(200);
+    // A browser POST without a body sends Content-Length: 0 (logout, refresh).
+    const logout = await send('POST', '/api/auth/logout', { 'content-length': '0' });
+    expect(logout.status).toBe(200);
+    expect(logout.headers.getSetCookie().some((line) => /max-age=0/i.test(line))).toBe(true);
+  });
 });
 
 describe('rate limiting', () => {

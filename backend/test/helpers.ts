@@ -100,11 +100,10 @@ export class TestClient {
     const cookie = [...this.cookies].map(([k, v]) => `${k}=${v}`).join('; ');
     if (cookie) h.set('cookie', cookie);
 
-    const res = await this.app.request(path, {
-      method,
-      headers: h,
-      body: body === undefined ? undefined : typeof body === 'string' ? body : JSON.stringify(body),
-    });
+    const payload = body === undefined ? undefined : typeof body === 'string' ? body : JSON.stringify(body);
+    // Like a real HTTP client: the server decides "has a body" from the headers.
+    if (payload !== undefined && !h.has('content-length')) h.set('content-length', String(new TextEncoder().encode(payload).length));
+    const res = await this.app.request(path, { method, headers: h, body: payload });
     const setCookies = res.headers.getSetCookie();
     for (const line of setCookies) {
       const [pair] = line.split(';');
@@ -117,6 +116,11 @@ export class TestClient {
     }
     const text = await res.text();
     return { status: res.status, body: parseBody(text) as T, headers: res.headers, setCookies };
+  }
+
+  /** The cookies this client holds, as a Cookie header. */
+  cookieHeader(): string {
+    return [...this.cookies].map(([k, v]) => `${k}=${v}`).join('; ');
   }
 
   get<T = any>(path: string) {

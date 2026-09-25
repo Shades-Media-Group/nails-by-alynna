@@ -71,7 +71,10 @@ export function originGuard(deps: AppDeps) {
       if (origin && !isAllowed(origin)) {
         throw new AppError(403, 'CSRF_REJECTED', 'Origin not allowed');
       }
-      const hasBody = c.req.raw.body !== null;
+      // Judge by the headers, not by `body`: the Node adapter gives every POST a body stream,
+      // even an empty one (logout, refresh), which must not need a Content-Type.
+      const length = c.req.header('content-length');
+      const hasBody = (length !== undefined && Number(length) > 0) || c.req.header('transfer-encoding') !== undefined;
       const type = (c.req.header('content-type') ?? '').toLowerCase();
       if (hasBody && !type.startsWith('application/json')) {
         throw new AppError(415, 'BAD_REQUEST', 'Content-Type must be application/json');
