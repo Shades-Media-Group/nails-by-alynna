@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { homePathFor, useAuth } from '@/app/auth';
-import { GoogleMark } from '@/components/brand/GoogleMark';
+import { GoogleButton, GoogleTerms, OrDivider } from '@/components/auth/GoogleButton';
 import { Logo } from '@/components/brand/Logo';
 import { Alert } from '@/components/common/Alert';
 import { AuthLayout } from '@/components/layout/AuthLayout';
@@ -19,7 +19,7 @@ const OAUTH_ERRORS = ['google', 'google_cancelled', 'google_conflict', 'google_d
 /** Figma "App Prototype _select_login": pick email or Google. */
 export default function WelcomePage() {
   const { t } = useTranslation(['auth', 'common']);
-  const { lp, locale } = useLocale();
+  const { lp } = useLocale();
   const [params] = useSearchParams();
   const config = useQuery(queries.config());
   const next = safeNextPath(params.get('next'));
@@ -66,18 +66,9 @@ export default function WelcomePage() {
 
         {config.data?.auth.google ? (
           <>
-            <div className="flex items-center gap-3 py-1 text-xs text-ink-500" aria-hidden="true">
-              <span className="h-px flex-1 bg-ink-200" />
-              {t('welcome.or')}
-              <span className="h-px flex-1 bg-ink-200" />
-            </div>
-            <a
-              href={authApi.googleStartUrl(locale, true, next ?? undefined)}
-              className="press flex h-14 items-center justify-center gap-3 rounded-pill bg-white px-6 font-semibold text-ink-900 ring-1 ring-inset ring-ink-200 hover:bg-ink-50 hover:ring-ink-300"
-            >
-              <GoogleMark className="size-5" />
-              {t('welcome.google')}
-            </a>
+            <OrDivider label={t('welcome.or')} />
+            <GoogleButton label={t('welcome.google')} next={next} />
+            <GoogleTerms className="mt-1" />
           </>
         ) : null}
       </div>

@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router';
@@ -11,7 +11,9 @@ import { safeNextPath } from '@/i18n/routing';
 import { useLocale } from '@/i18n/useLocale';
 import { errorMessage } from '@/lib/errors';
 import { isEmail } from '@/lib/validation';
+import { ApiError } from '@/services/api/client';
 import { authApi } from '@/services/api/endpoints';
+import { queries } from '@/services/queries';
 
 /** Figma "App Prototype _email login". Works with browser/iCloud password managers. */
 export default function LoginPage() {
@@ -21,6 +23,7 @@ export default function LoginPage() {
   const [params] = useSearchParams();
   const { setUser } = useAuth();
   const next = safeNextPath(params.get('next'));
+  const config = useQuery(queries.config());
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -66,7 +69,15 @@ export default function LoginPage() {
       <p className="mt-3 text-ink-600">{t('login.subtitle')}</p>
 
       <form className="mt-8 flex flex-col gap-4" method="post" action="#" noValidate onSubmit={onSubmit}>
-        {login.isError ? <Alert>{errorMessage(t, login.error)}</Alert> : null}
+        {login.isError ? (
+          <Alert>
+            {errorMessage(t, login.error)}
+            {/* Accounts made with Google have no password until the owner sets one. */}
+            {config.data?.auth.google && login.error instanceof ApiError && login.error.code === 'INVALID_CREDENTIALS' ? (
+              <span className="mt-1 block">{t('login.googleHint')}</span>
+            ) : null}
+          </Alert>
+        ) : null}
         <TextField
           label={t('login.email')}
           name="email"

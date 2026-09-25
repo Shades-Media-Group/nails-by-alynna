@@ -1,8 +1,9 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { homePathFor, useAuth } from '@/app/auth';
+import { GoogleButton, GoogleTerms, OrDivider } from '@/components/auth/GoogleButton';
 import { Alert } from '@/components/common/Alert';
 import { AuthLayout } from '@/components/layout/AuthLayout';
 import { Button, Checkbox, PasswordField, TextField, toast } from '@/components/ui';
@@ -13,6 +14,7 @@ import { errorMessage, fieldErrors } from '@/lib/errors';
 import { isEmail, nameIssue, normalizePhone, passwordIssue } from '@/lib/validation';
 import { ApiError } from '@/services/api/client';
 import { authApi } from '@/services/api/endpoints';
+import { queries } from '@/services/queries';
 
 type Field = 'name' | 'surname' | 'email' | 'phone' | 'password' | 'acceptTerms';
 
@@ -23,6 +25,7 @@ export default function SignupPage() {
   const [params] = useSearchParams();
   const { setUser } = useAuth();
   const next = safeNextPath(params.get('next'));
+  const config = useQuery(queries.config());
 
   const [form, setForm] = useState({ name: '', surname: '', email: '', phone: '', password: '' });
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -91,7 +94,15 @@ export default function SignupPage() {
       <h1 className="text-h1 font-extrabold">{t('signup.title')}</h1>
       <p className="mt-2 text-ink-600">{t('signup.subtitle')}</p>
 
-      <form className="mt-7 flex flex-col gap-4" method="post" action="#" noValidate onSubmit={onSubmit}>
+      {config.data?.auth.google ? (
+        <div className="mt-6 flex flex-col gap-3">
+          <GoogleButton label={t('signup.google')} next={next} />
+          <GoogleTerms />
+          <OrDivider label={t('signup.or')} />
+        </div>
+      ) : null}
+
+      <form className="mt-6 flex flex-col gap-4" method="post" action="#" noValidate onSubmit={onSubmit}>
         {showGlobalError ? <Alert>{errorMessage(t, register.error)}</Alert> : null}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <TextField
