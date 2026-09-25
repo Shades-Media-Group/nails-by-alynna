@@ -1,0 +1,27 @@
+{
+  // Nails by Alynna — the app (React PWA) on Cloudflare Workers Static Assets.
+  // /api/* is proxied by worker/index.ts to the backend, so clients never see its address.
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "nails-by-alynna",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-09-15",
+  "observability": { "enabled": true },
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "vars": {
+    // Backend on host.md (Plesk Node.js app). Use a hostname you control, e.g. api.your-domain.md.
+    // Leave empty and add the "services" binding below to run the API on Cloudflare instead.
+    "API_ORIGIN": "https://api.example.md"
+  }
+  // Secret shared with the backend (PROXY_SECRET): wrangler secret put PROXY_SECRET
+  //
+  // Alternative backend on Cloudflare Workers (backend/wrangler.jsonc):
+  // "services": [{ "binding": "API", "service": "nails-by-alynna-api" }]
+  //
+  // Custom domain:
+  // "routes": [{ "pattern": "app.your-domain.md", "custom_domain": true }]
+}
