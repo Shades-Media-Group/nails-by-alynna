@@ -1,0 +1,11 @@
+# Local secrets/vars for `wrangler dev` (Workers runtime). Copy to `.dev.vars`.
+# These override the "vars" in wrangler.jsonc during local development only.
+APP_ENV=development
+APP_URL=http://localhost:5173
+MONGODB_URI=mongodb://127.0.0.1:27017
+MONGODB_DB=nails_by_alynna
+JWT_SECRET=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+RESEND_API_KEY=
+MAIL_FROM=

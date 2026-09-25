@@ -1,0 +1,29 @@
+{
+  // Nails by Alynna API — Cloudflare Worker + Durable Object (holds the MongoDB connection).
+  // It has no public URL of its own: the frontend Worker forwards /api/* through a service
+  // binding, so the app and API share one origin (first-party, SameSite=Strict cookies).
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "nails-by-alynna-api",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": true },
+  "durable_objects": {
+    "bindings": [{ "name": "API_SERVER", "class_name": "ApiServer" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ApiServer"] }],
+  "vars": {
+    "APP_ENV": "production",
+    // Public URL of the app (the frontend Worker / custom domain). Update before deploying.
+    "APP_URL": "https://nails-by-alynna.example.workers.dev",
+    "MONGODB_DB": "nails_by_alynna",
+    // Region of your MongoDB Atlas cluster (weur = Western Europe, eeur = Eastern Europe).
+    "DO_LOCATION_HINT": "weur"
+  }
+  // Secrets (never commit): wrangler secret put <NAME>
+  //   MONGODB_URI, JWT_SECRET, [JWT_SECRET_PREVIOUS], [GOOGLE_CLIENT_ID], [GOOGLE_CLIENT_SECRET],
+  //   [RESEND_API_KEY], [MAIL_FROM]
+  // Local `wrangler dev` reads .dev.vars (see .dev.vars.template).
+}

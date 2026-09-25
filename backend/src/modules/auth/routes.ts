@@ -1,0 +1,456 @@
+import { Hono } from 'hono';
+import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { ObjectId } from 'mongodb';
+import { z } from 'zod';
+import type { AppDeps, AppEnv } from '../../context';
+import type { UserDoc } from '../../db/types';
+import { audit } from '../../lib/audit';
+import { randomToken, sha256Base64Url, sha256Hex, timingSafeEqualStr } from '../../lib/crypto';
+import { passwordResetEmail } from '../../lib/emails';
+import { AppError, isDuplicateKey } from '../../lib/errors';
+import { openState, sealState } from '../../lib/jwt';
+import { enforceRateLimits } from '../../lib/rate-limit';
+import { truncate, userSearch } from '../../lib/text';
+import {
+  LOCALES,
+  emailSchema,
+  localeSchema,
+  paramId,
+  parseJson,
+  parseQuery,
+  passwordSchema,
+  personNameSchema,
+  phoneSchema,
+  type Locale,
+} from '../../lib/validation';
+import { requireAuth } from '../../middleware/auth';
+import {
+  OAUTH_PATH,
+  clearSessionCookies,
+  cookieNames,
+  readRefreshToken,
+  setSessionCookies,
+} from './cookies';
+import {
+  createSession,
+  revokeAllSessions,
+  revokeSessionByToken,
+  rotateSession,
+  toPublicUser,
+} from './session';
+
+const RESET_TTL_MS = 30 * 60_000;
+const GOOGLE_ISSUERS = ['https://accounts.google.com', 'accounts.google.com'];
+let googleJwks: ReturnType<typeof createRemoteJWKSet> | null = null;
+
+export const localePrefix = (locale: Locale) => (locale === 'ro' ? '' : `/${locale}`);
+
+/** Only same-app relative paths are accepted as post-login destinations. */
+function safeNext(next: string | undefined): string {
+  if (!next || !/^\/(?!\/)[\w\-/?=&,.%]*$/.test(next) || next.length > 200) return '/home';
+  return next;
+}
+
+export function authRoutes(deps: AppDeps) {
+  const app = new Hono<AppEnv>();
+  const { config, col } = deps;
+  const auth = requireAuth(deps);
+  const meta = (c: { req: { header: (n: string) => string | undefined } }, ip: string) => ({
+    userAgent: c.req.header('user-agent'),
+    ip,
+  });
+
+  // ── Sign up ────────────────────────────────────────────────────────────────
+  const registerSchema = z.object({
+    name: personNameSchema,
+    surname: personNameSchema,
+    email: emailSchema,
+    phone: phoneSchema,
+    password: passwordSchema,
+    locale: localeSchema.default('ro'),
+    remember: z.boolean().default(true),
+    acceptTerms: z.literal(true, { error: 'required' }),
+  });
+
+  app.post('/register', async (c) => {
+    const ip = c.get('ip');
+    await enforceRateLimits(deps, [{ key: `register:ip:${ip}`, limit: 10, windowSec: 3600 }]);
+    const input = await parseJson(c, registerSchema);
+
+    const localPart = input.email.split('@')[0] ?? '';
+    if (localPart.length >= 4 && input.password.toLowerCase().includes(localPart)) {
+      throw new AppError(422, 'WEAK_PASSWORD', 'Password contains the email', {
+        fields: { password: 'contains_email' },
+      });
+    }
+
+    const exists = await col.users.findOne({ email: input.email }, { projection: { _id: 1 } });
+    if (exists) {
+      throw new AppError(409, 'EMAIL_TAKEN', 'Email already registered', { fields: { email: 'taken' } });
+    }
+
+    const now = deps.now();
+    const user: UserDoc = {
+      _id: new ObjectId(),
+      email: input.email,
+      name: input.name,
+      surname: input.surname,
+      phone: input.phone,
+      role: 'client',
+      locale: input.locale,
+      passwordHash: await deps.passwords.hash(input.password),
+      googleId: null,
+      isActive: true,
+      bookingBlocked: false,
+      tokenVersion: 0,
+      notes: '',
+      search: userSearch(input.name, input.surname, input.email, input.phone),
+      lastLoginAt: now,
+      createdAt: now,
+      updatedAt: now,
+      deletedAt: null,
+    };
+    try {
+      await col.users.insertOne(user);
+    } catch (error) {
+      if (isDuplicateKey(error)) {
+        throw new AppError(409, 'EMAIL_TAKEN', 'Email already registered', { fields: { email: 'taken' } });
+      }
+      throw error;
+    }
+
+    const tokens = await createSession(deps, user, { remember: input.remember, ...meta(c, ip) });
+    setSessionCookies(c, config, tokens);
+    await audit(deps, { actorId: user._id, action: 'user.register', targetType: 'user', targetId: user._id });
+    return c.json({ user: toPublicUser(user) }, 201);
+  });
+
+  // ── Log in ─────────────────────────────────────────────────────────────────
+  const loginSchema = z.object({
+    email: emailSchema,
+    password: z.string().min(1, 'required').max(128, 'too_long'),
+    remember: z.boolean().default(true),
+  });
+
+  app.post('/login', async (c) => {
+    const ip = c.get('ip');
+    const input = await parseJson(c, loginSchema);
+    await enforceRateLimits(deps, [
+      { key: `login:ip:${ip}`, limit: 30, windowSec: 900 },
+      { key: `login:acct:${input.email}`, limit: 10, windowSec: 900 },
+    ]);
+
+    const user = await col.users.findOne({ email: input.email });
+    if (!user || !user.passwordHash || user.deletedAt) {
+      await deps.passwords.burn();
+      throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
+    }
+    const { ok, needsRehash } = await deps.passwords.verify(input.password, user.passwordHash);
+    if (!ok) throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
+    if (!user.isActive) throw new AppError(403, 'ACCOUNT_DISABLED', 'Account disabled');
+
+    const now = deps.now();
+    const set: Partial<UserDoc> = { lastLoginAt: now, updatedAt: now };
+    if (needsRehash) set.passwordHash = await deps.passwords.hash(input.password);
+    await col.users.updateOne({ _id: user._id }, { $set: set });
+
+    const tokens = await createSession(deps, user, { remember: input.remember, ...meta(c, ip) });
+    setSessionCookies(c, config, tokens);
+    return c.json({ user: toPublicUser({ ...user, ...set }) });
+  });
+
+  // ── Refresh (rotates the refresh token) ──────────────────────────────────────
+  app.post('/refresh', async (c) => {
+    const ip = c.get('ip');
+    await enforceRateLimits(deps, [{ key: `refresh:ip:${ip}`, limit: 120, windowSec: 60 }]);
+    const token = readRefreshToken(c, config);
+    if (!token) {
+      clearSessionCookies(c, config);
+      throw new AppError(401, 'AUTH_REQUIRED', 'No session');
+    }
+    const result = await rotateSession(deps, token, meta(c, ip));
+    if (result.status === 'race') {
+      throw new AppError(409, 'REFRESH_RACE', 'Session was refreshed concurrently; retry');
+    }
+    if (result.status === 'invalid') {
+      clearSessionCookies(c, config);
+      throw new AppError(401, 'SESSION_REVOKED', 'Session expired');
+    }
+    setSessionCookies(c, config, result.tokens);
+    return c.json({ user: toPublicUser(result.user) });
+  });
+
+  // ── Log out ────────────────────────────────────────────────────────────────
+  app.post('/logout', async (c) => {
+    const token = readRefreshToken(c, config);
+    if (token) await revokeSessionByToken(deps, token);
+    clearSessionCookies(c, config);
+    return c.json({ ok: true });
+  });
+
+  app.post('/logout-all', auth, async (c) => {
+    const user = c.get('user');
+    await revokeAllSessions(deps, user._id);
+    clearSessionCookies(c, config);
+    await audit(deps, { actorId: user._id, action: 'user.logout_all', targetType: 'user', targetId: user._id });
+    return c.json({ ok: true });
+  });
+
+  app.get('/me', auth, (c) => c.json({ user: toPublicUser(c.get('user')) }));
+
+  // ── Devices ─────────────────────────────────────────────────────────────────
+  app.get('/sessions', auth, async (c) => {
+    const user = c.get('user');
+    const sessions = await col.sessions
+      .find({ userId: user._id, revokedAt: null, expiresAt: { $gt: deps.now() } })
+      .sort({ lastUsedAt: -1 })
+      .limit(20)
+      .toArray();
+    const current = c.get('sessionId');
+    return c.json({
+      sessions: sessions.map((s) => ({
+        id: s._id.toHexString(),
+        userAgent: s.userAgent,
+        ip: s.ip,
+        remember: s.remember,
+        createdAt: s.createdAt.toISOString(),
+        lastUsedAt: s.lastUsedAt.toISOString(),
+        current: s._id.toHexString() === current,
+      })),
+    });
+  });
+
+  app.delete('/sessions/:id', auth, async (c) => {
+    const user = c.get('user');
+    const id = paramId(c);
+    const res = await col.sessions.updateOne(
+      { _id: id, userId: user._id, revokedAt: null },
+      { $set: { revokedAt: deps.now() } },
+    );
+    if (res.matchedCount === 0) throw new AppError(404, 'NOT_FOUND', 'Session not found');
+    return c.json({ ok: true });
+  });
+
+  // ── Password reset ──────────────────────────────────────────────────────────
+  const forgotSchema = z.object({ email: emailSchema, locale: localeSchema.optional() });
+
+  app.post('/forgot-password', async (c) => {
+    const ip = c.get('ip');
+    const input = await parseJson(c, forgotSchema);
+    await enforceRateLimits(deps, [
+      { key: `forgot:ip:${ip}`, limit: 10, windowSec: 3600 },
+      { key: `forgot:acct:${input.email}`, limit: 3, windowSec: 3600 },
+    ]);
+
+    const user = await col.users.findOne({ email: input.email, isActive: true, deletedAt: null });
+    if (user) {
+      const now = deps.now();
+      const token = randomToken(32);
+      await col.passwordResets.insertOne({
+        _id: new ObjectId(),
+        userId: user._id,
+        tokenHash: await sha256Hex(token),
+        expiresAt: new Date(now.getTime() + RESET_TTL_MS),
+        usedAt: null,
+        createdAt: now,
+      });
+      const locale = input.locale ?? user.locale;
+      const link = `${config.appUrl}${localePrefix(locale)}/reset-password?token=${encodeURIComponent(token)}`;
+      // Sent after the response so timing does not reveal whether the account exists.
+      deps.defer(
+        deps.mailer
+          .send(passwordResetEmail({ to: user.email, name: user.name, locale, link }))
+          .catch((error) => console.error('[mail] password reset email failed', error)),
+      );
+    }
+    return c.json({ ok: true });
+  });
+
+  const resetSchema = z.object({
+    token: z.string().min(20, 'invalid').max(200, 'invalid'),
+    password: passwordSchema,
+  });
+
+  app.post('/reset-password', async (c) => {
+    const ip = c.get('ip');
+    await enforceRateLimits(deps, [{ key: `reset:ip:${ip}`, limit: 20, windowSec: 3600 }]);
+    const input = await parseJson(c, resetSchema);
+    const now = deps.now();
+
+    const reset = await col.passwordResets.findOneAndUpdate(
+      { tokenHash: await sha256Hex(input.token), usedAt: null, expiresAt: { $gt: now } },
+      { $set: { usedAt: now } },
+    );
+    if (!reset) throw new AppError(400, 'RESET_TOKEN_INVALID', 'Reset link is invalid or expired');
+
+    const user = await col.users.findOne({ _id: reset.userId, isActive: true, deletedAt: null });
+    if (!user) throw new AppError(400, 'RESET_TOKEN_INVALID', 'Reset link is invalid or expired');
+
+    await col.users.updateOne(
+      { _id: user._id },
+      { $set: { passwordHash: await deps.passwords.hash(input.password), updatedAt: now } },
+    );
+    await col.passwordResets.updateMany({ userId: user._id, usedAt: null }, { $set: { usedAt: now } });
+    await revokeAllSessions(deps, user._id);
+    clearSessionCookies(c, config);
+    await audit(deps, { actorId: user._id, action: 'user.password_reset', targetType: 'user', targetId: user._id });
+    return c.json({ ok: true });
+  });
+
+  // ── Google (OpenID Connect, authorization code + PKCE) ──────────────────────
+  const names = cookieNames(config);
+
+  app.get('/google/start', async (c) => {
+    const q = parseQuery(
+      c,
+      z.object({
+        lang: localeSchema.catch('ro'),
+        remember: z.enum(['0', '1']).catch('1'),
+        next: z.string().max(200).optional(),
+      }),
+    );
+    if (!config.google) {
+      return c.redirect(`${config.appUrl}${localePrefix(q.lang)}/login?error=google_disabled`, 302);
+    }
+    await enforceRateLimits(deps, [{ key: `google:ip:${c.get('ip')}`, limit: 30, windowSec: 900 }]);
+
+    const state = randomToken(24);
+    const nonce = randomToken(24);
+    const verifier = randomToken(48);
+    const sealed = await sealState(
+      config,
+      { state, nonce, verifier, lang: q.lang, remember: q.remember === '1', next: safeNext(q.next) },
+      600,
+    );
+    setCookie(c, names.oauth, sealed, {
+      httpOnly: true,
+      secure: config.cookieSecure,
+      sameSite: 'Lax',
+      path: OAUTH_PATH,
+      maxAge: 600,
+    });
+
+    const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+    url.search = new URLSearchParams({
+      client_id: config.google.clientId,
+      redirect_uri: config.google.redirectUri,
+      response_type: 'code',
+      scope: 'openid email profile',
+      state,
+      nonce,
+      code_challenge: await sha256Base64Url(verifier),
+      code_challenge_method: 'S256',
+      prompt: 'select_account',
+    }).toString();
+    return c.redirect(url.toString(), 302);
+  });
+
+  app.get('/google/callback', async (c) => {
+    const sealed = getCookie(c, names.oauth);
+    deleteCookie(c, names.oauth, { path: OAUTH_PATH, secure: config.cookieSecure });
+    const saved = sealed ? await openState(config, sealed) : null;
+    const lang: Locale = LOCALES.includes(saved?.lang as Locale) ? (saved?.lang as Locale) : 'ro';
+    const fail = (reason: string) =>
+      c.redirect(`${config.appUrl}${localePrefix(lang)}/login?error=${reason}`, 302);
+
+    const google = config.google;
+    if (!google || !saved) return fail('google');
+    const { code, state, error } = c.req.query();
+    if (error) return fail(error === 'access_denied' ? 'google_cancelled' : 'google');
+    if (!code || !state || typeof saved.state !== 'string' || !timingSafeEqualStr(state, saved.state)) {
+      return fail('google');
+    }
+
+    try {
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          code,
+          client_id: google.clientId,
+          client_secret: google.clientSecret,
+          redirect_uri: google.redirectUri,
+          grant_type: 'authorization_code',
+          code_verifier: String(saved.verifier),
+        }),
+      });
+      if (!tokenResponse.ok) return fail('google');
+      const tokenBody = (await tokenResponse.json()) as { id_token?: string };
+      if (!tokenBody.id_token) return fail('google');
+
+      googleJwks ??= createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
+      const { payload } = await jwtVerify(tokenBody.id_token, googleJwks, {
+        issuer: GOOGLE_ISSUERS,
+        audience: google.clientId,
+      });
+      if (
+        payload.nonce !== saved.nonce ||
+        payload.email_verified !== true ||
+        typeof payload.email !== 'string' ||
+        typeof payload.sub !== 'string'
+      ) {
+        return fail('google');
+      }
+
+      const googleId = payload.sub;
+      const email = payload.email.toLowerCase();
+      const now = deps.now();
+      let user = await col.users.findOne({ googleId });
+      if (!user) {
+        const byEmail = await col.users.findOne({ email });
+        if (byEmail) {
+          if (byEmail.googleId && byEmail.googleId !== googleId) return fail('google_conflict');
+          await col.users.updateOne({ _id: byEmail._id }, { $set: { googleId, updatedAt: now } });
+          user = { ...byEmail, googleId };
+        } else {
+          const given = typeof payload.given_name === 'string' ? payload.given_name : '';
+          const family = typeof payload.family_name === 'string' ? payload.family_name : '';
+          const name = truncate(given || email.split('@')[0] || 'Client', 60);
+          const surname = truncate(family, 60);
+          user = {
+            _id: new ObjectId(),
+            email,
+            name,
+            surname,
+            phone: null,
+            role: 'client',
+            locale: lang,
+            passwordHash: null,
+            googleId,
+            isActive: true,
+            bookingBlocked: false,
+            tokenVersion: 0,
+            notes: '',
+            search: userSearch(name, surname, email, null),
+            lastLoginAt: now,
+            createdAt: now,
+            updatedAt: now,
+            deletedAt: null,
+          };
+          try {
+            await col.users.insertOne(user);
+          } catch (insertError) {
+            if (isDuplicateKey(insertError)) return fail('google');
+            throw insertError;
+          }
+          await audit(deps, { actorId: user._id, action: 'user.register_google', targetType: 'user', targetId: user._id });
+        }
+      }
+      if (!user.isActive || user.deletedAt) return fail('account_disabled');
+
+      await col.users.updateOne({ _id: user._id }, { $set: { lastLoginAt: now } });
+      const tokens = await createSession(deps, user, {
+        remember: saved.remember !== false,
+        ...meta(c, c.get('ip')),
+      });
+      setSessionCookies(c, config, tokens);
+      return c.redirect(`${config.appUrl}${localePrefix(lang)}${safeNext(String(saved.next ?? ''))}`, 302);
+    } catch (callbackError) {
+      console.error('[auth] google callback failed', callbackError);
+      return fail('google');
+    }
+  });
+
+  return app;
+}
