@@ -1,5 +1,5 @@
 import { Suspense, useEffect } from 'react';
-import { Outlet, useLocation } from 'react-router';
+import { Outlet, ScrollRestoration, useLocation } from 'react-router';
 import { ConsentBanner } from '@/components/common/ConsentBanner';
 import { DelayedSpinner } from '@/components/common/DelayedSpinner';
 import { NavigationProgress } from '@/components/common/NavigationProgress';
@@ -31,6 +31,8 @@ export function LocaleLayout({ locale }: { locale: Locale }) {
     <Suspense fallback={<DelayedSpinner />}>
       <NavigationProgress />
       <Outlet />
+      {/* A new page opens at the top; Back returns to where you were. */}
+      <ScrollRestoration />
       <SplashDone />
       <ConsentBanner />
       <UpdatePrompt />

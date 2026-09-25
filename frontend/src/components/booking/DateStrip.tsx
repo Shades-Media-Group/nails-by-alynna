@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocale } from '@/i18n/useLocale';
 import { cx } from '@/lib/cx';
 import { dayParts } from '@/lib/format';
+import { centerInStrip } from '@/lib/scroll';
 
 interface DateStripProps {
   days: Array<{ date: string; slots: number }>;
@@ -17,11 +18,13 @@ export function DateStrip({ days, selected, onSelect, today }: DateStripProps) {
   const { locale } = useLocale();
   const strip = useRef<HTMLDivElement>(null);
 
+  // Bring the chosen day into view by moving the strip only, never the page.
+  const firstRun = useRef(true);
   useEffect(() => {
-    if (!selected) return;
-    strip.current
-      ?.querySelector<HTMLElement>(`[data-date="${selected}"]`)
-      ?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+    const row = strip.current;
+    const day = selected ? row?.querySelector<HTMLElement>(`[data-date="${selected}"]`) : null;
+    if (row && day) centerInStrip(row, day, firstRun.current ? 'auto' : 'smooth');
+    firstRun.current = false;
   }, [selected]);
 
   return (
@@ -29,7 +32,7 @@ export function DateStrip({ days, selected, onSelect, today }: DateStripProps) {
       ref={strip}
       role="listbox"
       aria-label={t('flow.chooseTime')}
-      className="no-scrollbar -mx-[var(--gutter)] flex snap-x gap-2 overflow-x-auto scroll-px-[var(--gutter)] px-[var(--gutter)] pb-2 pt-1"
+      className="no-scrollbar -mx-[var(--gutter)] flex snap-x gap-2 overflow-x-auto overscroll-x-contain scroll-px-[var(--gutter)] px-[var(--gutter)] pb-2 pt-1"
     >
       {days.map((day) => {
         const parts = dayParts(day.date, locale);

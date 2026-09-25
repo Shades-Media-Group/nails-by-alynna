@@ -109,7 +109,7 @@ export function AdminLayout() {
       {/* Phones: bottom bar */}
       <nav
         aria-label={t('nav.menu')}
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-100 bg-white/95 pb-[var(--safe-bottom)] backdrop-blur-md lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-100 bg-white pb-[var(--safe-bottom)] lg:hidden"
       >
         <ul className="mx-auto grid h-16 max-w-md grid-cols-5 items-center">
           <BarLink to={lp('/admin')} end icon={DashboardIcon} label={t('nav.dashboard')} />

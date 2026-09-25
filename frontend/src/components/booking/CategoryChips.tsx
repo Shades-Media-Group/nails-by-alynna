@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Chip } from '@/components/ui';
 import { useI18nText } from '@/hooks/useStudio';
+import { centerInStrip, scrollPageTo } from '@/lib/scroll';
 import type { Category } from '@/types/api';
 
 export const sectionId = (categoryId: string) => `category-${categoryId}`;
@@ -14,10 +15,10 @@ export function CategoryChips({ categories, className }: { categories: Category[
   const { t } = useTranslation('booking');
   const pick = useI18nText();
   const [active, setActive] = useState(categories[0]?.id ?? '');
+  const root = useRef<HTMLDivElement>(null);
   const bar = useRef<HTMLDivElement>(null);
   // While a tapped chip scrolls the page, the scroll-spy must not fight it.
   const scrolling = useRef(false);
-  const unlockTimer = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     const sections = categories
@@ -34,31 +35,33 @@ export function CategoryChips({ categories, className }: { categories: Category[
       { rootMargin: '-140px 0px -55% 0px' },
     );
     sections.forEach((s) => observer.observe(s));
-    return () => {
-      observer.disconnect();
-      window.clearTimeout(unlockTimer.current);
-    };
+    return () => observer.disconnect();
   }, [categories]);
 
+  // Keep the active chip in view by scrolling the chip row only — never the page, which would
+  // cut a flick short on iOS.
   useEffect(() => {
-    bar.current?.querySelector<HTMLElement>(`[data-id="${active}"]`)?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+    const strip = bar.current;
+    const chip = strip?.querySelector<HTMLElement>(`[data-id="${active}"]`);
+    if (strip && chip) centerInStrip(strip, chip);
   }, [active]);
 
   const go = (id: string) => {
     setActive(id);
-    scrolling.current = true;
-    window.clearTimeout(unlockTimer.current);
-    unlockTimer.current = window.setTimeout(() => {
-      scrolling.current = false;
-    }, 800);
     const target = document.getElementById(sectionId(id));
     if (!target) return;
-    const offset = window.matchMedia('(min-width: 64rem)').matches ? 160 : 90;
-    window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - offset, behavior: 'smooth' });
+    // Land the section just under the stuck chip row, whatever its height on this screen.
+    const sticky = root.current;
+    const stuckAt = sticky ? parseFloat(getComputedStyle(sticky).top) || 0 : 0;
+    const offset = stuckAt + (sticky?.offsetHeight ?? 0) + 8;
+    scrolling.current = true;
+    scrollPageTo(target.getBoundingClientRect().top + window.scrollY - offset, () => {
+      scrolling.current = false;
+    });
   };
 
   return (
-    <div className={className}>
+    <div ref={root} className={className}>
       <div
         ref={bar}
         role="toolbar"

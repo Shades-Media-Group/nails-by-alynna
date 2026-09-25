@@ -36,7 +36,7 @@ export default function AppointmentsPage() {
         <SegmentedControl<Tab>
           label={t('bookings.title')}
           value={tab}
-          onChange={(value) => setParams(value === 'past' ? { tab: 'past' } : {}, { replace: true })}
+          onChange={(value) => setParams(value === 'past' ? { tab: 'past' } : {}, { replace: true, preventScrollReset: true })}
           options={[
             { value: 'upcoming', label: t('bookings.upcoming'), count: upcoming.data?.length },
             { value: 'past', label: t('bookings.past') },

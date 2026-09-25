@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation } from 'react-router';
 import { DemoRibbon } from '@/components/common/DemoRibbon';
@@ -9,11 +8,6 @@ import { TopNav } from './TopNav';
 export function AppShell() {
   const { t } = useTranslation('common');
   const { pathname } = useLocation();
-
-  // New screen → start at the top (the tab bar keeps its own position).
-  useEffect(() => {
-    window.scrollTo({ top: 0 });
-  }, [pathname]);
 
   return (
     <div className="min-h-dvh bg-white">

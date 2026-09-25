@@ -72,8 +72,8 @@ export default function BookingPage() {
     (next: Step, replace = false) => {
       const nextParams = new URLSearchParams(params);
       nextParams.set('step', next);
+      // A new step starts at the top (the router's scroll restoration does it).
       setParams(nextParams, { replace });
-      window.scrollTo({ top: 0 });
     },
     [params, setParams],
   );
@@ -84,7 +84,7 @@ export default function BookingPage() {
     else nextParams.delete('services');
     // Picking services keeps you on this step until you press Continue.
     nextParams.set('step', 'services');
-    setParams(nextParams, { replace: true });
+    setParams(nextParams, { replace: true, preventScrollReset: true });
     setSlot(null);
     setDate(null);
   };
@@ -166,7 +166,7 @@ export default function BookingPage() {
 
   return (
     <main className={bar ? 'pb-36' : 'pb-[calc(var(--safe-bottom)+2rem)]'}>
-      <header className="sticky top-0 z-30 border-b border-ink-100 bg-white/95 pt-[var(--safe-top)] backdrop-blur-md">
+      <header className="sticky top-0 z-30 border-b border-ink-100 bg-white pt-[var(--safe-top)]">
         <div className="gutter-x mx-auto flex h-14 max-w-2xl items-center gap-3">
           <IconButton icon={stepIndex > 0 ? ArrowBackIcon : CloseIcon} label={stepIndex > 0 ? t('common:actions.back') : t('flow.leave')} size="sm" variant="soft" onClick={back} />
           <p className="min-w-0 flex-1 truncate text-[0.9375rem] font-bold">{rescheduleId ? t('flow.rescheduleTitle') : t('flow.title')}</p>

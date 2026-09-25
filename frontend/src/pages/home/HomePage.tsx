@@ -138,7 +138,7 @@ export default function HomePage() {
                   </Link>
                 }
               />
-              <ul className="no-scrollbar -mx-[var(--gutter)] flex snap-x snap-mandatory scroll-px-[var(--gutter)] gap-2.5 overflow-x-auto px-[var(--gutter)] pb-3 pt-1 lg:mx-0 lg:grid lg:grid-cols-2 lg:overflow-visible lg:px-0">
+              <ul className="no-scrollbar -mx-[var(--gutter)] flex snap-x scroll-px-[var(--gutter)] gap-2.5 overflow-x-auto overscroll-x-contain px-[var(--gutter)] pb-3 pt-1 lg:mx-0 lg:grid lg:grid-cols-2 lg:overflow-visible lg:px-0">
                 {popular.map((service) => {
                   const color = catalog.categoryById.get(service.categoryId)?.color ?? 'blush';
                   return (

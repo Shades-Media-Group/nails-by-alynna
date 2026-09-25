@@ -31,7 +31,7 @@ export default function ServicesPage() {
       {catalog.categories.length > 0 ? (
         <CategoryChips
           categories={catalog.grouped.map((g) => g.category)}
-          className="sticky top-0 z-30 mt-4 bg-white/95 backdrop-blur-md lg:top-18"
+          className="sticky top-0 z-30 mt-4 bg-white lg:top-18"
         />
       ) : null}
       <div className="px-[calc(var(--gutter)-0.75rem)] pt-2 lg:px-0">
