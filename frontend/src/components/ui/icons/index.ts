@@ -35,6 +35,7 @@ export { default as ExpandMoreIcon } from '@mui/icons-material/ExpandMoreRounded
 export { default as GroupIcon } from '@mui/icons-material/GroupRounded';
 export { default as HistoryIcon } from '@mui/icons-material/HistoryRounded';
 export { default as HomeIcon } from '@mui/icons-material/HomeRounded';
+export { default as HourglassIcon } from '@mui/icons-material/HourglassTopRounded';
 export { default as HomeOutlinedIcon } from '@mui/icons-material/HomeOutlined';
 export { default as InfoIcon } from '@mui/icons-material/InfoOutlined';
 export { default as InstagramIcon } from '@mui/icons-material/Instagram';

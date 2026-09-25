@@ -3,6 +3,8 @@
     "greeting": "Привет, {{name}}",
     "greetingLine": "готова к новому маникюру?",
     "nextVisit": "Ближайший визит",
+    "visitAt": "{{day}} в {{time}}",
+    "durationWith": "{{duration}}, мастер {{name}}",
     "details": "Подробнее",
     "bookTitle": "Записаться",
     "bookText": "Выберите услугу и время. Это займёт минуту.",
@@ -14,6 +16,7 @@
     "shortcutStudio": "О салоне",
     "shortcutContact": "Написать нам",
     "popular": "Популярное",
+    "allServices": "Все услуги",
     "openToday": "Сегодня открыто до {{time}}",
     "closedToday": "Сегодня выходной",
     "pending": "Салон скоро подтвердит вашу заявку."

@@ -3,6 +3,8 @@
     "greeting": "Bună, {{name}}",
     "greetingLine": "gata de o manichiură nouă?",
     "nextVisit": "Următoarea vizită",
+    "visitAt": "{{day}}, la {{time}}",
+    "durationWith": "{{duration}} cu {{name}}",
     "details": "Detalii",
     "bookTitle": "Programează-te",
     "bookText": "Alege serviciul și ora. Durează un minut.",
@@ -13,7 +15,8 @@
     "shortcutBookings": "Programările mele",
     "shortcutStudio": "Despre salon",
     "shortcutContact": "Scrie-ne",
-    "popular": "Populare acum",
+    "popular": "Populare",
+    "allServices": "Toate serviciile",
     "openToday": "Deschis azi până la {{time}}",
     "closedToday": "Închis azi",
     "pending": "Salonul îți va confirma cererea în curând."

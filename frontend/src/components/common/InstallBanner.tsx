@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { CloseIcon, InstallIcon } from '@/components/ui/icons';
+import { ChevronRightIcon, CloseIcon, InstallIcon } from '@/components/ui/icons';
 import { useLocale } from '@/i18n/useLocale';
 import { hasConsent } from '@/lib/consent';
 import { currentPlatform } from '@/lib/platform';
@@ -28,22 +28,28 @@ export function InstallBanner() {
   };
 
   return (
-    <div className="relative flex items-center gap-3 rounded-xl bg-cyan-50 p-4 pr-12">
-      <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-pill bg-white text-[1.35rem] text-cyan-700">
+    <div className="relative flex items-center gap-3 rounded-2xl bg-cyan-50 py-3 pl-3 pr-12">
+      <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-pill bg-white text-xl text-cyan-700">
         <InstallIcon fontSize="inherit" />
       </span>
       <div className="min-w-0">
-        <p className="font-bold text-cyan-800">{t('installBanner.title')}</p>
-        <p className="text-sm text-cyan-800/90">{t('installBanner.text')}</p>
-        <Link to={lp('/app')} className="mt-1 inline-block text-sm font-bold text-ink-900 underline">
+        <p className="text-[0.9375rem] font-bold leading-snug text-cyan-800">{t('installBanner.title')}</p>
+        <Link
+          to={lp('/app')}
+          className="group mt-0.5 inline-flex items-center gap-0.5 text-sm font-semibold text-ink-900 underline-offset-4 hover:underline"
+        >
           {t('installBanner.action')}
+          <ChevronRightIcon
+            fontSize="inherit"
+            className="text-base transition-transform duration-200 ease-(--ease-out) group-hover:translate-x-1"
+          />
         </Link>
       </div>
       <button
         type="button"
         onClick={dismiss}
         aria-label={t('actions.close')}
-        className="absolute right-2 top-2 inline-flex size-9 items-center justify-center rounded-pill text-[1.2rem] text-cyan-800 hover:bg-white/60"
+        className="press absolute right-2 top-1/2 inline-flex size-9 -translate-y-1/2 items-center justify-center rounded-pill text-[1.2rem] text-cyan-800 hover:bg-white/70"
       >
         <CloseIcon fontSize="inherit" />
       </button>

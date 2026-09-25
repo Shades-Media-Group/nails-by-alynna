@@ -3,6 +3,8 @@
     "greeting": "Hi, {{name}}",
     "greetingLine": "ready for a fresh set?",
     "nextVisit": "Your next visit",
+    "visitAt": "{{day}} at {{time}}",
+    "durationWith": "{{duration}} with {{name}}",
     "details": "Details",
     "bookTitle": "Book a visit",
     "bookText": "Pick a service and a time. It takes a minute.",
@@ -13,7 +15,8 @@
     "shortcutBookings": "My bookings",
     "shortcutStudio": "The studio",
     "shortcutContact": "Write to us",
-    "popular": "Popular right now",
+    "popular": "Popular",
+    "allServices": "All services",
     "openToday": "Open today until {{time}}",
     "closedToday": "Closed today",
     "pending": "The studio will confirm your request soon."
