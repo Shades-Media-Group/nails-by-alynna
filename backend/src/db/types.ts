@@ -59,6 +59,10 @@ export interface UserDoc {
    */
   isDemo?: boolean;
   tokenVersion: number;
+  /** Loyalty card number shown as a QR code in the app (see modules/loyalty). Missing = not issued yet. */
+  memberCode?: string;
+  /** Stamps staff added or removed by hand (visits outside the app, corrections). Missing = 0. */
+  loyaltyBonus?: number;
   /** Staff-only notes about a client. */
   notes: string;
   search: string;
@@ -221,9 +225,27 @@ export interface AppointmentDoc {
   cancelledAt: Date | null;
   cancelledBy: 'client' | 'staff' | null;
   cancelReason: string;
+  /** Loyalty stamp earned when the visit was completed, with the reward applied (if any). */
+  loyalty?: AppointmentLoyalty | null;
   createdBy: ObjectId;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/** One stamp on the loyalty card: which visit of the card it was and the discount it carried. */
+export interface AppointmentLoyalty {
+  /** Position on the card, 1..cycle. */
+  visit: number;
+  cycle: number;
+  percent: number;
+  /** Discount in the studio currency, from the visit's list price. */
+  discount: number;
+}
+
+/** A reward on the loyalty card: the Nth visit of every card gets `percent` off. */
+export interface LoyaltyReward {
+  visit: number;
+  percent: number;
 }
 
 export interface StudioSettings {
@@ -252,6 +274,11 @@ export interface StudioSettings {
   bufferMin: number;
   maxActiveBookings: number;
   policy: I18nText;
+  /** Loyalty stamp card: every completed visit is a stamp; some visits of each card get a discount. */
+  loyaltyEnabled: boolean;
+  /** Visits per card; the card starts again after the last one. */
+  loyaltyCycle: number;
+  loyaltyRewards: LoyaltyReward[];
 }
 
 export interface SettingsDoc extends StudioSettings {

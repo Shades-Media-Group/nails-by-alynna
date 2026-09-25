@@ -77,6 +77,7 @@ export function publicRoutes(deps: AppDeps) {
         policy: s.policy,
         mastersCount: bookable,
       },
+      loyalty: { enabled: s.loyaltyEnabled, cycle: s.loyaltyCycle, rewards: s.loyaltyRewards },
     });
   });
 

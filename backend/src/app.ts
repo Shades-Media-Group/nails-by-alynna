@@ -13,6 +13,7 @@ import { adminRoutes } from './modules/admin';
 import { appointmentRoutes } from './modules/appointments/routes';
 import { authRoutes } from './modules/auth/routes';
 import { availabilityRoutes } from './modules/availability/routes';
+import { loyaltyRoutes } from './modules/loyalty/routes';
 import { meRoutes } from './modules/me/routes';
 import { publicRoutes } from './modules/public/routes';
 
@@ -27,6 +28,7 @@ export function createApp(deps: AppDeps) {
   app.route('/api/me', meRoutes(deps));
   app.route('/api/availability', availabilityRoutes(deps));
   app.route('/api/appointments', appointmentRoutes(deps));
+  app.route('/api/loyalty', loyaltyRoutes(deps));
   app.route('/api/admin', adminRoutes(deps));
 
   app.notFound((c) => c.json({ error: { code: 'NOT_FOUND', message: 'Not found' } }, 404));

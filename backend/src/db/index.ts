@@ -65,6 +65,8 @@ export async function ensureIndexes(db: Db): Promise<void> {
         partialFilterExpression: { googleId: { $type: 'string' } },
       },
       { key: { role: 1, createdAt: -1 }, name: 'role_created' },
+      // Loyalty card number (QR); issued on first use, so only some users have one.
+      { key: { memberCode: 1 }, unique: true, name: 'member_code', partialFilterExpression: { memberCode: { $type: 'string' } } },
     ]),
     c.sessions.createIndexes([
       { key: { tokenHash: 1 }, unique: true, name: 'token_unique' },

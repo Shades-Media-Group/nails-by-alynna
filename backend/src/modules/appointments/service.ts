@@ -13,6 +13,7 @@ import { AppError, isDuplicateKey } from '../../lib/errors';
 import { HOUR, MINUTE, toZonedParts } from '../../lib/time';
 import { getSettings } from '../settings';
 import { canPerform, loadAvailabilityContext, loadServices, slotsForDate } from '../availability/service';
+import type { LoyaltyTag } from '../loyalty/service';
 
 /**
  * Double-booking protection without transactions: after writing a placement we look for an
@@ -242,7 +243,10 @@ export function toClientAppointment(
   staff: Map<string, StaffSummary>,
   settings: StudioSettings,
   now: Date,
+  /** Loyalty stamps (earned or expected) by appointment id, from loyalty/service loyaltyTags. */
+  loyalty?: Map<string, LoyaltyTag>,
 ) {
+  const stored = a.status === 'completed' && a.loyalty ? { ...a.loyalty, predicted: false } : null;
   return {
     id: a._id.toHexString(),
     code: a.code,
@@ -265,6 +269,7 @@ export function toClientAppointment(
     changeDeadline: cancelDeadline(a, settings).toISOString(),
     cancelledAt: a.cancelledAt?.toISOString() ?? null,
     cancelledBy: a.cancelledBy,
+    loyalty: loyalty?.get(a._id.toHexString()) ?? stored,
     createdAt: a.createdAt.toISOString(),
   };
 }
@@ -274,9 +279,10 @@ export function toStaffAppointment(
   staff: Map<string, StaffSummary>,
   settings: StudioSettings,
   now: Date,
+  loyalty?: Map<string, LoyaltyTag>,
 ) {
   return {
-    ...toClientAppointment(a, staff, settings, now),
+    ...toClientAppointment(a, staff, settings, now, loyalty),
     client: { id: a.clientId.toHexString(), ...a.client },
     staffNotes: a.staffNotes,
     source: a.source,

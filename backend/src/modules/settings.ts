@@ -42,6 +42,13 @@ export const DEFAULT_SETTINGS: StudioSettings = {
     ru: 'Отменить или перенести запись можно бесплатно до указанного срока. Позже, пожалуйста, свяжитесь с нами.',
     en: 'You can cancel or reschedule for free until the deadline shown. After that, please contact the studio.',
   },
+  // The studio's card: the 4th visit is 15% off, the 8th is 50% off, then a new card starts.
+  loyaltyEnabled: true,
+  loyaltyCycle: 8,
+  loyaltyRewards: [
+    { visit: 4, percent: 15 },
+    { visit: 8, percent: 50 },
+  ],
 };
 
 // Per-runtime cache (one per Node process or Durable Object), refreshed every 30 s.

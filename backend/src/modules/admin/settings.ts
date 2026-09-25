@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import type { AppDeps, AppEnv } from '../../context';
 import { audit } from '../../lib/audit';
+import { AppError } from '../../lib/errors';
 import { i18nOptionalTextSchema, i18nTextSchema, parseJson } from '../../lib/validation';
 import { requireRole } from '../../middleware/auth';
 import { DEFAULT_SETTINGS, getSettings, invalidateSettingsCache } from '../settings';
@@ -54,6 +55,11 @@ const settingsSchema = z
     bufferMin: z.number().int().min(0).max(120),
     maxActiveBookings: z.number().int().min(1).max(20),
     policy: i18nOptionalTextSchema(600),
+    loyaltyEnabled: z.boolean(),
+    loyaltyCycle: z.number().int().min(2).max(20),
+    loyaltyRewards: z
+      .array(z.object({ visit: z.number().int().min(1).max(20), percent: z.number().int().min(1).max(100) }))
+      .max(6),
   })
   .partial();
 
@@ -64,6 +70,19 @@ export function adminSettingsRoutes(deps: AppDeps) {
 
   app.patch('/', requireRole('administrator'), async (c) => {
     const input = await parseJson(c, settingsSchema);
+    if (input.loyaltyCycle !== undefined || input.loyaltyRewards !== undefined) {
+      // Every reward must sit on the card (visit ≤ visits per card), one reward per visit.
+      const current = await getSettings(deps);
+      const cycle = input.loyaltyCycle ?? current.loyaltyCycle;
+      const rewards = input.loyaltyRewards ?? current.loyaltyRewards;
+      const visits = rewards.map((r) => r.visit);
+      if (visits.some((v) => v > cycle) || new Set(visits).size !== visits.length) {
+        throw new AppError(422, 'VALIDATION_ERROR', 'Rewards must be on distinct visits within the card', {
+          fields: { loyaltyRewards: 'invalid' },
+        });
+      }
+      if (input.loyaltyRewards) input.loyaltyRewards = [...input.loyaltyRewards].sort((a, b) => a.visit - b.visit);
+    }
     const now = deps.now();
     await deps.col.settings.updateOne(
       { _id: 'studio' },

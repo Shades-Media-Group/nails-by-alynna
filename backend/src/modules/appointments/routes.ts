@@ -24,6 +24,7 @@ import {
   staffSummaries,
   toClientAppointment,
 } from './service';
+import { loyaltyTags } from '../loyalty/service';
 
 const staffChoice = z
   .union([z.literal('any'), objectIdSchema, z.null()])
@@ -60,7 +61,8 @@ export function appointmentRoutes(deps: AppDeps) {
       getSettings(deps),
       staffSummaries(deps, docs.map((d) => d.staffId)),
     ]);
-    return c.json({ appointments: docs.map((d) => toClientAppointment(d, staff, settings, now)) });
+    const loyalty = await loyaltyTags(deps, docs, settings);
+    return c.json({ appointments: docs.map((d) => toClientAppointment(d, staff, settings, now, loyalty)) });
   });
 
   app.get('/:id', async (c) => {
@@ -68,7 +70,8 @@ export function appointmentRoutes(deps: AppDeps) {
     const doc = await deps.col.appointments.findOne({ _id: paramId(c), clientId: user._id });
     if (!doc) throw notFound('Appointment');
     const [settings, staff] = await Promise.all([getSettings(deps), staffSummaries(deps, [doc.staffId])]);
-    return c.json({ appointment: toClientAppointment(doc, staff, settings, deps.now()) });
+    const loyalty = await loyaltyTags(deps, [doc], settings);
+    return c.json({ appointment: toClientAppointment(doc, staff, settings, deps.now(), loyalty) });
   });
 
   const createSchema = z.object({
@@ -128,8 +131,8 @@ export function appointmentRoutes(deps: AppDeps) {
       enforceSlots: true,
     });
     await audit(deps, { actorId: user._id, action: 'appointment.create', targetType: 'appointment', targetId: doc._id });
-    const staff = await staffSummaries(deps, [doc.staffId]);
-    return c.json({ appointment: toClientAppointment(doc, staff, settings, now) }, 201);
+    const [staff, loyalty] = await Promise.all([staffSummaries(deps, [doc.staffId]), loyaltyTags(deps, [doc], settings)]);
+    return c.json({ appointment: toClientAppointment(doc, staff, settings, now, loyalty) }, 201);
   });
 
   app.post('/:id/cancel', async (c) => {
@@ -182,8 +185,8 @@ export function appointmentRoutes(deps: AppDeps) {
       enforceSlots: true,
     });
     await audit(deps, { actorId: user._id, action: 'appointment.reschedule', targetType: 'appointment', targetId: id });
-    const staff = await staffSummaries(deps, [updated.staffId]);
-    return c.json({ appointment: toClientAppointment(updated, staff, settings, now) });
+    const [staff, loyalty] = await Promise.all([staffSummaries(deps, [updated.staffId]), loyaltyTags(deps, [updated], settings)]);
+    return c.json({ appointment: toClientAppointment(updated, staff, settings, now, loyalty) });
   });
 
   return app;

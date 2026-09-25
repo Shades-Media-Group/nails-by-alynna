@@ -27,6 +27,7 @@ import {
   toStaffAppointment,
 } from '../appointments/service';
 import { placeholderEmail } from '../../lib/placeholder-email';
+import { loyaltyTags, stampOnCompletion } from '../loyalty/service';
 
 export { placeholderEmail };
 
@@ -64,14 +65,15 @@ export function adminAppointmentRoutes(deps: AppDeps) {
   const app = new Hono<AppEnv>();
 
   async function respond(docs: AppointmentDoc[]) {
-    const [settings, staff, badges] = await Promise.all([
-      getSettings(deps),
+    const settings = await getSettings(deps);
+    const [staff, badges, loyalty] = await Promise.all([
       staffSummaries(deps, docs.map((d) => d.staffId)),
       clientBadges(deps, docs.map((d) => d.clientId)),
+      loyaltyTags(deps, docs, settings),
     ]);
     const now = deps.now();
     return docs.map((d) => ({
-      ...toStaffAppointment(d, staff, settings, now),
+      ...toStaffAppointment(d, staff, settings, now, loyalty),
       clientStats: badges.get(d.clientId.toHexString()) ?? { visits: 0, noShows: 0 },
     }));
   }
@@ -244,6 +246,10 @@ export function adminAppointmentRoutes(deps: AppDeps) {
         set.cancelReason = '';
       }
       set.status = input.status;
+      // Completing a visit stamps the loyalty card and locks in its discount; undoing the
+      // completion takes the stamp back.
+      if (input.status === 'completed') set.loyalty = await stampOnCompletion(deps, doc, await getSettings(deps));
+      else if (doc.status === 'completed') set.loyalty = null;
     }
 
     const updated = await deps.col.appointments.findOneAndUpdate(
