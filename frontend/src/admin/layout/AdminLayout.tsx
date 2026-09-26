@@ -32,6 +32,9 @@ import { SWATCH, type SwatchColor } from '@/lib/swatch';
 import { signedOutStart } from '@/lib/platform';
 import { adminQueries } from '../api';
 import { BookingAlerts } from '../components/BookingAlerts';
+import { PendingBadge } from '../requests/PendingBadge';
+import { PendingRequestsSheet } from '../requests/PendingRequestsSheet';
+import { useAppBadge } from '../requests/useAppBadge';
 
 /** Each part of the admin has its own brand colour (a tile behind its icon), like iOS Settings. */
 type Tone = SwatchColor | 'ink';
@@ -54,6 +57,8 @@ interface Item {
   masterOnly?: boolean;
   /** For the owner and masters: reception staff have nothing to read there. */
   readersOnly?: boolean;
+  /** Requests waiting for an answer (on "Today"). */
+  pending?: number;
 }
 
 /**
@@ -61,7 +66,8 @@ interface Item {
  * daily four (today, calendar, new booking, clients) and the rest under "More".
  */
 export function AdminLayout() {
-  const { t } = useTranslation(['admin', 'loyalty', 'promo', 'feedback']);
+  // 'booking' too: the requests sheet can come up over any staff screen.
+  const { t } = useTranslation(['admin', 'loyalty', 'promo', 'feedback', 'booking']);
   const { lp } = useLocale();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -70,6 +76,8 @@ export function AdminLayout() {
   const isOwner = user?.role === 'administrator';
   // Staff with a master profile set their own week; reception staff have none.
   const isMaster = useQuery(adminQueries.myStaff()).isSuccess;
+  const pending = useQuery(adminQueries.pendingRequests()).data?.total;
+  useAppBadge(pending);
 
   const items: Item[] = (
     [
@@ -79,6 +87,7 @@ export function AdminLayout() {
         icon: DashboardIcon,
         tone: 'blush',
         end: true,
+        pending,
       },
       { to: lp('/admin/calendar'), label: t('nav.calendar'), icon: CalendarIcon, tone: 'cyan' },
       { to: lp('/admin/clients'), label: t('nav.clients'), icon: GroupIcon, tone: 'peach' },
@@ -207,6 +216,8 @@ export function AdminLayout() {
 
       {/* A chime and a banner when a client books while the app is open. */}
       <BookingAlerts />
+      {/* Each time the app opens with requests waiting: the list, to answer them at once. */}
+      <PendingRequestsSheet />
       <main
         key={pathname}
         className="animate-page pb-[calc(var(--safe-bottom)+6rem)] lg:pb-12 lg:pl-64"
@@ -228,6 +239,7 @@ export function AdminLayout() {
             icon={DashboardIcon}
             tone="blush"
             label={t('nav.dashboard')}
+            pending={pending}
           />
           <BarLink
             to={lp('/admin/calendar')}
@@ -313,6 +325,7 @@ function SideLink({ item }: { item: Item }) {
         <item.icon fontSize="inherit" />
       </span>
       {item.label}
+      <PendingBadge count={item.pending} placement="side" />
     </NavLink>
   );
 }
@@ -324,12 +337,14 @@ function BarLink({
   label,
   tone,
   end,
+  pending,
 }: {
   to: string;
   icon: IconComponent;
   label: string;
   tone: Tone;
   end?: boolean;
+  pending?: number;
 }): ReactNode {
   return (
     <li className="flex justify-center">
@@ -338,7 +353,7 @@ function BarLink({
         end={end}
         className={({ isActive }) =>
           cx(
-            'press flex h-12 w-16 flex-col items-center justify-center gap-0.5 rounded-xl transition-colors',
+            'press relative flex h-12 w-16 flex-col items-center justify-center gap-0.5 rounded-xl transition-colors',
             isActive ? 'text-ink-900' : 'text-ink-600',
           )
         }
@@ -354,6 +369,7 @@ function BarLink({
               <Icon fontSize="inherit" />
             </span>
             <span className="text-[0.6875rem] font-semibold">{label}</span>
+            <PendingBadge count={pending} placement="bar" />
           </>
         )}
       </NavLink>

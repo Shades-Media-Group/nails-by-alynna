@@ -788,5 +788,15 @@
     "request": "New booking request",
     "booking": "New booking",
     "open": "Open"
+  },
+  "requests": {
+    "title": "New requests ({{n}})",
+    "later": "Later",
+    "seeAll": "See all ({{n}})",
+    "showFewer": "Show fewer",
+    "allDone": "All requests are answered",
+    "sent": "Sent",
+    "count_one": "{{count}} new request",
+    "count_other": "{{count}} new requests"
   }
 }

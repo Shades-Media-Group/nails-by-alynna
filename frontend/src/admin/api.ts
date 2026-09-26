@@ -70,6 +70,15 @@ export interface CategoryInput {
  */
 export type StaffAppointmentCore = Omit<StaffAppointment, 'clientStats'>;
 
+/** The booking requests waiting for the signed-in staff member's answer. */
+export interface PendingRequests {
+  /** The one waiting longest first. */
+  appointments: StaffAppointment[];
+  total: number;
+  /** 'own': a master's own requests; 'all': the whole studio's (the owner, the desk). */
+  scope: 'all' | 'own';
+}
+
 export interface AppointmentsParams {
   /** First day (YYYY-MM-DD, studio time). */
   from: string;
@@ -315,6 +324,8 @@ export const adminApi = {
 
   appointments: (params: AppointmentsParams) =>
     api.get<{ appointments: StaffAppointment[] }>(`/admin/appointments${query({ ...params })}`).then((r) => r.appointments),
+  /** The owner every request; a master only theirs (scoped by the API). */
+  pendingRequests: () => api.get<PendingRequests>('/admin/appointments/pending'),
   appointment: (id: string) => api.get<{ appointment: StaffAppointment }>(`/admin/appointments/${id}`).then((r) => r.appointment),
   createAppointment: (input: NewAppointmentInput) =>
     api.post<{ appointment: StaffAppointment }>('/admin/appointments', input).then((r) => r.appointment),
@@ -384,6 +395,9 @@ export const adminQueries = {
   myStaff: () => queryOptions({ queryKey: ['admin', 'staff', 'me'], queryFn: adminApi.myStaff, staleTime: 60_000, retry: false }),
   appointments: (params: AppointmentsParams) =>
     queryOptions({ queryKey: ['admin', 'appointments', params], queryFn: () => adminApi.appointments(params), staleTime: 15_000, ...LIVE }),
+  /** Under ['admin', 'appointments'], so every booking change refreshes it too. */
+  pendingRequests: () =>
+    queryOptions({ queryKey: ['admin', 'appointments', 'pending'], queryFn: adminApi.pendingRequests, staleTime: 15_000, ...LIVE }),
   appointment: (id: string) =>
     queryOptions({ queryKey: ['admin', 'appointment', id], queryFn: () => adminApi.appointment(id), staleTime: 15_000, ...LIVE }),
   clients: (params: { q?: string; page?: number; limit?: number }) =>

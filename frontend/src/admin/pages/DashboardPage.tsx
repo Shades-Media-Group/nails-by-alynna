@@ -1,48 +1,43 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { useAuth } from '@/app/auth';
 import { Alert } from '@/components/common/Alert';
 import { SectionHeading } from '@/components/layout/PageHeader';
 import { PromoBadge } from '@/components/promo/PromoBits';
-import { Button, ButtonLink, EmptyState, Skeleton, Textarea, toast } from '@/components/ui';
+import { ButtonLink, EmptyState, Skeleton, toast } from '@/components/ui';
 import { AddIcon, CalendarIcon, CallIcon, ChevronRightIcon, EventIcon, GroupIcon, QrCodeIcon, type IconComponent } from '@/components/ui/icons';
 import { useI18nText, useStudio } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
 import { cx } from '@/lib/cx';
 import { errorMessage } from '@/lib/errors';
-import { addDays, dateToInstant, dayParts, formatDayLong, formatDuration, formatPrice, formatTime, fullName, zonedDate } from '@/lib/format';
+import { dateToInstant, formatDayLong, formatDuration, formatPrice, formatTime, fullName } from '@/lib/format';
 import { SWATCH } from '@/lib/swatch';
-import type { StaffAppointment } from '@/types/api';
 import { adminQueries, type DashboardStats } from '../api';
 import { AdminHeader } from '../components/AdminHeader';
-import { ConfirmSheet } from '../components/ConfirmSheet';
 import { useStatusChange, useStudioToday } from '../components/hooks';
 import { StatusBadge } from '../components/StatusBadge';
 import { Timeline } from '../components/Timeline';
 import { zonedParts } from '../components/time';
 import { relativeTime, telHref } from '../components/utils';
+import { PendingRequestsCard } from '../requests/PendingRequestsCard';
 
-/** The day at the desk: who is next, what waits for an answer, the schedule and the numbers. */
+/** The day at the desk: what waits for an answer, who is next, the schedule and the numbers. */
 export default function DashboardPage() {
   const { t } = useTranslation(['admin', 'common', 'booking']);
   const { user } = useAuth();
   const { lp, locale } = useLocale();
   const { today, now, timeZone } = useStudioToday();
   const stats = useQuery({ ...adminQueries.stats(), refetchInterval: 60_000 });
-  const pending = useQuery({ ...adminQueries.appointments({ from: today, to: addDays(today, 60), status: 'pending' }), refetchInterval: 60_000 });
   const staff = useQuery(adminQueries.staff());
   const multiMaster = (staff.data ?? []).filter((s) => s.isActive && s.isBookable).length > 1;
-  const [declining, setDeclining] = useState<StaffAppointment | null>(null);
-  const [reason, setReason] = useState('');
 
   const minutes = zonedParts(new Date(now), timeZone).minutes;
   // Before 5:00 it's still the evening before (nobody says "good morning" at midnight).
   const greeting = minutes < 5 * 60 ? 'evening' : minutes < 12 * 60 ? 'morning' : minutes < 18 * 60 ? 'afternoon' : 'evening';
 
-  const setStatus = useStatusChange(() => setDeclining(null));
-  const busy = (id: string, status: string) => setStatus.isPending && setStatus.variables?.id === id && setStatus.variables.status === status;
+  const setStatus = useStatusChange();
   const quickError = (error: unknown) => toast.error(errorMessage(t, error));
 
   const quick: Array<{ to: string; label: string; icon: IconComponent; primary?: boolean }> = [
@@ -66,6 +61,11 @@ export default function DashboardPage() {
           </div>
         }
       />
+
+      {/* Clients waiting for an answer come first: the most urgent thing on the screen. */}
+      <div className="gutter-x mt-6 empty:hidden lg:px-0">
+        <PendingRequestsCard withMaster={multiMaster} />
+      </div>
 
       <div className="gutter-x mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:px-0">
         <div className="flex min-w-0 flex-col gap-8">
@@ -94,35 +94,6 @@ export default function DashboardPage() {
               </Link>
             ))}
           </nav>
-
-          {pending.data && pending.data.length > 0 ? (
-            <section aria-labelledby="requests-title">
-              <SectionHeading
-                id="requests-title"
-                title={t('dashboard.requests')}
-                action={<span className="tabular rounded-pill bg-peach-50 px-2.5 py-0.5 text-sm font-bold text-peach-800">{pending.data.length}</span>}
-              />
-              <p className="-mt-1 mb-3 text-sm text-ink-600">{t('dashboard.requestsHint')}</p>
-              <ul className="flex flex-col gap-2">
-                {pending.data.map((a) => (
-                  <RequestCard
-                    key={a.id}
-                    appointment={a}
-                    confirming={busy(a.id, 'confirmed')}
-                    disabled={setStatus.isPending}
-                    onConfirm={() => setStatus.mutate({ id: a.id, status: 'confirmed' }, { onError: quickError })}
-                    onDecline={() => {
-                      setReason('');
-                      setStatus.reset();
-                      setDeclining(a);
-                    }}
-                  />
-                ))}
-              </ul>
-            </section>
-          ) : pending.isError ? (
-            <Alert>{errorMessage(t, pending.error)}</Alert>
-          ) : null}
 
           <section aria-labelledby="schedule-title">
             <SectionHeading
@@ -184,27 +155,6 @@ export default function DashboardPage() {
           ) : null}
         </div>
       </div>
-
-      <ConfirmSheet
-        open={declining !== null}
-        onClose={() => setDeclining(null)}
-        onConfirm={() => declining && setStatus.mutate({ id: declining.id, status: 'cancelled', cancelReason: reason.trim(), toast: 'declined' })}
-        title={t('appointment.declineTitle')}
-        description={declining ? t('appointment.declineText', { name: fullName(declining.client) }) : undefined}
-        confirmLabel={t('appointment.decline')}
-        cancelLabel={t('appointment.keep')}
-        loading={declining ? busy(declining.id, 'cancelled') : false}
-        error={setStatus.variables?.status === 'cancelled' ? setStatus.error : null}
-      >
-        <Textarea
-          label={t('appointment.reason')}
-          hint={t('appointment.reasonHint')}
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          maxLength={300}
-          rows={3}
-        />
-      </ConfirmSheet>
     </div>
   );
 }
@@ -277,59 +227,6 @@ function NextUp({ stats, now, multiMaster }: { stats: DashboardStats; now: numbe
         ) : null}
       </div>
     </section>
-  );
-}
-
-function RequestCard({
-  appointment: a,
-  confirming,
-  disabled,
-  onConfirm,
-  onDecline,
-}: {
-  appointment: StaffAppointment;
-  confirming: boolean;
-  disabled: boolean;
-  onConfirm: () => void;
-  onDecline: () => void;
-}) {
-  const { t } = useTranslation(['admin', 'booking']);
-  const { lp, locale } = useLocale();
-  const pick = useI18nText();
-  const { timeZone } = useStudio();
-  const leaf = dayParts(zonedDate(new Date(a.start), timeZone), locale);
-  return (
-    <li className="rounded-2xl bg-white ring-1 ring-inset ring-ink-100">
-      {/* The whole top of the card opens the booking, not just the name. */}
-      <Link
-        to={lp(`/admin/appointments/${a.id}`)}
-        className="group flex items-start gap-3 rounded-t-2xl px-3 pt-3 transition-colors hover:bg-ink-50/70 focus-visible:bg-ink-50/70"
-      >
-        <span className="flex w-12 shrink-0 flex-col items-center rounded-xl bg-peach-50 pb-1.5 pt-1">
-          <span className="text-xs font-semibold capitalize text-peach-800">{leaf.month}</span>
-          <span className="tabular text-xl font-extrabold leading-none tracking-[-0.03em]">{leaf.day}</span>
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block break-words font-semibold group-hover:underline">{fullName(a.client)}</span>
-          <span className="block text-sm text-ink-600">
-            <span className="capitalize">{leaf.weekday}</span>, <span className="tabular">{formatTime(a.start, locale, timeZone)}</span>
-            {a.staff ? ` · ${a.staff.name}` : ''}
-          </span>
-          <span className="block text-sm text-ink-600">{a.services.map((s) => pick(s.name)).join(', ')}</span>
-          {a.clientStats.noShows > 0 ? (
-            <span className="mt-0.5 block text-xs font-semibold text-red-700">{t('appointment.noShowCount', { count: a.clientStats.noShows })}</span>
-          ) : null}
-        </span>
-      </Link>
-      <div className="grid grid-cols-2 gap-2 p-3">
-        <Button size="md" variant="outline" disabled={disabled} onClick={onDecline}>
-          {t('appointment.decline')}
-        </Button>
-        <Button size="md" loading={confirming} disabled={disabled && !confirming} onClick={onConfirm}>
-          {t('appointment.confirm')}
-        </Button>
-      </div>
-    </li>
   );
 }
 
