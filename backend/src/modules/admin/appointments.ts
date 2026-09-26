@@ -12,6 +12,7 @@ import {
   emailSchema,
   idListSchema,
   isoDateTimeSchema,
+  nailShapeSchema,
   objectIdSchema,
   paramId,
   parseJson,
@@ -148,6 +149,8 @@ export function adminAppointmentRoutes(deps: AppDeps) {
       force: z.boolean().default(false),
       /** A promo code the client mentions at the desk; checked like an online booking's. */
       promoCode: z.string().trim().max(40, 'too_long').optional(),
+      /** Optional at the desk: the client may not have decided yet (the master asks at the visit). */
+      nailShape: nailShapeSchema.optional(),
     })
     .refine((v) => Boolean(v.clientId) !== Boolean(v.newClient), { message: 'client_required', path: ['clientId'] });
 
@@ -202,6 +205,7 @@ export function adminAppointmentRoutes(deps: AppDeps) {
       staffId: input.staffId,
       start: new Date(input.start),
       notes: input.notes,
+      nailShape: input.nailShape ?? null,
       source: 'staff',
       createdBy: actor._id,
       status: input.status,
@@ -227,6 +231,8 @@ export function adminAppointmentRoutes(deps: AppDeps) {
     staffNotes: z.string().trim().max(1000, 'too_long').optional(),
     notes: z.string().trim().max(500, 'too_long').optional(),
     cancelReason: z.string().trim().max(300, 'too_long').optional(),
+    /** The client changed her mind about the shape; null clears it. */
+    nailShape: nailShapeSchema.nullable().optional(),
     force: z.boolean().default(false),
   });
 
@@ -242,6 +248,7 @@ export function adminAppointmentRoutes(deps: AppDeps) {
 
     if (input.staffNotes !== undefined) set.staffNotes = input.staffNotes;
     if (input.notes !== undefined) set.notes = input.notes;
+    if (input.nailShape !== undefined) set.nailShape = input.nailShape;
 
     if (input.status && input.status !== doc.status) {
       if (!TRANSITIONS[doc.status].includes(input.status)) {

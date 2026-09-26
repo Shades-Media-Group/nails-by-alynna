@@ -4,6 +4,7 @@ import type {
   AvailabilityDays,
   Catalog,
   DeviceSession,
+  NailShape,
   PublicConfig,
   Slot,
   StaffMember,
@@ -142,7 +143,15 @@ export const appointmentsApi = {
     api.get<{ appointments: Appointment[] }>(`/appointments${query({ scope })}`).then((r) => r.appointments),
   get: (id: string) => api.get<{ appointment: Appointment }>(`/appointments/${id}`).then((r) => r.appointment),
   /** `promoCode`: a code checked on the confirm step; the API checks it again and holds one use. */
-  create: (input: { serviceIds: string[]; staffId: string | null; start: string; notes: string; phone?: string; promoCode?: string }) =>
+  create: (input: {
+    serviceIds: string[];
+    staffId: string | null;
+    start: string;
+    notes: string;
+    nailShape?: NailShape;
+    phone?: string;
+    promoCode?: string;
+  }) =>
     api.post<{ appointment: Appointment }>('/appointments', input).then((r) => r.appointment),
   cancel: (id: string, reason: string) =>
     api.post<{ appointment: Appointment }>(`/appointments/${id}/cancel`, { reason }).then((r) => r.appointment),

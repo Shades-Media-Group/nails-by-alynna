@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
+import { NailShapeRow } from '@/components/appointments/NailShapeRow';
 import { NailArt } from '@/components/brand/NailArt';
 import { Alert } from '@/components/common/Alert';
 import { Avatar, Button, ButtonLink, EmptyState, ListGroup, ListRow, Skeleton, Textarea, toast, type ButtonVariant } from '@/components/ui';
@@ -287,6 +288,7 @@ function Services({ appointment: a }: { appointment: StaffAppointment }) {
       <h2 id="services-title" className="px-4 pt-4 text-h3 font-extrabold">
         {t('booking.services')}
       </h2>
+      <NailShapeRow shape={a.nailShape} />
       <ul className="mt-1 divide-y divide-ink-100">
         {a.services.map((line) => {
           const service = services.get(line.id);

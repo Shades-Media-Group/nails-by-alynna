@@ -66,6 +66,7 @@ const appointment = (over: Record<string, unknown> = {}) => ({
   totalPrice: 450,
   priceFrom: false,
   services: [{ id: 's1', name: text('Gel polish'), durationMin: 90, price: 450, priceFrom: false }],
+  nailShape: 'almond',
   staff: { id: 'm1', name: 'Alina', title: text('Nail master'), color: 'blush' },
   notes: 'Pastel colours',
   canChange: true,
@@ -342,6 +343,9 @@ describe('staff screens', () => {
     expect(await screen.findByText('Reschedule')).toBeInTheDocument();
     expect(screen.getByText('Private note')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Sensitive cuticles')).toBeInTheDocument();
+    // The shape the client picked, with the services.
+    const services = screen.getByRole('region', { name: 'Services' });
+    expect(within(services).getByText('Nail shape').nextElementSibling).toHaveTextContent('Almond');
     expect(leakedKeys()).toEqual([]);
   });
 
@@ -491,6 +495,22 @@ describe('new booking flow', () => {
       status: 'confirmed',
       force: false,
     });
+  });
+
+  it('sends the nail shape when the desk picks one (it stays optional)', async () => {
+    const user = userEvent.setup();
+    renderScreen(<NewAppointmentPage />, '/en/admin/appointments/new', '/en/admin/appointments/new');
+    await user.click(await screen.findByRole('button', { name: /Maria Popescu/ }));
+    await user.selectOptions(screen.getByLabelText('Nail shape (optional)'), 'Almond');
+    await user.click(await screen.findByRole('button', { name: /Gel polish/ }));
+    await user.click(await screen.findByRole('button', { name: '10:00' }));
+    // The summary lists it once chosen.
+    const summary = screen.getAllByRole('region', { name: 'Summary' })[0]!;
+    expect(within(summary).getByText('Nail shape').nextElementSibling).toHaveTextContent('Almond');
+    await user.click(screen.getByRole('button', { name: 'Create booking' }));
+
+    await waitFor(() => expect(posts.some((p) => p.path === '/api/admin/appointments')).toBe(true));
+    expect(posts.find((p) => p.path === '/api/admin/appointments')?.body).toMatchObject({ clientId: 'c1', serviceIds: ['s1'], nailShape: 'almond' });
   });
 
   it('will not book without the essentials, and says what is missing', async () => {

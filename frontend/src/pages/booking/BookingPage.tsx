@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router';
 import { useAuth } from '@/app/auth';
@@ -7,6 +7,7 @@ import { Alert } from '@/components/common/Alert';
 import { ConfirmStep } from '@/components/booking/ConfirmStep';
 import { DoneStep } from '@/components/booking/DoneStep';
 import { MasterStep } from '@/components/booking/MasterStep';
+import { NailShapePicker } from '@/components/booking/NailShapePicker';
 import { usePromoQuote } from '@/components/promo/usePromoQuote';
 import { SelectionBar } from '@/components/booking/SelectionBar';
 import { ServiceList } from '@/components/booking/ServiceList';
@@ -19,20 +20,22 @@ import { useCatalog, useStudio } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
 import { errorMessage } from '@/lib/errors';
 import { formatDayLong, formatTime } from '@/lib/format';
+import { parseNailShape } from '@/lib/nailShape';
 import { promoProblemText, promoRefusal } from '@/lib/promo';
+import { bringIntoView } from '@/lib/scroll';
 import { toggleService } from '@/lib/selection';
 import { normalizePhone } from '@/lib/validation';
 import { ApiError } from '@/services/api/client';
 import { appointmentsApi } from '@/services/api/endpoints';
 import { queries } from '@/services/queries';
-import type { Appointment, Service, Slot } from '@/types/api';
+import type { Appointment, NailShape, Service, Slot } from '@/types/api';
 
 type Step = 'services' | 'master' | 'time' | 'confirm';
 
 /**
- * The booking flow: services → master (only when there is more than one) → time → confirm.
- * Each step is a history entry (?step=…), so the phone's back gesture walks back through the
- * flow. With ?reschedule=<id> the same screens move an existing booking.
+ * The booking flow: nail shape and services → master (only when there is more than one) → time
+ * → confirm. Each step is a history entry (?step=…), so the phone's back gesture walks back
+ * through the flow. With ?reschedule=<id> the same screens move an existing booking.
  */
 export default function BookingPage() {
   const { t } = useTranslation(['booking', 'common', 'promo']);
@@ -53,6 +56,13 @@ export default function BookingPage() {
   const droppedServices = catalog.isSuccess && selectedFromUrl.length < requestedServices.length;
   const serviceIds = rescheduleId ? (original.data?.services.map((s) => s.id) ?? []) : selectedFromUrl;
   const services = serviceIds.map((id) => catalog.byId.get(id)).filter((s): s is Service => Boolean(s));
+  // The nail shape travels in the link like the services (?shape=), so Back, a reload and "Book
+  // again" keep it. Every service in the price list ends with the nails filed to a shape, so a
+  // new booking always needs one; moving a booking keeps the shape it has.
+  const nailShape = parseNailShape(params.get('shape'));
+  const shapeMissing = !rescheduleId && nailShape === null;
+  const [shapeAsked, setShapeAsked] = useState(false);
+  const shapePicker = useRef<HTMLElement>(null);
 
   const { eligible, isPending: mastersLoading } = useEligibleMasters(serviceIds);
   const showMasters = !rescheduleId && (config?.booking.mastersCount ?? 1) > 1 && eligible.length > 1;
@@ -73,6 +83,9 @@ export default function BookingPage() {
   const requested = params.get('step') as Step | null;
   let step: Step = requested && steps.includes(requested) ? requested : serviceIds.length > 0 ? (steps[1] ?? 'time') : steps[0]!;
   if (!rescheduleId && serviceIds.length === 0 && catalog.isSuccess) step = 'services';
+  // Links that skip the shape (a Popular service on Home, "Book again" of an older visit) open
+  // on the services step, where it is asked.
+  if (shapeMissing) step = 'services';
   if (step === 'confirm' && !slot) step = 'time';
   const stepIndex = steps.indexOf(step);
   const effectiveStaff = rescheduleId ? (original.data?.staff?.id ?? null) : staffId;
@@ -106,6 +119,27 @@ export default function BookingPage() {
     setDate(null);
   };
 
+  const setShape = (shape: NailShape) => {
+    const nextParams = new URLSearchParams(params);
+    nextParams.set('shape', shape);
+    nextParams.set('step', 'services');
+    setParams(nextParams, { replace: true, preventScrollReset: true });
+  };
+
+  const continueFromServices = () => {
+    if (!shapeMissing) {
+      go(steps[1] ?? 'time');
+      return;
+    }
+    // Continue can be pressed far down the list: go back up to the shapes and move focus there,
+    // so a screen reader lands on the group and hears the message.
+    setShapeAsked(true);
+    const picker = shapePicker.current;
+    if (!picker) return;
+    bringIntoView(picker);
+    picker.querySelector<HTMLElement>('[role="radio"][tabindex="0"]')?.focus({ preventScroll: true });
+  };
+
   const leave = () => (window.history.length > 1 ? navigate(-1) : navigate(lp('/home'), { replace: true }));
   const back = () => (stepIndex > 0 ? go(steps[stepIndex - 1]!, true) : leave());
 
@@ -122,6 +156,7 @@ export default function BookingPage() {
             staffId,
             start: slot!.start,
             notes: notes.trim(),
+            ...(nailShape ? { nailShape } : {}),
             ...(needsPhone && normalizedPhone ? { phone: normalizedPhone } : {}),
             ...(promo.quote ? { promoCode: promo.quote.code } : {}),
           }),
@@ -219,9 +254,12 @@ export default function BookingPage() {
               ))}
             </div>
           ) : step === 'services' ? (
-            <div className="-mx-3">
-              <ServiceList selected={serviceIds} onToggle={(service) => setServices(toggleService(serviceIds, service, catalog))} />
-            </div>
+            <>
+              <NailShapePicker ref={shapePicker} value={nailShape} onChange={setShape} invalid={shapeAsked && shapeMissing} />
+              <div className="-mx-3 mt-8">
+                <ServiceList selected={serviceIds} onToggle={(service) => setServices(toggleService(serviceIds, service, catalog))} />
+              </div>
+            </>
           ) : step === 'master' ? (
             <MasterStep
               serviceIds={serviceIds}
@@ -250,6 +288,7 @@ export default function BookingPage() {
             <ConfirmStep
               mode={rescheduleId ? 'reschedule' : 'new'}
               services={services}
+              nailShape={rescheduleId ? (original.data?.nailShape ?? null) : nailShape}
               slot={slot}
               masterName={masterName}
               needsPhone={needsPhone}
@@ -277,7 +316,7 @@ export default function BookingPage() {
           priceFrom={priceFrom}
           currency={currency}
           actionLabel={t('services.continue')}
-          onAction={() => go(steps[1] ?? 'time')}
+          onAction={continueFromServices}
         />
       ) : null}
       {step === 'time' && slot ? (

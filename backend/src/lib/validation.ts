@@ -1,6 +1,7 @@
 import { ObjectId } from 'bson';
 import type { Context } from 'hono';
 import { z } from 'zod';
+import { NAIL_SHAPES } from '../db/types';
 import { AppError, validationError } from './errors';
 
 /** Parse and validate a JSON request body. Unknown keys are stripped by zod objects. */
@@ -123,6 +124,9 @@ export const dateSchema = z
 export const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'invalid_time');
 
 export const isoDateTimeSchema = z.iso.datetime({ offset: true, error: 'invalid_datetime' });
+
+/** The nail shape of a booking (square, almond, round or stiletto). */
+export const nailShapeSchema = z.enum(NAIL_SHAPES);
 
 export const idListSchema = (max = 10) =>
   z

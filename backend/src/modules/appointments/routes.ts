@@ -9,6 +9,7 @@ import { userSearch } from '../../lib/text';
 import {
   idListSchema,
   isoDateTimeSchema,
+  nailShapeSchema,
   objectIdSchema,
   paramId,
   parseJson,
@@ -85,6 +86,11 @@ export function appointmentRoutes(deps: AppDeps) {
     phone: phoneSchema.optional(),
     /** A promo code typed on the confirm step (any case); checked again here and one use held. */
     promoCode: z.string().trim().max(40, 'too_long').optional(),
+    /**
+     * The nail shape picked on the services step. The app always asks for it, but the API keeps
+     * it optional: an installed app that hasn't updated yet books without one.
+     */
+    nailShape: nailShapeSchema.optional(),
   });
 
   app.post('/', async (c) => {
@@ -133,6 +139,7 @@ export function appointmentRoutes(deps: AppDeps) {
       staffId: input.staffId,
       start: new Date(input.start),
       notes: input.notes,
+      nailShape: input.nailShape ?? null,
       source: 'client',
       createdBy: user._id,
       enforceSlots: true,

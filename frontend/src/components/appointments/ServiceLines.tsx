@@ -5,7 +5,8 @@ import type { Appointment } from '@/types/api';
 
 /**
  * The services of a visit, one per line, so a line break never lands in the middle of the
- * next service's name. Long lists end with "+2 more".
+ * next service's name. Long lists end with "+2 more". The nail shape, when the client gave
+ * one, closes the list on a line of its own.
  */
 export function ServiceLines({ appointment, max = 3, className }: { appointment: Appointment; max?: number; className?: string }) {
   const { t } = useTranslation('booking');
@@ -21,6 +22,7 @@ export function ServiceLines({ appointment, max = 3, className }: { appointment:
         </li>
       ))}
       {more > 0 ? <li>{t('flow.moreServices', { count: more })}</li> : null}
+      {appointment.nailShape ? <li>{t('shape.line', { shape: t(`shape.${appointment.nailShape}`) })}</li> : null}
     </ul>
   );
 }

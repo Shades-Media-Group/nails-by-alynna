@@ -205,6 +205,7 @@ export function meRoutes(deps: AppDeps) {
         start: a.start.toISOString(),
         end: a.end.toISOString(),
         services: a.services.map((s) => ({ name: s.name, durationMin: s.durationMin, price: s.price })),
+        nailShape: a.nailShape ?? null,
         totalPrice: a.totalPrice,
         promo: a.promo ? { code: a.promo.code, discount: a.promo.discount } : null,
         notes: a.notes,

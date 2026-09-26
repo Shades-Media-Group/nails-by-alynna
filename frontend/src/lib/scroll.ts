@@ -14,6 +14,14 @@ export function centerInStrip(strip: HTMLElement, item: HTMLElement, behavior: S
   strip.scrollTo({ left, behavior: reducedMotion() ? 'auto' : behavior });
 }
 
+/**
+ * Scrolls the page just enough to show `el`, gently unless the device asks for less motion. Give
+ * `el` a scroll margin (`scroll-mt-*`) so it lands clear of a sticky header.
+ */
+export function bringIntoView(el: HTMLElement): void {
+  el.scrollIntoView({ block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
+}
+
 /** Scrolls the page to `top`, calling `done` once it has settled (scrollend, or a timeout). */
 export function scrollPageTo(top: number, done?: () => void): void {
   const target = Math.max(0, Math.round(top));

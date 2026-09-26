@@ -6,6 +6,7 @@ import { NailArt } from '@/components/brand/NailArt';
 import { Alert } from '@/components/common/Alert';
 import { ContactSheet } from '@/components/common/ContactSheet';
 import { AddToCalendarSheet } from '@/components/appointments/AddToCalendar';
+import { NailShapeRow } from '@/components/appointments/NailShapeRow';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { LoyaltyLine } from '@/components/loyalty/LoyaltyBits';
 import { PromoLine, PromoRemovedNote, ToPayLine } from '@/components/promo/PromoBits';
@@ -145,6 +146,7 @@ export default function AppointmentDetailPage() {
           <h2 id="services-title" className="sr-only">
             {t('booking.services')}
           </h2>
+          <NailShapeRow shape={a.nailShape} />
           <ul className="divide-y divide-ink-100">
             {a.services.map((line) => {
               const service = catalog.byId.get(line.id);

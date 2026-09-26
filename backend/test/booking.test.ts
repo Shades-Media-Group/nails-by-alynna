@@ -125,6 +125,40 @@ describe('booking', () => {
     expect(res.body.error.code).toBe('BOOKING_BLOCKED');
   });
 
+  it('keeps the nail shape the client picked, in the booking and after a move', async () => {
+    const { client } = await registerClient(ctx);
+    const [first] = await slots(client, '2026-06-02');
+    const res = await client.post('/api/appointments', { serviceIds: [gelId], start: first!.start, nailShape: 'almond' });
+    expect(res.status).toBe(201);
+    expect(res.body.appointment.nailShape).toBe('almond');
+    const id = res.body.appointment.id;
+
+    const { ObjectId } = await import('bson');
+    expect((await ctx.deps.col.appointments.findOne({ _id: new ObjectId(id) }))?.nailShape).toBe('almond');
+    expect((await client.get(`/api/appointments/${id}`)).body.appointment.nailShape).toBe('almond');
+    const later = (await slots(client, '2026-06-02')).find((s) => s.time === '15:00')!;
+    const moved = await client.post(`/api/appointments/${id}/reschedule`, { start: later.start });
+    expect(moved.status).toBe(200);
+    expect(moved.body.appointment.nailShape).toBe('almond');
+    const upcoming = await client.get('/api/appointments?scope=upcoming');
+    expect(upcoming.body.appointments[0].nailShape).toBe('almond');
+  });
+
+  it('refuses a nail shape it does not know, and still books without one', async () => {
+    const { client } = await registerClient(ctx);
+    const [slot] = await slots(client, '2026-06-02');
+    const unknown = await client.post('/api/appointments', { serviceIds: [gelId], start: slot!.start, nailShape: 'oval' });
+    expect(unknown.status).toBe(422);
+    expect(unknown.body.error.code).toBe('VALIDATION_ERROR');
+    expect(unknown.body.error.fields).toHaveProperty('nailShape');
+    expect(await ctx.deps.col.appointments.countDocuments({})).toBe(0);
+
+    // An installed app that hasn't updated yet sends no shape: the booking goes through without one.
+    const without = await client.post('/api/appointments', { serviceIds: [gelId], start: slot!.start });
+    expect(without.status).toBe(201);
+    expect(without.body.appointment.nailShape).toBeNull();
+  });
+
   it("hides other clients' appointments", async () => {
     const owner = await registerClient(ctx);
     const other = await registerClient(ctx);

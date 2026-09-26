@@ -3,7 +3,7 @@ import type { Locale } from '@/i18n/config';
 import type { SwatchColor } from '@/lib/swatch';
 import { api } from '@/services/api/client';
 import { LIVE } from '@/services/queries';
-import type { AppointmentStatus, Category, I18nText, Role, Service, ServiceArt, StaffAppointment } from '@/types/api';
+import type { AppointmentStatus, Category, I18nText, NailShape, Role, Service, ServiceArt, StaffAppointment } from '@/types/api';
 
 /*
  * Staff API. This module is only imported from src/admin, which loads on demand for staff,
@@ -255,6 +255,8 @@ export interface NewAppointmentInput {
   force?: boolean;
   /** A promo code the client brings (checked again by the API, one use held). */
   promoCode?: string;
+  /** Optional at the desk: the client may not have decided yet. */
+  nailShape?: NailShape;
 }
 
 export interface Paged {

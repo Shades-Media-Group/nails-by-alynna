@@ -156,6 +156,31 @@ describe('staff bookings & statuses', () => {
     }
   });
 
+  it('records the nail shape at the desk, and lets staff change or clear it', async () => {
+    const booking = {
+      newClient: { name: 'Nadia', surname: 'Shape', phone: '079000666' },
+      serviceIds: [gelId],
+      start: '2026-06-08T10:00:00.000Z',
+    };
+    const unknown = await owner.post('/api/admin/appointments', { ...booking, nailShape: 'coffin' });
+    expect(unknown.status).toBe(422);
+    expect(unknown.body.error.fields).toHaveProperty('nailShape');
+
+    const created = await owner.post('/api/admin/appointments', { ...booking, nailShape: 'square' });
+    expect(created.status).toBe(201);
+    const id = created.body.appointment.id;
+    expect(created.body.appointment.nailShape).toBe('square');
+    expect((await owner.get(`/api/admin/appointments/${id}`)).body.appointment.nailShape).toBe('square');
+
+    const changed = await owner.patch(`/api/admin/appointments/${id}`, { nailShape: 'stiletto' });
+    expect(changed.status).toBe(200);
+    expect(changed.body.appointment.nailShape).toBe('stiletto');
+    expect((await owner.patch(`/api/admin/appointments/${id}`, { nailShape: 'oval' })).status).toBe(422);
+    // Editing something else leaves the shape alone; null clears it.
+    expect((await owner.patch(`/api/admin/appointments/${id}`, { staffNotes: 'Short, please' })).body.appointment.nailShape).toBe('stiletto');
+    expect((await owner.patch(`/api/admin/appointments/${id}`, { nailShape: null })).body.appointment.nailShape).toBeNull();
+  });
+
   it('time off removes availability', async () => {
     const staff = await owner.get('/api/admin/team/staff');
     const masterId = staff.body.staff[0].id;

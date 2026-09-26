@@ -4,6 +4,7 @@ import {
   ACTIVE_STATUSES,
   type AppointmentDoc,
   type AppointmentStatus,
+  type NailShape,
   type PromoCodeDoc,
   type StaffDoc,
   type StudioSettings,
@@ -111,6 +112,8 @@ export interface PlaceInput {
   staffId: ObjectId | null;
   start: Date;
   notes: string;
+  /** The nail shape the client asked for; null when none was given. */
+  nailShape?: NailShape | null;
   source: 'client' | 'staff';
   createdBy: ObjectId;
   status?: AppointmentStatus;
@@ -176,6 +179,7 @@ export async function placeAppointment(deps: AppDeps, input: PlaceInput): Promis
       price: s.price,
       priceFrom: s.priceFrom,
     })),
+    nailShape: input.nailShape ?? null,
     start: input.start,
     end: new Date(input.start.getTime() + durationMin * MINUTE),
     durationMin,
@@ -352,6 +356,8 @@ export function toClientAppointment(
       price: s.price,
       priceFrom: s.priceFrom,
     })),
+    /** The nail shape the client asked for; null when none was given (older bookings included). */
+    nailShape: a.nailShape ?? null,
     staff: staff.get(a.staffId.toHexString()) ?? null,
     notes: a.notes,
     canChange: clientCanChange(a, settings, now),

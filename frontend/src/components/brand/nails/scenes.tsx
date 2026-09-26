@@ -1,5 +1,5 @@
-import type { ServiceArt } from '@/types/api';
-import { along, d, sizeOf } from './geometry';
+import type { NailShape, ServiceArt } from '@/types/api';
+import { along, d, sizeOf, type NailShape as Outline } from './geometry';
 import { NATURAL, WHITE, mix, usePaint } from './paint';
 import {
   CottonDefs,
@@ -20,6 +20,11 @@ import {
   ToolDefs,
   type DigitProps,
 } from './parts';
+
+/** A nail shape on its own, as the booking's shape picker shows it (`shape-almond`…). */
+export type ShapeArt = `shape-${NailShape}`;
+/** What a realistic drawing can show: a service's illustration, or a nail shape. */
+export type SceneArt = ServiceArt | ShapeArt;
 
 /**
  * Every drawing is one fingertip close-up: the finger comes in from the bottom of the tile,
@@ -103,6 +108,24 @@ function Size({ level, refill }: { level: number; refill: boolean }) {
       regrowth={refill ? 0.36 : undefined}
     />
   );
+}
+
+// ── Nail shapes ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * The shapes clients choose from when booking: the size series' finger with an everyday nail,
+ * so the outline of the free edge is the one thing that changes from shape to shape. Round is
+ * the oval outline: a free edge rounded evenly, following the fingertip.
+ */
+const SHAPE_OUTLINES: Record<NailShape, Outline> = { square: 'square', almond: 'almond', round: 'oval', stiletto: 'stiletto' };
+
+/** `shape-almond` → almond; a service's illustration → null. */
+function shapeOf(art: SceneArt): NailShape | null {
+  return art.startsWith('shape-') ? (art.slice('shape-'.length) as NailShape) : null;
+}
+
+function Shape({ shape }: { shape: NailShape }) {
+  return <Finger cx={SIZE_CUTICLE.x} cy={SIZE_CUTICLE.y} shape={SHAPE_OUTLINES[shape]} />;
 }
 
 // ── Finishes ───────────────────────────────────────────────────────────────────────────────
@@ -380,7 +403,9 @@ function Pedicure() {
 }
 
 /** The drawing for one art in the 100×100 box. */
-export function Scene({ art }: { art: ServiceArt }) {
+export function Scene({ art }: { art: SceneArt }) {
+  const shape = shapeOf(art);
+  if (shape) return <Shape shape={shape} />;
   const size = sizeOf(art);
   if (size) {
     return (
