@@ -10,7 +10,7 @@ import { SWATCH, SWATCH_ORDER } from '@/lib/swatch';
 import { adminApi, adminQueries, type AdminStaff, type StaffInput, type WeeklyHours } from '../api';
 import { HoursEditor } from './HoursEditor';
 import { I18nFields } from './I18nFields';
-import { dayIssue, emptyText, fillFromRo } from './utils';
+import { dayIssue, emptyText, fillFromRo, sameValue } from './utils';
 
 const DEFAULT_WEEK: WeeklyHours = [0, 1, 2, 3, 4, 5, 6].map((day) => (day < 5 ? [{ start: '10:00', end: '19:00' }] : []));
 
@@ -54,7 +54,7 @@ export function StaffEditor({ member, onClose }: { member: AdminStaff | null; on
       if (!member) return adminApi.createStaff(input);
       const before = initialForm(member);
       const changed = Object.fromEntries(
-        Object.entries(input).filter(([key, value]) => JSON.stringify(value) !== JSON.stringify(before[key as keyof StaffInput])),
+        Object.entries(input).filter(([key, value]) => !sameValue(value, before[key as keyof StaffInput])),
       ) as Partial<StaffInput>;
       return Object.keys(changed).length ? adminApi.updateStaff(member.id, changed) : Promise.resolve(member);
     },
