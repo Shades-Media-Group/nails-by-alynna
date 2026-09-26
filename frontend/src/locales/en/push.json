@@ -24,6 +24,7 @@
   "prompt": {
     "clientTitle": "Turn on notifications?",
     "clientText": "We'll tell you on this phone, and by email:",
+    "clientTextDevice": "We'll tell you on this device, and by email:",
     "clientPoints": {
       "confirm": "when the master confirms or moves your visit",
       "remind": "before each visit, so you don't miss it",
@@ -46,7 +47,8 @@
     "onDevice": "Notifications are on for this device.",
     "dismissed": "No problem. You can turn them on any time in Profile → Notifications.",
     "notReady": "Notifications are still getting ready on this device. Try again in a moment.",
-    "saveFailed": "Notifications are on, but your choices weren't saved. Check them in Profile → Notifications."
+    "saveFailed": "Notifications are on, but your choices weren't saved. Check them in Profile → Notifications.",
+    "subscribeFailed": "Couldn't turn on notifications on this device right now. Check your connection and try again."
   },
   "banner": {
     "staffBlocked": "Notifications are blocked on this device: new booking requests won't reach you.",
@@ -65,7 +67,8 @@
       "iphone": "iPhone",
       "ipad": "iPad",
       "android": "Android",
-      "mac": "Mac or iPad",
+      "mac": "Mac",
+      "macOrIpad": "Mac or iPad",
       "windows": "Windows",
       "linux": "Linux",
       "chromeos": "Chromebook",

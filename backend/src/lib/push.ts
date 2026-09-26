@@ -302,11 +302,13 @@ function reasonOf(body: string | undefined): string {
 }
 
 /**
- * The subscription can never receive anything again: removed on the device (404/410), or made
- * for another VAPID key (Apple: VapidPkHashMismatch; FCM: "does not correspond to the sender ID").
+ * The subscription can never receive anything again: removed on the device (404/410), a device
+ * token Apple doesn't know (400 BadWebPushToken), or made for another VAPID key (Apple:
+ * VapidPkHashMismatch; FCM: "does not correspond to the sender ID").
  */
 export function subscriptionGone(status: number, reason: string): boolean {
   if (status === 404 || status === 410) return true;
+  if (status === 400) return /BadWebPushToken|BadDeviceToken/.test(reason);
   return status === 403 && /VapidPkHashMismatch|does not correspond to the sender ID/i.test(reason);
 }
 

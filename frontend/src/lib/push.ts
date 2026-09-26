@@ -91,6 +91,19 @@ export async function readPushState(userId: string): Promise<PushState> {
   return subscription && mine && Notification.permission === 'granted' ? 'on' : 'off';
 }
 
+/** The browser's push service didn't give this device a subscription (offline, service down…). */
+export class PushSubscribeError extends Error {
+  constructor(cause: unknown) {
+    super(
+      `Push subscription failed: ${cause instanceof Error ? `${cause.name}: ${cause.message}` : String(cause)}`,
+      {
+        cause,
+      },
+    );
+    this.name = 'PushSubscribeError';
+  }
+}
+
 /** VAPID public key (base64url) → the bytes PushManager.subscribe expects. */
 export function urlBase64ToUint8Array(value: string): Uint8Array<ArrayBuffer> {
   const padded = `${value}${'='.repeat((4 - (value.length % 4)) % 4)}`
@@ -149,10 +162,19 @@ export async function enablePush(
     await subscription.unsubscribe().catch(() => undefined);
     subscription = null;
   }
-  subscription ??= await reg.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: key,
-  });
+  if (!subscription) {
+    try {
+      subscription = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: key,
+      });
+    } catch (error) {
+      // Allowed in the browser, refused by the system: notifications are off for this app in
+      // the phone's settings (iOS: Settings → Notifications). Only the person can change that.
+      if (error instanceof DOMException && error.name === 'NotAllowedError') return 'denied';
+      throw new PushSubscribeError(error);
+    }
+  }
   await notificationsApi.subscribe(toInput(subscription));
   storage.set(OWNER_KEY, userId);
   return 'on';

@@ -208,6 +208,23 @@ describe('clients', () => {
     expect(enablePush).not.toHaveBeenCalled();
   });
 
+  it('are asked once per app open: a failed attempt does not bring the sheet back', async () => {
+    const user = userEvent.setup();
+    vi.mocked(enablePush).mockRejectedValue(new Error('Registration failed - push service error'));
+    renderApp(person('client', 'c6'), '/en/loyalty');
+    await until(() => expect(readPushState).toHaveBeenCalled());
+    await wait(10_000);
+    await wait(1_000);
+    await until(() => expect(isOpen()).toBe(true));
+    await user.click(within(sheet()!).getByRole('button', { name: 'Turn on notifications' }));
+    await until(() => expect(isOpen()).toBe(false));
+    await wait(120_000);
+    expect(isOpen()).toBe(false);
+    expect(patches).toHaveLength(0);
+    // Not a "Not now": the next open may ask again.
+    expect(readSchedule('c6')).toMatchObject({ dismissals: 0, done: false });
+  });
+
   it('are never asked in the booking flow, over the first-run intro, or with notifications blocked', async () => {
     const { unmount } = renderApp(person('client', 'c3'), '/en/book');
     await until(() => expect(readPushState).toHaveBeenCalled());

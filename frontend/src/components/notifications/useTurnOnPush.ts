@@ -6,7 +6,7 @@ import { useAuth } from '@/app/auth';
 import { toast } from '@/components/ui';
 import { useLocale } from '@/i18n/useLocale';
 import { errorMessage } from '@/lib/errors';
-import { enablePush, readPushState, type PushState } from '@/lib/push';
+import { PushSubscribeError, enablePush, readPushState, type PushState } from '@/lib/push';
 import { markPromptDone } from '@/lib/pushPrompt';
 import {
   notificationsApi,
@@ -69,7 +69,12 @@ export function useTurnOnPush() {
         else if (message) toast(message.text);
         return state;
       } catch (error) {
-        toast.error(errorMessage(t, error));
+        console.warn('[push] could not turn notifications on', error);
+        toast.error(
+          error instanceof PushSubscribeError
+            ? t('push:result.subscribeFailed')
+            : errorMessage(t, error),
+        );
         setDevice(await readPushState(userId).catch(() => 'off' as const));
         return null;
       } finally {

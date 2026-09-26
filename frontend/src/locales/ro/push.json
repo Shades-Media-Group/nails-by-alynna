@@ -24,6 +24,7 @@
   "prompt": {
     "clientTitle": "Activezi notificările?",
     "clientText": "Îți dăm de știre pe acest telefon și pe email:",
+    "clientTextDevice": "Îți dăm de știre pe acest dispozitiv și pe email:",
     "clientPoints": {
       "confirm": "când maestrul confirmă sau mută vizita",
       "remind": "înainte de fiecare vizită, ca să n-o scapi",
@@ -46,7 +47,8 @@
     "onDevice": "Notificările sunt pornite pe acest dispozitiv.",
     "dismissed": "Nicio problemă. Le poți porni oricând din Profil → Notificări.",
     "notReady": "Notificările se pregătesc încă pe acest dispozitiv. Încearcă din nou peste câteva clipe.",
-    "saveFailed": "Notificările sunt pornite, dar alegerile nu s-au salvat. Verifică-le în Profil → Notificări."
+    "saveFailed": "Notificările sunt pornite, dar alegerile nu s-au salvat. Verifică-le în Profil → Notificări.",
+    "subscribeFailed": "Notificările nu au putut fi pornite acum pe acest dispozitiv. Verifică conexiunea și încearcă din nou."
   },
   "banner": {
     "staffBlocked": "Notificările sunt blocate pe acest dispozitiv: cererile noi de programare nu ajung la tine.",
@@ -66,7 +68,8 @@
       "iphone": "iPhone",
       "ipad": "iPad",
       "android": "Android",
-      "mac": "Mac sau iPad",
+      "mac": "Mac",
+      "macOrIpad": "Mac sau iPad",
       "windows": "Windows",
       "linux": "Linux",
       "chromeos": "Chromebook",

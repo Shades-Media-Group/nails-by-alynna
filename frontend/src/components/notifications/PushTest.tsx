@@ -132,9 +132,7 @@ function TestResult({ result }: { result: PushTestResult }) {
                 )}
               </span>
               <span>
-                <span className="font-medium text-ink-900">
-                  {t(`test.device.${delivery.device}`)}
-                </span>
+                <span className="font-medium text-ink-900">{deviceLabel(t, delivery)}</span>
                 {' · '}
                 {outcomeText(t, delivery)}
               </span>
@@ -144,6 +142,12 @@ function TestResult({ result }: { result: PushTestResult }) {
       ) : null}
     </div>
   );
+}
+
+/** iPad web apps say "Macintosh": a Mac with Apple's push service may be either. */
+function deviceLabel(t: (key: string) => string, delivery: PushDelivery): string {
+  const apple = delivery.device === 'mac' && delivery.service === 'apple';
+  return t(`test.device.${apple ? 'macOrIpad' : delivery.device}`);
 }
 
 function outcomeText(

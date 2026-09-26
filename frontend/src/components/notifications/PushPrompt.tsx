@@ -25,10 +25,13 @@ import type { DeviceState } from '@/lib/push';
 import { SHEET_ORDER, useSheetTurn } from '@/lib/sheetQueue';
 import type { NotificationSettings } from '@/services/api/endpoints';
 import type { User } from '@/types/api';
+import { onPhone } from './pushDevice';
 import { useTurnOnPush } from './useTurnOnPush';
 
-/** Staff: when "Not now" was tapped in this app open (a reload, or 30 min away, starts a new one). */
+/** Staff: when the sheet was last closed in this app open (a reload, or 30 min away, starts a new one). */
 let staffSnoozedAt: number | null = null;
+/** Clients asked in this app open (at most once per open, whatever came of it). */
+const clientsAskedThisOpen = new Set<string>();
 
 /** Any dialog already on screen (a sheet, the first-run intro): the ask never goes on top of it. */
 const otherDialogOpen = () =>
@@ -98,7 +101,7 @@ function PromptHost({ user, audience }: { user: User; audience: PromptAudience }
 
     const check = () => {
       const { data, device, pathname, shown, myTurn } = facts.current;
-      if (shown) return;
+      if (shown || (!staff && clientsAskedThisOpen.has(user.id))) return;
       const now = Date.now();
       const next =
         data && device !== 'loading'
@@ -120,7 +123,10 @@ function PromptHost({ user, audience }: { user: User; audience: PromptAudience }
       const moment = next !== null && quiet && rightPage && (staff || introSeen(user));
       setKind(next);
       setReady(moment);
-      if (moment && myTurn && !otherDialogOpen()) setShown(next);
+      if (moment && myTurn && !otherDialogOpen()) {
+        if (!staff) clientsAskedThisOpen.add(user.id);
+        setShown(next);
+      }
     };
     const timer = window.setInterval(check, CHECK_EVERY_MS);
     return () => {
@@ -142,11 +148,10 @@ function PromptHost({ user, audience }: { user: User; audience: PromptAudience }
     const state = await turnOn(promptPrefsPatch(audience));
     setShown(null);
     setReady(false);
+    // Whatever came of it, staff are asked again on the next open, not right away.
+    if (staff) staffSnoozedAt = Date.now();
     // Closed the phone's own prompt without choosing: like "Not now".
-    if (state === 'off') {
-      if (staff) staffSnoozedAt = Date.now();
-      else saveSchedule(user.id, afterNotNow(readSchedule(user.id), Date.now()));
-    }
+    else if (state === 'off') saveSchedule(user.id, afterNotNow(readSchedule(user.id), Date.now()));
   };
 
   const showHowToInstall = () => {
@@ -179,7 +184,13 @@ function PromptHost({ user, audience }: { user: User; audience: PromptAudience }
       onClose={notNow}
       title={title}
       description={
-        install ? t('prompt.installText') : staff ? t('prompt.staffText') : t('prompt.clientText')
+        install
+          ? t('prompt.installText')
+          : staff
+            ? t('prompt.staffText')
+            : onPhone()
+              ? t('prompt.clientText')
+              : t('prompt.clientTextDevice')
       }
       footer={
         <div className="flex flex-col gap-2">

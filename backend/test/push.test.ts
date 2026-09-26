@@ -150,6 +150,8 @@ describe('push services and devices', () => {
     expect(subscriptionGone(410, '')).toBe(true);
     expect(subscriptionGone(404, '')).toBe(true);
     expect(subscriptionGone(403, 'VapidPkHashMismatch')).toBe(true);
+    // What web.push.apple.com answered this app's sender for a device token it doesn't know.
+    expect(subscriptionGone(400, 'BadWebPushToken')).toBe(true);
     expect(subscriptionGone(403, 'the key in the authorization header does not correspond to the sender ID used to subscribe this user.')).toBe(true);
     // Our own problem, or a passing one: keep the device.
     expect(subscriptionGone(403, 'BadJwtToken')).toBe(false);
