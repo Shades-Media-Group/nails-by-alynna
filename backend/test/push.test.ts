@@ -55,6 +55,18 @@ describe('the message a phone receives', () => {
     });
   });
 
+  it('carries the count for the app icon when there is one, for the service worker and for Safari', () => {
+    const counted = JSON.parse(encodePushMessage({ title: 'New booking request', body: 'Ana', url: '/admin', tag: 't', badge: 3 }, APP));
+    expect(counted).toMatchObject({ badge: 3, app_badge: 3 });
+    const cleared = JSON.parse(encodePushMessage({ title: 'x', body: 'y', url: '/admin', tag: 't', badge: 0 }, APP));
+    expect(cleared).toMatchObject({ badge: 0, app_badge: 0 });
+    for (const badge of [undefined, -1, 2.5]) {
+      const message = JSON.parse(encodePushMessage({ title: 'x', body: 'y', url: '/', tag: 't', badge }, APP));
+      expect(message).not.toHaveProperty('badge');
+      expect(message).not.toHaveProperty('app_badge');
+    }
+  });
+
   it('never opens another site, and always has a title', () => {
     const message = JSON.parse(encodePushMessage({ title: '  ', body: 'x', url: 'https://evil.example.com/steal', tag: 't' }, APP));
     expect(message.notification.navigate).toBe('https://nails.example.md/');

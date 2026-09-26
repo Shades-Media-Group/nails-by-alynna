@@ -24,6 +24,8 @@ export interface PushPayload {
   lang?: string;
   /** When it happened (ms since epoch): shown instead of the moment it reached the phone. */
   timestamp?: number;
+  /** The count on the app's icon (staff: booking requests waiting); 0 clears it. */
+  badge?: number;
 }
 
 export interface PushSendOptions {
@@ -143,6 +145,7 @@ export function encodePushMessage(payload: PushPayload, appUrl: string): string 
   const origin = new URL(appUrl).origin;
   const target = new URL(payload.url || '/', `${origin}/`);
   const navigate = target.origin === origin ? target.href : `${origin}/`;
+  const badge = payload.badge !== undefined && Number.isInteger(payload.badge) && payload.badge >= 0 ? payload.badge : undefined;
   const build = (body: string) =>
     JSON.stringify({
       title,
@@ -151,8 +154,11 @@ export function encodePushMessage(payload: PushPayload, appUrl: string): string 
       tag: payload.tag,
       lang: payload.lang,
       timestamp: payload.timestamp,
+      badge,
       web_push: DECLARATIVE_WEB_PUSH,
       notification: { title, body, navigate, tag: payload.tag, lang: payload.lang, timestamp: payload.timestamp, silent: false },
+      // Declarative: the icon's count, set by Safari itself if the service worker can't.
+      app_badge: badge,
       mutable: true,
     });
 

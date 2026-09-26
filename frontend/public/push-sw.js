@@ -67,7 +67,28 @@ function nbaReadPush(event) {
     options.tag = tag;
     options.renotify = true;
   }
-  return { title: nbaText(data.title) || nbaText(declared.title) || NBA_APP_NAME, options: options, tag: tag || null };
+  var rawBadge = data.badge !== undefined ? data.badge : data.app_badge;
+  var badge = typeof rawBadge === 'number' || (typeof rawBadge === 'string' && /^\d+$/.test(rawBadge)) ? Number(rawBadge) : NaN;
+  return {
+    title: nbaText(data.title) || nbaText(declared.title) || NBA_APP_NAME,
+    options: options,
+    tag: tag || null,
+    // The count on the app's icon (staff: requests waiting), when the message has one.
+    badge: Number.isInteger(badge) && badge >= 0 ? badge : null,
+  };
+}
+
+/** Sets (or at 0 clears) the app icon's count, where the Badging API exists; never fails the push. */
+function nbaBadge(count) {
+  var nav = self.navigator;
+  if (count === null || !nav) return Promise.resolve();
+  try {
+    if (count > 0 && typeof nav.setAppBadge === 'function') return nav.setAppBadge(count).catch(function () {});
+    if (count === 0 && typeof nav.clearAppBadge === 'function') return nav.clearAppBadge().catch(function () {});
+  } catch (error) {
+    /* Not supported here. */
+  }
+  return Promise.resolve();
 }
 
 function nbaShow(title, options) {
@@ -84,11 +105,12 @@ self.addEventListener('push', function (event) {
     shown = nbaReadPush(event);
   } catch (error) {
     console.error('[push] unreadable push', error);
-    shown = { title: NBA_APP_NAME, options: { body: NBA_FALLBACK_BODY[nbaLang()], icon: NBA_ICON, data: { url: '/' } }, tag: null };
+    shown = { title: NBA_APP_NAME, options: { body: NBA_FALLBACK_BODY[nbaLang()], icon: NBA_ICON, data: { url: '/' } }, tag: null, badge: null };
   }
   event.waitUntil(
     Promise.all([
       nbaShow(shown.title, shown.options),
+      nbaBadge(shown.badge),
       // An open app fetches what it shows again at once (lib/liveUpdates.ts).
       self.clients
         .matchAll({ type: 'window' })

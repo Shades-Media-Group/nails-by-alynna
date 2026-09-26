@@ -1,5 +1,6 @@
 import { ObjectId } from 'bson';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { setPushTransport } from '../src/lib/push';
 import { invalidateSettingsCache, switchToApprovalOnce } from '../src/modules/settings';
 import { createTestContext, registerClient, type TestClient, type TestContext } from './helpers';
 
@@ -7,6 +8,7 @@ let ctx: TestContext;
 let gelId: string;
 let master: { client: TestClient; email: string };
 let ownerEmail: string;
+let ownerClient: TestClient;
 
 const mailsTo = (email: string) => ctx.sentMail.filter((m) => m.to === email);
 const subjectsTo = (email: string, since: number) => mailsTo(email).slice(since).map((m) => m.subject);
@@ -51,6 +53,7 @@ beforeAll(async () => {
   const owner = await registerClient(ctx, { name: 'Olga', surname: 'Owner' });
   await ctx.deps.col.users.updateOne({ _id: new ObjectId(owner.user.id) }, { $set: { role: 'administrator', locale: 'en' } });
   ownerEmail = owner.user.email;
+  ownerClient = owner.client;
 });
 afterAll(async () => {
   await ctx.close();
@@ -120,6 +123,66 @@ describe('a client books', () => {
     expect(mailsTo(master.email).length).toBe(since.master);
     expect(mailsTo(ownerEmail).length).toBe(since.owner + 1);
     expect((await master.client.patch('/api/notifications/prefs', { staffBookings: { email: true } })).status).toBe(200);
+  });
+});
+
+describe("the staff app's icon", () => {
+  it('counts the requests waiting for each person in every booking push: the owner all, a master their own', async () => {
+    const pushed: Array<{ endpoint: string; payload: Record<string, unknown> }> = [];
+    setPushTransport(ctx.deps, {
+      async send(target, payload) {
+        pushed.push({ endpoint: target.endpoint, payload: JSON.parse(payload) as Record<string, unknown> });
+        return 201;
+      },
+    });
+    try {
+      const keys = { p256dh: 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM', auth: 'tBHItJI5svbpez7KI4CCXg' };
+      expect((await master.client.post('/api/notifications/push/subscribe', { endpoint: 'https://fcm.googleapis.com/fcm/send/master-phone', keys })).status).toBe(200);
+      expect((await ownerClient.post('/api/notifications/push/subscribe', { endpoint: 'https://web.push.apple.com/owner-phone', keys })).status).toBe(200);
+
+      // A request already waiting for another master: the owner answers it, this master doesn't.
+      const now = ctx.now();
+      const start = new Date(now.getTime() + 30 * 3_600_000);
+      const staff = (await ctx.deps.col.staff.findOne({}))!;
+      const sample = (await ctx.deps.col.services.findOne({ isActive: true }))!;
+      await ctx.deps.col.appointments.insertOne({
+        _id: new ObjectId(),
+        code: 'OTHER1',
+        clientId: new ObjectId(),
+        client: { name: 'Elena', surname: 'Rusu', phone: null, email: 'elena@example.com' },
+        staffId: new ObjectId(),
+        services: [{ serviceId: sample._id, name: sample.name, durationMin: sample.durationMin, price: sample.price, priceFrom: sample.priceFrom }],
+        start,
+        end: new Date(start.getTime() + 3_600_000),
+        durationMin: 60,
+        totalPrice: sample.price,
+        priceFrom: false,
+        status: 'pending',
+        notes: '',
+        staffNotes: '',
+        source: 'client',
+        placedAt: now,
+        cancelledAt: null,
+        cancelledBy: null,
+        cancelReason: '',
+        createdBy: staff._id,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      await clientWithBooking();
+      await ctx.flush();
+      const last = (device: string) => pushed.filter((p) => p.endpoint.endsWith(device)).at(-1)!.payload;
+      expect(last('master-phone')).toMatchObject({ title: 'New booking request', badge: 1, app_badge: 1 });
+      expect(last('owner-phone')).toMatchObject({ title: 'New booking request', badge: 2, app_badge: 2 });
+
+      // The same count as the list the staff app shows.
+      expect((await master.client.get('/api/admin/appointments/pending')).body.total).toBe(1);
+      expect((await ownerClient.get('/api/admin/appointments/pending')).body.total).toBe(2);
+    } finally {
+      setPushTransport(ctx.deps, null);
+      await ctx.deps.col.pushSubscriptions.deleteMany({});
+    }
   });
 });
 

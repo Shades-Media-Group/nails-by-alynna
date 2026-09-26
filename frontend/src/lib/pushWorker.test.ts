@@ -37,11 +37,12 @@ function worker({
   language = 'ro-RO',
   windows = [] as FakeWindow[],
   showNotification = vi.fn<ShowNotification>(async () => undefined),
+  badging = {} as Record<string, unknown>,
 } = {}) {
   const listeners: Record<string, (event: unknown) => void> = {};
   const self = {
     location: { origin: ORIGIN },
-    navigator: { language },
+    navigator: { language, ...badging },
     registration: { showNotification, pushManager: { subscribe: vi.fn() } },
     clients: {
       matchAll: vi.fn(async () => windows),
@@ -213,5 +214,63 @@ describe('push-sw.js: tapping a notification', () => {
     const sw = worker({ windows: [app] });
     await sw.click('/bookings/a1');
     expect(sw.self.clients.openWindow).toHaveBeenCalledWith(`${ORIGIN}/bookings/a1`);
+  });
+});
+
+describe('push-sw.js: the count on the app icon', () => {
+  const badging = () => ({
+    setAppBadge: vi.fn(async (_count?: number) => undefined),
+    clearAppBadge: vi.fn(async () => undefined),
+  });
+
+  it('shows the requests waiting (staff), and clears it at 0', async () => {
+    const api = badging();
+    const sw = worker({ badging: api });
+    await sw.push({
+      title: 'New booking request',
+      body: 'Ana · Tue 12:00',
+      tag: 'staff-visit-A1',
+      badge: 3,
+    });
+    expect(api.setAppBadge).toHaveBeenCalledWith(3);
+    await sw.push({
+      title: 'The client cancelled',
+      body: 'Ana · Tue 12:00',
+      tag: 'staff-visit-A1',
+      badge: 0,
+    });
+    expect(api.clearAppBadge).toHaveBeenCalledTimes(1);
+    // The declarative field works too (the same number, for Safari).
+    await sw.push({
+      title: 'x',
+      web_push: 8030,
+      notification: { title: 'x', navigate: ORIGIN },
+      app_badge: 2,
+    });
+    expect(api.setAppBadge).toHaveBeenLastCalledWith(2);
+  });
+
+  it('leaves the icon alone when the message has no count', async () => {
+    const api = badging();
+    const sw = worker({ badging: api });
+    await sw.push({ title: 'Booking confirmed', body: 'Tomorrow, 11:00' });
+    await sw.push({ title: 'Booking confirmed', body: 'Tomorrow, 11:00', badge: null });
+    await sw.push({ title: 'Booking confirmed', body: 'Tomorrow, 11:00', badge: -1 });
+    expect(api.setAppBadge).not.toHaveBeenCalled();
+    expect(api.clearAppBadge).not.toHaveBeenCalled();
+  });
+
+  it('still shows the notification where the Badging API is missing or refuses', async () => {
+    const missing = worker();
+    await missing.push({ title: 'New booking request', body: 'Ana', badge: 1 });
+    expect(missing.showNotification).toHaveBeenCalledTimes(1);
+
+    const refusing = worker({
+      badging: {
+        setAppBadge: vi.fn(async () => Promise.reject(new DOMException('no', 'NotAllowedError'))),
+      },
+    });
+    await refusing.push({ title: 'New booking request', body: 'Ana', badge: 1 });
+    expect(refusing.showNotification).toHaveBeenCalledTimes(1);
   });
 });
