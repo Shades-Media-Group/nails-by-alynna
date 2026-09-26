@@ -66,9 +66,10 @@ export function ConsentBanner() {
         event.preventDefault();
         if (dismissible) close();
       }}
-      className="fixed inset-x-0 bottom-0 top-auto m-0 w-full max-w-none bg-transparent p-3 pb-[calc(var(--safe-bottom)+0.75rem)] backdrop:bg-ink-900/35 open:animate-rise md:inset-0 md:m-auto md:h-fit md:w-[27rem] md:p-0"
+      // A bottom sheet like every other popup: from the bottom edge, top corners rounded.
+      className="fixed inset-x-0 bottom-0 top-auto m-0 w-full max-w-none overflow-visible bg-transparent p-0 backdrop:bg-ink-900/35 open:animate-sheet-in md:mx-auto md:max-w-lg"
     >
-      <div ref={panelRef} tabIndex={-1} className="max-h-[85dvh] overflow-y-auto overscroll-contain rounded-xl bg-white p-4 shadow-raised outline-none md:p-5">
+      <div ref={panelRef} tabIndex={-1} className="max-h-[85dvh] overflow-y-auto overscroll-contain rounded-t-2xl bg-white px-5 pb-[calc(var(--safe-bottom)+1.25rem)] pt-5 shadow-sheet outline-none">
         <div className="flex gap-3">
           <span className="mt-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-pill bg-peach-50 text-[1.2rem] text-peach-700">
             <CookieIcon fontSize="inherit" />

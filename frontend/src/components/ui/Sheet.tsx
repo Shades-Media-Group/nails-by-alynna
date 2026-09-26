@@ -18,7 +18,8 @@ interface SheetProps {
 }
 
 /**
- * Bottom sheet on phones, centred dialog from md up. Built on <dialog> + showModal(), so
+ * A bottom sheet on every screen: it slides up from the bottom edge, only its top corners
+ * rounded (on wider screens it is centred and narrower). Built on <dialog> + showModal(), so
  * focus trapping, Escape and inert background come from the platform.
  */
 export function Sheet({ open, onClose, title, description, children, footer, hideTitle, size = 'md' }: SheetProps) {
@@ -117,7 +118,7 @@ export function Sheet({ open, onClose, title, description, children, footer, hid
         // or the sheet's header never scrolls the page behind (iOS before 26.4 ignores
         // overflow: hidden on the page).
         'group m-0 max-h-none w-full max-w-none touch-none overflow-visible bg-transparent p-0 text-ink-900',
-        'fixed inset-x-0 bottom-0 top-auto md:inset-0 md:m-auto md:h-fit',
+        'fixed inset-x-0 bottom-0 top-auto md:mx-auto',
         size === 'lg' ? 'md:max-w-2xl' : 'md:max-w-lg',
         'open:flex',
       )}
@@ -127,17 +128,17 @@ export function Sheet({ open, onClose, title, description, children, footer, hid
         tabIndex={-1}
         className={cx(
           'flex max-h-[92dvh] w-full flex-col overflow-hidden bg-white shadow-sheet outline-none',
-          'rounded-t-2xl md:rounded-2xl',
-          // Phones: slides up from below the screen. Wider screens: a short rise and fade.
-          'translate-y-full transition-[translate,opacity] md:translate-y-2 md:opacity-0',
-          'group-data-[state=open]:translate-y-0 group-data-[state=open]:opacity-100 group-data-[state=open]:duration-[380ms] group-data-[state=open]:ease-(--ease-out)',
+          'rounded-t-2xl',
+          // Slides up from below the screen.
+          'translate-y-full transition-[translate]',
+          'group-data-[state=open]:translate-y-0 group-data-[state=open]:duration-[380ms] group-data-[state=open]:ease-(--ease-out)',
           'group-data-[state=closed]:duration-200 group-data-[state=closed]:ease-(--ease-in-out)',
         )}
       >
-        <div className="flex justify-center pt-2.5 md:hidden" aria-hidden="true">
+        <div className="flex justify-center pt-2.5" aria-hidden="true">
           <span className="h-1.5 w-10 rounded-pill bg-ink-200" />
         </div>
-        <header className="flex items-start justify-between gap-4 px-6 pb-2 pt-4 md:pt-6">
+        <header className="flex items-start justify-between gap-4 px-6 pb-2 pt-4">
           <div className="min-w-0">
             <h2 id={titleId} className={cx('text-h3 font-bold', hideTitle && 'sr-only')}>
               {title}
