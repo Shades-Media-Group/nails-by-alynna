@@ -30,8 +30,11 @@ export const CLIENT_DELAY_MS = 8_000;
 export const CLIENT_IDLE_MS = 2_500;
 /** Staff: a moment for the dashboard to draw first. */
 export const STAFF_DELAY_MS = 1_500;
-/** Staff: back after this long in the background counts as a new open. */
-export const STAFF_REOPEN_MS = 30 * 60_000;
+/**
+ * Back to the app after this long away counts as a new opening (the same as the staff app's
+ * "new requests" sheet, admin/requests/openings.ts).
+ */
+export const REOPEN_AFTER_MS = 30_000;
 /** Days until the next ask after each "Not now", in order. */
 export const REASK_AFTER_DAYS = [3, 7, 30] as const;
 /** The third "Not now" ends it (so the 30-day step only applies if this is raised). */
@@ -95,9 +98,32 @@ export function markPromptDone(userId: string): void {
   saveSchedule(userId, { ...readSchedule(userId), done: true });
 }
 
-/** Staff: "Not now" at `snoozedAt` still holds at `now` (same open, or back too soon). */
-export function staffSnoozed(snoozedAt: number | null, now: number): boolean {
-  return snoozedAt !== null && now - snoozedAt < STAFF_REOPEN_MS;
+// ── App openings ──────────────────────────────────────────────────────────────
+
+let opening = 1;
+let hiddenAt: number | null = null;
+let tracking = false;
+
+/** Counts a new opening when the app comes back after REOPEN_AFTER_MS or more away. */
+export function noteVisibility(visible: boolean, now: number): void {
+  if (!visible) {
+    hiddenAt ??= now;
+    return;
+  }
+  const away = hiddenAt === null ? 0 : now - hiddenAt;
+  hiddenAt = null;
+  if (away >= REOPEN_AFTER_MS) opening++;
+}
+
+/** 1 for the page load, then +1 each time the app returns after REOPEN_AFTER_MS or more away. */
+export function currentOpening(): number {
+  if (!tracking && typeof document !== 'undefined') {
+    tracking = true;
+    document.addEventListener('visibilitychange', () =>
+      noteVisibility(document.visibilityState === 'visible', Date.now()),
+    );
+  }
+  return opening;
 }
 
 /** App notifications switched off for every service message: the person said no in settings. */
@@ -136,8 +162,8 @@ export interface PromptFacts {
   optedOut: boolean;
   /** Clients only. */
   schedule: PromptSchedule;
-  /** Staff only: when "Not now" was last tapped (null: not in this open). */
-  snoozedAt: number | null;
+  /** Staff only: closed already in this app opening ("Not now" lasts until the next one). */
+  snoozed: boolean;
   now: number;
 }
 
@@ -146,7 +172,7 @@ export function promptFor(facts: PromptFacts): PromptKind | null {
   const { device, schedule, now } = facts;
   if (!facts.serverPush || facts.optedOut) return null;
   if (facts.audience === 'staff') {
-    if (staffSnoozed(facts.snoozedAt, now)) return null;
+    if (facts.snoozed) return null;
     if (device === 'off') return 'enable';
     if (device === 'needs-install') return 'install';
     // On, blocked (the banner explains), still installing, or a browser without notifications.

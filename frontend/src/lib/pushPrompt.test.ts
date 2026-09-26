@@ -5,9 +5,11 @@ import {
   DAY_MS,
   MAX_DISMISSALS,
   NEW_SCHEDULE,
-  STAFF_REOPEN_MS,
+  REOPEN_AFTER_MS,
   afterNotNow,
+  currentOpening,
   markPromptDone,
+  noteVisibility,
   optedOutOfPush,
   promptFor,
   promptPrefsPatch,
@@ -35,13 +37,13 @@ const client = (
   serverPush: true,
   optedOut: false,
   schedule,
-  snoozedAt: null,
+  snoozed: false,
   now,
 });
-const staff = (device: DeviceState, snoozedAt: number | null = null, now = NOW): PromptFacts => ({
-  ...client(device, NEW_SCHEDULE, now),
+const staff = (device: DeviceState, snoozed = false): PromptFacts => ({
+  ...client(device),
   audience: 'staff',
-  snoozedAt,
+  snoozed,
 });
 
 const channels = (push: boolean) => ({ email: true, push });
@@ -123,12 +125,19 @@ describe('staff: when the sheet asks', () => {
     expect(promptFor(staff('needs-install'))).toBe('install');
   });
 
-  it('"Not now" lasts until the next open (half an hour away counts as one)', () => {
-    expect(promptFor(staff('off', NOW, NOW + 60_000))).toBeNull();
-    expect(promptFor(staff('off', NOW, NOW + STAFF_REOPEN_MS - 1))).toBeNull();
-    expect(promptFor(staff('off', NOW, NOW + STAFF_REOPEN_MS))).toBe('enable');
-    // A new page load forgets the snooze (module state): asked again at once.
-    expect(promptFor(staff('off', null, NOW + 60_000))).toBe('enable');
+  it('"Not now" lasts until the next opening: a reload, or back after 30 s away', () => {
+    expect(promptFor(staff('off', true))).toBeNull();
+    expect(promptFor(staff('off', false))).toBe('enable');
+
+    const first = currentOpening();
+    // A quick look at another app is not a new opening…
+    noteVisibility(false, NOW);
+    noteVisibility(true, NOW + REOPEN_AFTER_MS - 1);
+    expect(currentOpening()).toBe(first);
+    // …coming back after half a minute or more is.
+    noteVisibility(false, NOW + 60_000);
+    noteVisibility(true, NOW + 60_000 + REOPEN_AFTER_MS);
+    expect(currentOpening()).toBe(first + 1);
   });
 
   it('leaves blocked devices to the banner, and respects booking notifications switched off', () => {

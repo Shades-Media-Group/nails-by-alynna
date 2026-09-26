@@ -105,6 +105,13 @@ const wait = (ms: number) =>
   });
 /** The notifications sheet (a <dialog> named by its title). */
 const sheet = () => document.querySelector<HTMLDialogElement>('dialog[aria-labelledby]');
+/** The app going to the background and back (the page's visibility). */
+function setVisibility(state: 'visible' | 'hidden') {
+  Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
+  act(() => {
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+}
 const isOpen = () => sheet()?.hasAttribute('open') ?? false;
 
 beforeEach(() => {
@@ -264,13 +271,21 @@ describe('staff', () => {
     await until(() => expect(isOpen()).toBe(false));
     // Its turn is over: the other sheet opens now.
     await until(() => expect(screen.getByTestId('pending')).toHaveTextContent('open'));
-    // No backoff kept for staff, and nothing asked again in the same open…
+    // No backoff kept for staff, and nothing asked again in the same opening, however long…
     expect(readSchedule('s1').dismissals).toBe(0);
     await wait(10 * 60_000);
     expect(isOpen()).toBe(false);
-    // …but back after half an hour (a new open), it asks again.
-    await wait(21 * 60_000);
-    await wait(1_000);
+    // …or after a quick look at another app…
+    setVisibility('hidden');
+    await wait(10_000);
+    setVisibility('visible');
+    await wait(3_000);
+    expect(isOpen()).toBe(false);
+    // …but back after half a minute away (a new opening), it asks again.
+    setVisibility('hidden');
+    await wait(31_000);
+    setVisibility('visible');
+    await wait(2_000);
     await until(() => expect(isOpen()).toBe(true));
 
     await user.click(within(sheet()!).getByRole('button', { name: 'Turn on notifications' }));

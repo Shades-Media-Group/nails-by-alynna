@@ -13,6 +13,7 @@ import {
   CLIENT_PROMPT_PAGES,
   STAFF_DELAY_MS,
   afterNotNow,
+  currentOpening,
   optedOutOfPush,
   promptFor,
   promptPrefsPatch,
@@ -28,8 +29,8 @@ import type { User } from '@/types/api';
 import { onPhone } from './pushDevice';
 import { useTurnOnPush } from './useTurnOnPush';
 
-/** Staff: when the sheet was last closed in this app open (a reload, or 30 min away, starts a new one). */
-let staffSnoozedAt: number | null = null;
+/** Staff: the app opening in which the sheet was last closed (lib/pushPrompt.ts currentOpening). */
+let staffClosedInOpening: number | null = null;
 /** Clients asked in this app open (at most once per open, whatever came of it). */
 const clientsAskedThisOpen = new Set<string>();
 
@@ -111,7 +112,7 @@ function PromptHost({ user, audience }: { user: User; audience: PromptAudience }
               serverPush: data.push.available,
               optedOut: optedOutOfPush(data.prefs, audience),
               schedule: readSchedule(user.id),
-              snoozedAt: staffSnoozedAt,
+              snoozed: staffClosedInOpening === currentOpening(),
               now,
             })
           : null;
@@ -139,7 +140,7 @@ function PromptHost({ user, audience }: { user: User; audience: PromptAudience }
   const notNow = useCallback(() => {
     setShown(null);
     setReady(false);
-    if (staff) staffSnoozedAt = Date.now();
+    if (staff) staffClosedInOpening = currentOpening();
     else saveSchedule(user.id, afterNotNow(readSchedule(user.id), Date.now()));
   }, [staff, user.id]);
 
@@ -149,7 +150,7 @@ function PromptHost({ user, audience }: { user: User; audience: PromptAudience }
     setShown(null);
     setReady(false);
     // Whatever came of it, staff are asked again on the next open, not right away.
-    if (staff) staffSnoozedAt = Date.now();
+    if (staff) staffClosedInOpening = currentOpening();
     // Closed the phone's own prompt without choosing: like "Not now".
     else if (state === 'off') saveSchedule(user.id, afterNotNow(readSchedule(user.id), Date.now()));
   };
@@ -157,7 +158,7 @@ function PromptHost({ user, audience }: { user: User; audience: PromptAudience }
   const showHowToInstall = () => {
     setShown(null);
     setReady(false);
-    if (staff) staffSnoozedAt = Date.now();
+    if (staff) staffClosedInOpening = currentOpening();
     else saveSchedule(user.id, { ...readSchedule(user.id), installShown: true });
     void navigate(lp('/app'));
   };
