@@ -60,7 +60,9 @@ function Finger({ cx = 46, cy = 76, angle = TILT, ext = EVERYDAY, ...nail }: Fin
 /**
  * Sizes 1–6 are one series: the same finger in the same place, the free edge running from 0.3×
  * the nail bed (size 1, a short natural extension) to 1.1× (size 6, long but wearable) in even
- * steps. A dotted guide crosses every size's tip; the chosen one is dashed in the swatch colour.
+ * steps. The shape is a sculpted almond: round when short, slimmer and pointier as it grows,
+ * never a wide paddle. A dotted guide crosses every size's tip; the chosen one is dashed in the
+ * swatch colour.
  */
 const SIZE_CUTICLE = { x: 44, y: 79 };
 const freeEdge = (level: number) => NB * (0.3 + 0.16 * (level - 1));
@@ -97,7 +99,7 @@ function Size({ level, refill }: { level: number; refill: boolean }) {
       cx={SIZE_CUTICLE.x}
       cy={SIZE_CUTICLE.y}
       ext={freeEdge(level) / W}
-      shape="oval"
+      shape="sculpted"
       regrowth={refill ? 0.36 : undefined}
     />
   );

@@ -4,7 +4,8 @@
  * Units are those of the 100×100 art box.
  */
 
-export type NailShape = 'almond' | 'oval' | 'stiletto' | 'square';
+/** `sculpted`: an extension that tapers along its whole free edge (the size series). */
+export type NailShape = 'almond' | 'oval' | 'stiletto' | 'square' | 'sculpted';
 
 export interface NailGeometry {
   /** Width of the nail plate. */
@@ -47,6 +48,10 @@ export function tipZone(g: NailGeometry): number {
       return Math.min(span * 0.6, 0.8 * g.nw);
     case 'stiletto':
       return span * 0.78;
+    case 'sculpted':
+      // The taper starts where the nail leaves the fingertip, whatever the length (and wherever
+      // the cuticle is, so a refill's polish keeps the outline of the nail under it).
+      return Math.min(span, Math.max(0.7 * g.nw, -g.yt + 0.15 * g.nw));
     case 'almond':
     default:
       return Math.min(span * 0.7, 1.15 * g.nw);
@@ -75,6 +80,14 @@ export function nailPath(g: NailGeometry): string {
     case 'stiletto':
       tip = d`C${-a} ${ys - T * 0.42} ${-a * 0.16} ${t + T * 0.08} 0 ${t}C${a * 0.16} ${t + T * 0.08} ${a} ${ys - T * 0.42} ${a} ${ys}`;
       break;
+    case 'sculpted': {
+      // Short extensions end round; long ones curve in sooner and end in a soft almond point.
+      const q = Math.min(1, Math.max(0, (-g.yt / g.nw - 0.3) / 0.9));
+      const k1 = 0.55 - 0.25 * q;
+      const k2 = 0.5 - 0.3 * q;
+      tip = d`C${-a} ${ys - T * k1} ${-a * k2} ${t} 0 ${t}C${a * k2} ${t} ${a} ${ys - T * k1} ${a} ${ys}`;
+      break;
+    }
     case 'almond':
     default:
       tip = d`C${-a} ${ys - T * 0.52} ${-a * 0.3} ${t} 0 ${t}C${a * 0.3} ${t} ${a} ${ys - T * 0.52} ${a} ${ys}`;
