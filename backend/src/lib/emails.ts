@@ -24,7 +24,6 @@ const MUTED = '#5C605E';
 const LINE = '#E9E4E7';
 const PAGE = '#FFFFFF';
 const FONT = "Onest,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
-const MONO = "'SF Mono',SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace";
 
 const LOCALE_TAGS: Record<Locale, string> = { ro: 'ro-MD', ru: 'ru-MD', en: 'en-GB' };
 
@@ -55,12 +54,12 @@ function safeUrl(url: string | null | undefined): string | null {
  * the same hue, never grey), the perforation colour and the text colour.
  */
 type ToneName = 'blush' | 'peach' | 'cyan' | 'stone' | 'ink';
-const TONES: Record<ToneName, { field: string; accent: string; deep: string; perf: string; text: string; chip: string }> = {
-  blush: { field: '#FDE7FC', accent: '#FD2578', deep: '#8F1446', perf: '#F2B9E7', text: INK, chip: '#FFFFFF' },
-  peach: { field: '#FFF3E0', accent: '#FD9B1D', deep: '#7A4400', perf: '#F6D39F', text: INK, chip: '#FFFFFF' },
-  cyan: { field: '#E6FAFC', accent: '#3DBFCC', deep: '#155C63', perf: '#AEE3E8', text: INK, chip: '#FFFFFF' },
-  stone: { field: '#F2F0F1', accent: '#8A8E8C', deep: '#4A4D4C', perf: '#D8D3D6', text: INK, chip: '#FFFFFF' },
-  ink: { field: INK, accent: '#FD2578', deep: '#D9D3D7', perf: '#4B4D4C', text: '#FFFFFF', chip: '#3A3C3B' },
+const TONES: Record<ToneName, { field: string; accent: string; deep: string; perf: string; text: string}> = {
+  blush: { field: '#FDE7FC', accent: '#FD2578', deep: '#8F1446', perf: '#F2B9E7', text: INK },
+  peach: { field: '#FFF3E0', accent: '#FD9B1D', deep: '#7A4400', perf: '#F6D39F', text: INK },
+  cyan: { field: '#E6FAFC', accent: '#3DBFCC', deep: '#155C63', perf: '#AEE3E8', text: INK },
+  stone: { field: '#F2F0F1', accent: '#8A8E8C', deep: '#4A4D4C', perf: '#D8D3D6', text: INK },
+  ink: { field: INK, accent: '#FD2578', deep: '#D9D3D7', perf: '#4B4D4C', text: '#FFFFFF' },
 };
 
 interface Block {
@@ -77,14 +76,6 @@ const para = (value: string, style = `font-size:16px;line-height:1.55;color:${IN
 const small = (value: string): Block => para(value, `font-size:13px;line-height:1.5;color:${MUTED}`, 'nba-muted');
 
 /** A status on a pass: a dot in the accent colour and a short word. */
-function chip(tone: ToneName, label: string): string {
-  const t = TONES[tone];
-  return (
-    `<span class="nba-chip-${tone}" style="display:inline-block;background:${t.chip};border-radius:999px;padding:5px 11px 5px 9px;font-size:13px;line-height:16px;font-weight:600;color:${tone === 'ink' ? '#FFFFFF' : t.deep};white-space:nowrap">` +
-    `<span style="display:inline-block;width:8px;height:8px;border-radius:8px;background:${t.accent};margin-right:6px;vertical-align:1px"></span>${escapeHtml(label)}</span>`
-  );
-}
-
 /** The ticket cut between the pass and its stub: two notches and a dashed line. */
 function perforation(tone: ToneName): string {
   const t = TONES[tone];
@@ -100,26 +91,87 @@ function perforation(tone: ToneName): string {
 }
 
 /**
- * The pass itself: a status chip and a reference on top, the main content, and (optionally)
- * the stub under the perforation. Corner radius 16px, colour only (no border, no shadow).
+ * The pass itself: its main content (the time, the code, the card), the fields under it, and
+ * (optionally) the stub under the perforation. Corner radius 16px, colour only (no border, no
+ * shadow). What happened is the headline's job; the pass holds the facts.
  */
-function pass(opts: { tone: ToneName; chip: string; reference?: string | null; main: Block; stub?: Block; text?: string }): Block {
+function pass(opts: { tone: ToneName; main: Block; fields?: Block; stub?: Block }): Block {
   const t = TONES[opts.tone];
-  const reference = opts.reference
-    ? `<td align="right" class="nba-deep-${opts.tone}" style="font-family:${MONO};font-size:12px;line-height:16px;color:${t.deep};white-space:nowrap">${escapeHtml(opts.reference)}</td>`
-    : '';
-  const stub = opts.stub?.html
-    ? perforation(opts.tone) + `<tr><td style="padding:14px 20px 18px">${opts.stub.html}</td></tr>`
-    : '';
+  const fields = opts.fields?.html ? `<tr><td style="padding:0 20px 16px">${opts.fields.html}</td></tr>` : '';
+  const stub = opts.stub?.html ? perforation(opts.tone) + `<tr><td style="padding:14px 20px 18px">${opts.stub.html}</td></tr>` : '';
   return {
     html:
       `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="nba-pass-${opts.tone}" style="background:${t.field};border-radius:16px;margin:0 0 20px;border-collapse:separate">` +
-      `<tr><td style="padding:18px 20px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td>${chip(opts.tone, opts.chip)}</td>${reference}</tr></table></td></tr>` +
-      `<tr><td style="padding:14px 20px ${stub ? '16px' : '20px'}">${opts.main.html}</td></tr>` +
+      `<tr><td style="padding:20px 20px ${fields || stub ? '16px' : '20px'}">${opts.main.html}</td></tr>` +
+      fields +
       stub +
       `</table>`,
-    text: [opts.chip + (opts.reference ? ` · ${opts.reference}` : ''), opts.main.text, opts.stub?.text ?? ''].filter(Boolean).join('\n'),
+    text: [opts.main.text, opts.fields?.text ?? '', opts.stub?.text ?? ''].filter(Boolean).join('\n'),
   };
+}
+
+/**
+ * Label-over-value fields, two to a row, as on the pass in the app ("Member", "Card code"): a
+ * small sentence-case label in the pass's deep tone over a bold value. A value can be a link
+ * (Directions, a phone number) or tabular (a code).
+ */
+interface Field {
+  label: string;
+  value: string | null | undefined;
+  href?: string | null;
+  tabular?: boolean;
+  /** Takes the whole row (an address). */
+  wide?: boolean;
+  /** A second link after the value ("str. Ismail 88 · Directions"). */
+  extra?: { label: string; href: string | null };
+}
+function fields(tone: ToneName, items: Field[]): Block {
+  const present = items.filter((f): f is Field & { value: string } => Boolean(f.value));
+  if (present.length === 0) return NONE;
+  const main = onPass(tone);
+  const deep = onPass(tone, true);
+  const cell = (f: Field & { value: string }, span = 1) => {
+    const safe = safeUrl(f.href);
+    const extraHref = safeUrl(f.extra?.href);
+    const valueStyle = `font-size:15px;line-height:1.4;font-weight:700;color:${main.color};${f.tabular ? 'font-variant-numeric:tabular-nums;letter-spacing:0.02em;' : ''}`;
+    const value = safe
+      ? `<a class="${main.cls}" href="${escapeHtml(safe)}" style="${valueStyle}text-decoration:underline;text-underline-offset:3px">${escapeHtml(f.value)}</a>`
+      : `<span class="${main.cls}" style="${valueStyle}">${escapeHtml(f.value)}</span>`;
+    const extra = f.extra && extraHref
+      ? `<span class="${deep.cls}" style="color:${deep.color}"> · </span><a class="${main.cls}" href="${escapeHtml(extraHref)}" style="font-size:15px;font-weight:700;color:${main.color};text-decoration:underline;text-underline-offset:3px">${escapeHtml(f.extra.label)}</a>`
+      : '';
+    return (
+      `<td valign="top"${span > 1 ? ` colspan="${span}"` : ''} style="padding:0 12px 12px 0">` +
+      `<p class="${deep.cls}" style="margin:0 0 2px;font-size:12px;line-height:1.35;color:${deep.color}">${escapeHtml(f.label)}</p>` +
+      `<p style="margin:0">${value}${extra}</p></td>`
+    );
+  };
+  const rows: string[] = [];
+  let pair: Array<Field & { value: string }> = [];
+  const flush = () => {
+    if (pair.length) rows.push(`<tr>${pair.map((f) => cell(f)).join('')}${pair.length === 1 ? '<td></td>' : ''}</tr>`);
+    pair = [];
+  };
+  for (const f of present) {
+    if (f.wide) {
+      flush();
+      rows.push(`<tr>${cell(f, 2)}</tr>`);
+    } else {
+      pair.push(f);
+      if (pair.length === 2) flush();
+    }
+  }
+  flush();
+  return {
+    html: `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="table-layout:fixed">${rows.join('')}</table>`,
+    text: present.map((f) => `${f.label}: ${f.value}${f.extra && safeUrl(f.extra.href) ? ` (${f.extra.label}: ${safeUrl(f.extra.href)})` : ''}`).join('\n'),
+  };
+}
+
+/** A field label on a pass (above its value), in the pass's own deep tone. */
+function passLabel(tone: ToneName, value: string): string {
+  const deep = onPass(tone, true);
+  return `<p class="${deep.cls}" style="margin:0 0 4px;font-size:12px;line-height:1.35;color:${deep.color}">${escapeHtml(value)}</p>`;
 }
 
 /** Text on a pass: the main colour or the deep tone of its hue. */
@@ -152,28 +204,33 @@ function passText(tone: ToneName, value: string, deep = true, size = 14): Block 
 }
 
 /** The loyalty card's slots, as in the app: numbered circles, dashed ones carry a discount. */
-function stampRow(tone: ToneName, cycle: number, rewards: Array<{ visit: number; percent: number }>, stamped = 0): Block {
+function stampGrid(tone: ToneName, cycle: number, rewards: Array<{ visit: number; percent: number }>, stamped = 0): Block {
   const t = TONES[tone];
-  const cells = Array.from({ length: cycle }, (_, i) => i + 1)
-    .map((visit) => {
-      const reward = rewards.find((r) => r.visit === visit);
-      const filled = visit <= stamped;
-      const border = filled ? 0 : reward ? 2 : 1;
-      const look = filled
-        ? `background:${t.accent};color:#FFFFFF;`
-        : reward
-          ? `background:#FFFFFF;border:2px dashed ${t.accent};color:${t.deep};`
-          : `background:#FFFFFF;border:1px solid ${t.perf};color:${t.deep};`;
-      const label = reward ? `−${reward.percent}%` : String(visit);
-      return (
-        `<td align="center" style="padding:0 1px"><div style="width:31px;height:31px;line-height:${31 - 2 * border}px;border-radius:31px;box-sizing:border-box;${look}` +
-        `font-size:${reward ? 9 : 12}px;font-weight:700;letter-spacing:-0.02em;text-align:center">${escapeHtml(label)}</div></td>`
-      );
-    })
-    .join('');
+  const slots = Array.from({ length: cycle }, (_, i) => i + 1);
+  const disc = (visit: number) => {
+    const reward = rewards.find((r) => r.visit === visit);
+    const filled = visit <= stamped;
+    const next = visit === stamped + 1;
+    const border = filled ? 0 : 2;
+    const look = filled
+      ? `background:${t.accent};color:#FFFFFF;`
+      : reward
+        ? `background:#FFFFFF;border:2px dashed ${t.accent};color:${t.deep};`
+        : `background:#FFFFFF;border:2px solid ${next && stamped > 0 ? INK : t.perf};color:${t.deep};`;
+    const label = reward && !filled ? `−${reward.percent}%` : String(visit);
+    return (
+      `<td align="center" width="25%" style="padding:0 0 10px"><div style="width:48px;height:48px;line-height:${48 - 2 * border}px;border-radius:48px;box-sizing:border-box;${look}` +
+      `font-size:${reward && !filled ? 13 : 15}px;font-weight:800;text-align:center">${escapeHtml(label)}</div></td>`
+    );
+  };
+  const rows: string[] = [];
+  for (let i = 0; i < slots.length; i += 4) {
+    const row = slots.slice(i, i + 4);
+    rows.push(`<tr>${row.map(disc).join('')}${'<td width="25%"></td>'.repeat(4 - row.length)}</tr>`);
+  }
   return {
-    html: `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${cells}</tr></table>`,
-    text: rewards.map((r) => `${r.visit}: −${r.percent}%`).join(', '),
+    html: `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="table-layout:fixed">${rows.join('')}</table>`,
+    text: `${stamped}/${cycle}` + (rewards.length ? ` (${rewards.map((r) => `${r.visit}: −${r.percent}%`).join(', ')})` : ''),
   };
 }
 
@@ -202,19 +259,6 @@ function buttons(items: Array<{ label: string; url: string | null; primary?: boo
   return {
     html: `<div style="margin:0 0 8px;font-size:0;line-height:0">${links}</div>`,
     text: valid.map((item) => `${item.label}: ${item.url}`).join('\n'),
-  };
-}
-
-/** A line with a link at its end ("str. Ismail 88, Chișinău · Directions"). */
-function lineWithLink(value: string | null, label: string, url: string | null): Block {
-  const safe = safeUrl(url);
-  if (!value && !safe) return NONE;
-  const link = safe
-    ? `${value ? ' · ' : ''}<a class="nba-text" href="${escapeHtml(safe)}" style="color:${INK};font-weight:600;text-decoration:underline;text-underline-offset:3px">${escapeHtml(label)}</a>`
-    : '';
-  return {
-    html: `<p class="nba-text" style="margin:0 0 16px;font-size:15px;line-height:1.5;color:${INK}">${value ? escapeHtml(value) : ''}${link}</p>`,
-    text: [value, safe ? `${label}: ${safe}` : null].filter(Boolean).join('\n'),
   };
 }
 
@@ -263,11 +307,13 @@ function render(opts: {
 <meta name="x-apple-disable-message-reformatting">
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
+<meta name="format-detection" content="telephone=no,date=no,address=no,email=no,url=no">
 <title>${escapeHtml(opts.subject)}</title>
 <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
 <style>
 :root{color-scheme:light dark;supported-color-schemes:light dark}
-a{color:${INK}}
+/* iOS Mail turns dates, times, addresses and numbers into its own links: keep them in our colours. */
+a[x-apple-data-detectors]{color:inherit !important;text-decoration:none !important;font-size:inherit !important;font-family:inherit !important;font-weight:inherit !important;line-height:inherit !important}
 @media (prefers-color-scheme:dark){
 .nba-page{background:#161516 !important}
 .nba-text{color:#F5F1F4 !important}
@@ -280,15 +326,14 @@ a{color:${INK}}
 .nba-pass-peach{background:#382711 !important}.nba-deep-peach{color:#F8CF94 !important}.nba-perf-peach{border-color:#6B4E24 !important}
 .nba-pass-cyan{background:#0F3438 !important}.nba-deep-cyan{color:#A6E4EA !important}.nba-perf-cyan{border-color:#2A5F65 !important}
 .nba-pass-stone{background:#2A292A !important}.nba-deep-stone{color:#D4CFD2 !important}.nba-perf-stone{border-color:#4C4A4C !important}
-.nba-pass-ink{background:#0D0E0E !important}.nba-perf-ink{border-color:#3A3C3B !important}
-.nba-chip-blush,.nba-chip-peach,.nba-chip-cyan,.nba-chip-stone{background:#1F1E1F !important;color:#F5F1F4 !important}
+.nba-pass-ink{background:#2E302F !important}.nba-perf-ink{border-color:#4A4C4B !important}
 }
 [data-ogsc] .nba-text,[data-ogsc] .nba-pass-text{color:#F5F1F4 !important}
 [data-ogsc] .nba-muted{color:#B9B2B7 !important}
 </style>
 </head>
 <body class="nba-page" style="margin:0;padding:0;background:${PAGE};-webkit-text-size-adjust:100%">
-<!-- THESIS: every message is the studio's pass, the same object as the loyalty card in the app; refuses the generic centred card with a tracked-caps wordmark. OWN-WORLD: white page, the pink logo, one tight bold headline, a 16px-radius pass in a state colour (blush, peach, cyan, stone, ink) with a perforated stub, ink pill buttons. STORY: the reader sees what happened and when at a glance, then acts with one button. FIRST VIEWPORT: logo top left, headline, one line of lead, the pass with its status chip and the time in 44px. FORM: brief-pinned (the owner chose "Wallet-pass ticket"), position 1, no seed. FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md -->
+<!-- THESIS: every message is the studio's pass, the same object as the loyalty card in the app; refuses the generic centred card with a tracked-caps wordmark. OWN-WORLD: white page, the pink logo, one tight bold headline, a 16px-radius pass in a state colour (blush, peach, cyan, stone, ink) with a perforated stub, ink pill buttons. STORY: the reader sees what happened and when at a glance, then acts with one button. FIRST VIEWPORT: logo top left, headline, one line of lead, the pass with the time in 44px and the day in 21px, then label-over-value fields (length, master, booking code, where). FORM: brief-pinned (the owner chose "Wallet-pass ticket"), position 1, no seed. FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md -->
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all">${escapeHtml(opts.preheader)}&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="nba-page" style="background:${PAGE}">
 <tr><td align="center" style="padding:28px 16px 40px">
@@ -386,12 +431,12 @@ function codePass(locale: Locale, code: string, stub?: string): Block {
   const c = COMMON[locale];
   return pass({
     tone: 'ink',
-    chip: c.codeChip,
     main: {
       html:
+        passLabel('ink', c.codeChip) +
         `<p class="nba-pass-text" style="margin:0;font-size:44px;line-height:1.05;font-weight:800;letter-spacing:0.12em;font-variant-numeric:tabular-nums;color:#FFFFFF">${escapeHtml(code)}</p>` +
         `<p class="nba-deep-ink" style="margin:8px 0 0;font-size:14px;line-height:1.4;color:${TONES.ink.deep}">${escapeHtml(c.codeValid)}</p>`,
-      text: `${code} (${c.codeValid})`,
+      text: `${c.codeChip}: ${code} (${c.codeValid})`,
     },
     stub: stub ? passText('ink', stub) : undefined,
   });
@@ -582,7 +627,11 @@ export function emailChangedNoticeEmail(opts: {
     heading: t.heading,
     lead: t.body(masked),
     blocks: [
-      pass({ tone: 'stone', chip: t.chip, main: passText('stone', masked, false, 22), stub: passText('stone', t.notYou) }),
+      pass({
+        tone: 'stone',
+        main: { html: passLabel('stone', t.chip) + passText('stone', masked, false, 22).html, text: `${t.chip}: ${masked}` },
+        stub: passText('stone', t.notYou),
+      }),
     ],
     footer: [small(c.signature)],
     replyTo: opts.replyTo,
@@ -655,7 +704,7 @@ const VISIT_COPY: Record<
   Locale,
   {
     when: (v: VisitTime) => string;
-    labels: { when: string; services: string; master: string; where: string; code: string };
+    labels: { when: string; services: string; master: string; where: string; code: string; length: string; status: string };
     view: string;
     directions: string;
     calendar: string;
@@ -680,7 +729,7 @@ const VISIT_COPY: Record<
 > = {
   ro: {
     when: (v) => (v.relative === 'today' ? `Azi, ${v.time}` : v.relative === 'tomorrow' ? `Mâine, ${v.time}` : `${capitalize(v.date)}, ${v.time}`),
-    labels: { when: 'Când', services: 'Servicii', master: 'Maestru', where: 'Unde', code: 'Codul programării' },
+    labels: { when: 'Când', services: 'Servicii', master: 'Maestru', where: 'Unde', code: 'Codul programării', length: 'Durata', status: 'Stare' },
     view: 'Vezi programarea',
     directions: 'Cum ajungi',
     calendar: 'Adaugă în calendar',
@@ -749,7 +798,7 @@ const VISIT_COPY: Record<
   },
   ru: {
     when: (v) => (v.relative === 'today' ? `Сегодня, ${v.time}` : v.relative === 'tomorrow' ? `Завтра, ${v.time}` : `${capitalize(v.date)}, ${v.time}`),
-    labels: { when: 'Когда', services: 'Услуги', master: 'Мастер', where: 'Где', code: 'Код записи' },
+    labels: { when: 'Когда', services: 'Услуги', master: 'Мастер', where: 'Где', code: 'Код записи', length: 'Длительность', status: 'Статус' },
     view: 'Открыть запись',
     directions: 'Как добраться',
     calendar: 'Добавить в календарь',
@@ -813,7 +862,7 @@ const VISIT_COPY: Record<
   },
   en: {
     when: (v) => (v.relative === 'today' ? `Today, ${v.time}` : v.relative === 'tomorrow' ? `Tomorrow, ${v.time}` : `${v.date}, ${v.time}`),
-    labels: { when: 'When', services: 'Services', master: 'Master', where: 'Where', code: 'Booking code' },
+    labels: { when: 'When', services: 'Services', master: 'Master', where: 'Where', code: 'Booking code', length: 'Length', status: 'Status' },
     view: 'View booking',
     directions: 'Directions',
     calendar: 'Add to calendar',
@@ -890,45 +939,44 @@ export function describeVisitTime(when: VisitTime, locale: Locale): string {
  * A visit on its pass: the time large, the day under it, length and master on the right; the
  * stub lists the services, with prices and an estimated total when `prices` is on.
  */
+/**
+ * A visit on its pass: the time large and the day under it, then label-over-value fields
+ * (length, master, booking code, where with directions); the stub lists the services with
+ * their prices and an estimated total when `prices` is on. `first` puts fields ahead (the
+ * client and phone for staff, a status for a pending reminder).
+ */
 function visitPass(
   locale: Locale,
   tone: ToneName,
-  chipLabel: string,
   visit: VisitInfo,
   when: VisitTime,
-  opts: { prices: boolean; aside?: string[] },
+  opts: { prices: boolean; first?: Field[]; relative?: string | null },
 ): Block {
   const c = COMMON[locale];
+  const v = VISIT_COPY[locale];
   const main = onPass(tone);
-  const deep = onPass(tone, true);
-  const day = capitalize(when.date);
-  const aside = opts.aside ?? [
-    ...(visit.durationMin ? [c.duration(visit.durationMin)] : []),
-    ...(visit.master ? [c.withMaster(visit.master)] : []),
-  ];
-  const lead =
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>` +
-    `<td valign="bottom"><p class="${main.cls}" style="margin:0;font-size:44px;line-height:1;font-weight:800;letter-spacing:-0.02em;color:${main.color}">${escapeHtml(when.time)}</p>` +
-    `<p class="${main.cls}" style="margin:8px 0 0;font-size:16px;line-height:1.35;font-weight:600;color:${main.color}">${escapeHtml(day)}</p></td>` +
-    (aside.length
-      ? `<td valign="bottom" align="right" style="padding-left:12px"><p class="${deep.cls}" style="margin:0;font-size:14px;line-height:1.5;color:${deep.color};white-space:nowrap">${aside.map(escapeHtml).join('<br>')}</p></td>`
-      : '') +
-    `</tr></table>`;
+  const day = capitalize(opts.relative ? `${opts.relative}, ${when.date}` : when.date);
+  const head =
+    `<p class="${main.cls}" style="margin:0;font-size:44px;line-height:1;font-weight:800;letter-spacing:-0.02em;color:${main.color}">${escapeHtml(when.time)}</p>` +
+    `<p class="${main.cls}" style="margin:8px 0 0;font-size:21px;line-height:1.25;font-weight:700;letter-spacing:-0.01em;color:${main.color}">${escapeHtml(day)}</p>`;
+  const info = fields(tone, [
+    ...(opts.first ?? []),
+    { label: v.labels.length, value: visit.durationMin ? c.duration(visit.durationMin) : null },
+    { label: v.labels.master, value: visit.master },
+    { label: v.labels.code, value: visit.code, tabular: true },
+    ...(visit.address || visit.directionsUrl
+      ? [{ label: v.labels.where, value: visit.address ?? v.directions, wide: true, extra: visit.address ? { label: v.directions, href: visit.directionsUrl } : undefined, href: visit.address ? null : visit.directionsUrl }]
+      : []),
+  ]);
   const priced = opts.prices && visit.lines && visit.lines.length > 0;
   const stub = priced
     ? lines(
         tone,
         visit.lines!.map((l) => [l.name, money(l.price, visit.total?.currency ?? 'MDL', locale, l.priceFrom)]),
-        visit.total && visit.lines!.length > 1 ? [c.total, money(visit.total.amount, visit.total.currency, locale, visit.total.from)] : null,
+        visit.total ? [c.total, money(visit.total.amount, visit.total.currency, locale, visit.total.from)] : null,
       )
     : passText(tone, visit.services.join('\n'), false, 15);
-  return pass({
-    tone,
-    chip: chipLabel,
-    reference: visit.code,
-    main: { html: lead, text: [`${when.time} · ${day}`, ...aside].join(' · ') },
-    stub,
-  });
+  return pass({ tone, main: { html: head, text: `${when.time} · ${day}` }, fields: info, stub });
 }
 
 function changeNote(t: (typeof VISIT_COPY)[Locale], visit: VisitInfo, locale: Locale, timeZone: string, now: Date): Block {
@@ -962,13 +1010,16 @@ export function appointmentReminderEmail(opts: {
     heading: t.reminder.heading,
     lead: t.reminder.lead(opts.name),
     blocks: [
-      visitPass(opts.locale, pending ? 'peach' : 'blush', pending ? t.chip.requested : t.chip.reminder(when), opts.visit, when, { prices: true }),
+      visitPass(opts.locale, pending ? 'peach' : 'blush', opts.visit, when, {
+        prices: true,
+        relative: when.relative ? t.chip.reminder(when) : null,
+        first: pending ? [{ label: t.labels.status, value: t.chip.requested, wide: true }] : [],
+      }),
       pending ? para(t.pending, `font-size:15px;line-height:1.5;color:${INK}`) : NONE,
       buttons([
         { label: t.view, url: opts.visit.bookingUrl, primary: true },
         { label: t.calendar, url: opts.visit.calendarUrl ?? null },
       ]),
-      lineWithLink(opts.visit.address, t.directions, opts.visit.directionsUrl),
       changeNote(t, opts.visit, opts.locale, opts.timeZone, opts.now),
     ],
     footer: opts.visit.settingsUrl
@@ -999,7 +1050,6 @@ export function bookingUpdateEmail(opts: {
   const c = COMMON[opts.locale];
   const cancelled = opts.kind === 'cancelled';
   const tone: ToneName = opts.kind === 'requested' ? 'peach' : opts.kind === 'rescheduled' ? 'cyan' : cancelled ? 'stone' : 'blush';
-  const chipLabel = t.chip[opts.kind === 'booked' ? 'confirmed' : opts.kind];
   return render({
     locale: opts.locale,
     to: opts.to,
@@ -1010,7 +1060,7 @@ export function bookingUpdateEmail(opts: {
     heading: copy.heading,
     lead,
     blocks: [
-      visitPass(opts.locale, tone, chipLabel, opts.visit, when, { prices: !cancelled }),
+      visitPass(opts.locale, tone, opts.visit, when, { prices: !cancelled }),
       cancelled ? para(t.cancelled.next) : NONE,
       cancelled
         ? buttons([{ label: t.bookAgain, url: opts.visit.bookUrl, primary: true }])
@@ -1018,7 +1068,6 @@ export function bookingUpdateEmail(opts: {
             { label: t.view, url: opts.visit.bookingUrl, primary: true },
             { label: t.calendar, url: opts.visit.calendarUrl ?? null },
           ]),
-      cancelled ? NONE : lineWithLink(opts.visit.address, t.directions, opts.visit.directionsUrl),
       cancelled ? NONE : changeNote(t, opts.visit, opts.locale, opts.timeZone, opts.now),
     ],
     footer: opts.visit.settingsUrl
@@ -1133,12 +1182,11 @@ export function staffBookingEmail(opts: {
   const when = visitTime(opts.visit.start, opts.locale, opts.timeZone, opts.now);
   const c = COMMON[opts.locale];
   // The staff pass is ink: who comes and when, then what they booked.
-  const who = lines('ink', [[opts.client.name, opts.client.phone ?? '']]);
-  const visit = visitPass(opts.locale, 'ink', t.heading[opts.event], opts.visit, when, {
+  const visit = visitPass(opts.locale, 'ink', opts.visit, when, {
     prices: opts.event !== 'cancelled',
-    aside: [
-      ...(opts.visit.durationMin ? [c.duration(opts.visit.durationMin)] : []),
-      ...(opts.visit.master ? [c.withMaster(opts.visit.master)] : []),
+    first: [
+      { label: t.labels.client, value: opts.client.name },
+      { label: t.labels.phone, value: opts.client.phone, href: opts.client.phone ? `tel:${opts.client.phone.replace(/[^+\d]/g, '')}` : null },
     ],
   });
   return render({
@@ -1151,10 +1199,7 @@ export function staffBookingEmail(opts: {
     heading: t.heading[opts.event],
     lead: t.lead[opts.event],
     blocks: [
-      {
-        html: visit.html.replace('<tr><td style="padding:14px 20px 16px">', `<tr><td style="padding:0 20px 12px">${who.html}</td></tr><tr><td style="padding:14px 20px 16px">`),
-        text: `${who.text}\n${visit.text}`,
-      },
+      visit,
       buttons([{ label: t.open[opts.event], url: opts.openUrl, primary: true }]),
     ],
     footer: [small(t.why), linkLine(v.settings, opts.settingsUrl), small(c.signature)],
@@ -1243,7 +1288,11 @@ export function welcomeEmail(opts: {
     lead: t.body,
     blocks: [
       rewards && cycle > 0 && cycle <= 12
-        ? pass({ tone: 'blush', chip: t.card, main: stampRow('blush', cycle, opts.rewards), stub: passText('blush', t.loyalty(rewards)) })
+        ? pass({
+            tone: 'blush',
+            main: { html: passLabel('blush', t.card) + stampGrid('blush', cycle, opts.rewards).html, text: t.card },
+            stub: passText('blush', t.loyalty(rewards)),
+          })
         : NONE,
       buttons([
         { label: t.book, url: `${base}/book`, primary: true },
@@ -1287,12 +1336,20 @@ const LOYALTY_NEXT_COPY: Record<
 };
 
 /** After a visit, when the next one on the card carries a discount. */
-export function loyaltyNextEmail(opts: { to: string; name: string; locale: Locale; appUrl: string; percent: number }): MailMessage {
+export function loyaltyNextEmail(opts: {
+  to: string;
+  name: string;
+  locale: Locale;
+  appUrl: string;
+  percent: number;
+  /** The client's card as it is now: the grid shows the stamps and the discount that is next. */
+  card?: { stamps: number; cycle: number; rewards: Array<{ visit: number; percent: number }> };
+}): MailMessage {
   const t = LOYALTY_NEXT_COPY[opts.locale];
   const c = COMMON[opts.locale];
   const base = `${opts.appUrl.replace(/\/$/, '')}${localeSegment(opts.locale)}`;
-  const main = onPass('blush');
-  const deep = onPass('blush', true);
+  const card = opts.card && opts.card.cycle > 0 && opts.card.cycle <= 12 ? opts.card : null;
+  const next = passText('blush', `−${opts.percent}% ${t.next}`, false, 16);
   return render({
     locale: opts.locale,
     to: opts.to,
@@ -1305,13 +1362,10 @@ export function loyaltyNextEmail(opts: { to: string; name: string; locale: Local
     blocks: [
       pass({
         tone: 'blush',
-        chip: t.card,
-        main: {
-          html:
-            `<p class="${main.cls}" style="margin:0;font-size:44px;line-height:1;font-weight:800;letter-spacing:-0.02em;color:${main.color}">−${opts.percent}%</p>` +
-            `<p class="${deep.cls}" style="margin:8px 0 0;font-size:16px;line-height:1.35;font-weight:600;color:${deep.color}">${escapeHtml(t.next)}</p>`,
-          text: `−${opts.percent}% ${t.next}`,
-        },
+        main: card
+          ? { html: passLabel('blush', t.card) + stampGrid('blush', card.cycle, card.rewards, card.stamps).html, text: `${t.card}: ${card.stamps}/${card.cycle}` }
+          : { html: passLabel('blush', t.card) + next.html, text: next.text },
+        stub: card ? next : undefined,
       }),
       buttons([{ label: t.book, url: `${base}/book`, primary: true }]),
     ],

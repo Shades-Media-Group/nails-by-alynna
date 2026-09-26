@@ -45,7 +45,11 @@ export async function notifyWelcome(deps: AppDeps, user: UserDoc): Promise<Deliv
 }
 
 /** After a completed visit, when the client's next visit carries a loyalty discount. */
-export async function notifyLoyaltyNext(deps: AppDeps, user: UserDoc, opts: { percent: number; visits: number }): Promise<DeliveryOutcome> {
+export async function notifyLoyaltyNext(
+  deps: AppDeps,
+  user: UserDoc,
+  opts: { percent: number; visits: number; card?: { stamps: number; cycle: number; rewards: Array<{ visit: number; percent: number }> } },
+): Promise<DeliveryOutcome> {
   try {
     const copy = PUSH_COPY.loyalty[user.locale](opts.percent);
     return await deliver(deps, {
@@ -53,7 +57,8 @@ export async function notifyLoyaltyNext(deps: AppDeps, user: UserDoc, opts: { pe
       kind: 'custom',
       category: 'loyalty',
       user,
-      email: () => loyaltyNextEmail({ to: user.email, name: user.name, locale: user.locale, appUrl: deps.config.appUrl, percent: opts.percent }),
+      email: () =>
+        loyaltyNextEmail({ to: user.email, name: user.name, locale: user.locale, appUrl: deps.config.appUrl, percent: opts.percent, card: opts.card }),
       push: {
         payload: { ...copy, url: `${localeSegment(user.locale)}/loyalty`, tag: 'loyalty' },
         options: { ttlSec: 3 * 86_400, urgency: 'normal' },

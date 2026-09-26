@@ -71,7 +71,11 @@ async function announceNextReward(deps: AppDeps, clientId: ObjectId): Promise<vo
   if (!client) return;
   const status = await loyaltyStatus(deps, client, settings);
   if (status.enabled && status.nextReward?.inVisits === 1) {
-    await notifyLoyaltyNext(deps, client, { percent: status.nextReward.percent, visits: status.visits });
+    await notifyLoyaltyNext(deps, client, {
+      percent: status.nextReward.percent,
+      visits: status.visits,
+      card: { stamps: status.stamps, cycle: status.cycle, rewards: status.rewards },
+    });
   }
 }
 
