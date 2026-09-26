@@ -62,10 +62,4 @@ export const session = {
   },
 };
 
-export const STORAGE_KEYS = {
-  locale: 'nba:locale',
-  consent: 'nba:consent',
-  installDismissed: 'nba:install-dismissed',
-  splashSeen: 'nba:splash-seen',
-  bookingDraft: 'nba:booking-draft',
-} as const;
+export { STORAGE_KEYS } from './storageKeys';

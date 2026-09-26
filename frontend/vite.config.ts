@@ -1,12 +1,16 @@
 /// <reference types="vitest/config" />
 import { execSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { readFile, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import { VitePWA, type ManifestOptions } from 'vite-plugin-pwa';
 import { BRAND_BACKGROUND, generateBrandAssets, splashLinkTags } from './scripts/brand-assets.mjs';
+import { SPLASH_GATE_SCRIPT } from './src/components/brand/splashGate.ts';
 
 const src = fileURLToPath(new URL('./src', import.meta.url));
 
@@ -54,15 +58,34 @@ function splashSvg(): string {
   );
 }
 
-/** Icons, favicon and iOS launch screens from brand/logo.svg + the inline splash logo. */
+/** The CSP allows no inline script except the splash gate, by its hash. */
+const SPLASH_GATE_CSP = `'sha256-${createHash('sha256').update(SPLASH_GATE_SCRIPT).digest('base64')}'`;
+
+/**
+ * Icons, favicon and iOS launch screens from brand/logo.svg, the inline splash logo, and the
+ * splash gate (splashGate.ts) with its hash added to `script-src` in the built _headers.
+ */
 function brandPlugin(): Plugin {
+  let headersFile: string | null = null;
   return {
     name: 'nba:brand',
+    configResolved(config) {
+      if (config.command === 'build') headersFile = resolve(config.root, config.build.outDir, '_headers');
+    },
     async buildStart() {
       await generateBrandAssets({ log: (m: string) => this.info(m) });
     },
     transformIndexHtml(html) {
-      return html.replace('<!--splash-logo-->', splashSvg()).replace('<!--apple-splash-links-->', splashLinkTags());
+      return html
+        .replace('<!--splash-logo-->', splashSvg())
+        .replace('<!--apple-splash-links-->', splashLinkTags())
+        .replace('<!--splash-gate-->', `<script>${SPLASH_GATE_SCRIPT}</script>`);
+    },
+    async closeBundle() {
+      if (!headersFile) return;
+      const headers = await readFile(headersFile, 'utf8');
+      if (!headers.includes("script-src 'self';")) throw new Error(`${headersFile}: no "script-src 'self';" to add the splash gate hash to`);
+      await writeFile(headersFile, headers.replace("script-src 'self';", `script-src 'self' ${SPLASH_GATE_CSP};`));
     },
   };
 }
