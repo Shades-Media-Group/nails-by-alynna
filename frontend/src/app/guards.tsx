@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Navigate, Outlet, useSearchParams } from 'react-router';
-import { safeNextPath } from '@/i18n/routing';
+import { safeNextPath, signedInPath } from '@/i18n/routing';
 import { useLocale } from '@/i18n/useLocale';
 import { needsLanding, signedOutStart } from '@/lib/platform';
 import type { Role } from '@/types/api';
@@ -27,9 +27,10 @@ export function RequireRole({ roles, children }: { roles: Role[]; children?: Rea
 }
 
 /**
- * Login/sign-up screens: signed-in visitors go straight to their destination. A phone browser
- * that lands here first (a shared link, or "open in Safari" from Telegram) is offered "web or
- * app" once; studio invites skip it, since they already are the way in.
+ * Login/sign-up screens: signed-in visitors go straight to their destination, in their account's
+ * language (this also runs the moment a sign-in succeeds). A phone browser that lands here first
+ * (a shared link, or "open in Safari" from Telegram) is offered "web or app" once; studio invites
+ * skip it, since they already are the way in.
  */
 export function GuestOnly() {
   const { user } = useAuth();
@@ -37,7 +38,7 @@ export function GuestOnly() {
   const [params] = useSearchParams();
   if (user) {
     const next = safeNextPath(params.get('next'));
-    return <Navigate to={lp(next ?? homePathFor(user))} replace />;
+    return <Navigate to={signedInPath(next ?? homePathFor(user), user.locale)} replace />;
   }
   if (needsLanding() && !params.get('invite')) return <Navigate to={lp('/')} replace />;
   return <Outlet />;

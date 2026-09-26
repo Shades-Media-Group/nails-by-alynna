@@ -26,7 +26,8 @@ describe('demo accounts', () => {
   it('can look at everything a client sees', async () => {
     const demo = await loginAs(ctx, 'client.demo@example.com', DEMO_PASSWORD);
     const me = await demo.get('/api/auth/me');
-    expect(me.body.user).toMatchObject({ isDemo: true, role: 'client' });
+    // Romanian, like every account nobody chose a language for: the app opens in it after sign-in.
+    expect(me.body.user).toMatchObject({ isDemo: true, role: 'client', locale: 'ro' });
     expect((await demo.get('/api/appointments?scope=upcoming')).status).toBe(200);
     expect((await demo.get(`/api/availability/days?serviceIds=${gelId}&days=7`)).status).toBe(200);
   });

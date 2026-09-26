@@ -9,7 +9,7 @@ import { Alert } from '@/components/common/Alert';
 import { AuthLayout } from '@/components/layout/AuthLayout';
 import { Button, Checkbox, PasswordField, TextField } from '@/components/ui';
 import { ArrowForwardIcon, EmailIcon, KeyIcon } from '@/components/ui/icons';
-import { safeNextPath } from '@/i18n/routing';
+import { safeNextPath, signedInPath } from '@/i18n/routing';
 import { useLocale } from '@/i18n/useLocale';
 import { errorMessage } from '@/lib/errors';
 import { resyncPush } from '@/lib/push';
@@ -41,7 +41,8 @@ export default function LoginPage() {
     clearPendingCode();
     setUser(user);
     void resyncPush(user.id);
-    navigate(lp(next ?? homePathFor(user)), { replace: true });
+    // In the account's language, whichever language this screen is in.
+    navigate(signedInPath(next ?? homePathFor(user), user.locale), { replace: true });
   };
 
   const login = useMutation({
@@ -57,7 +58,10 @@ export default function LoginPage() {
 
   // "demo" (with password "demo") opens the shared client demo when the studio enables it.
   const isDemoShortcut = email.trim().toLowerCase() === 'demo';
-  const emailError = touched && !isEmail(email) && !isDemoShortcut ? t('common:validation.invalid_email') : undefined;
+  const emailError =
+    touched && !isEmail(email) && !isDemoShortcut
+      ? t('common:validation.invalid_email')
+      : undefined;
   const passwordError = touched && !password ? t('common:validation.required') : undefined;
 
   const onSubmit = (event: FormEvent) => {
@@ -91,7 +95,11 @@ export default function LoginPage() {
   return (
     <AuthLayout
       back={`${lp('/login')}${carry}`}
-      footer={{ text: t('welcome.noAccount'), action: t('welcome.signUp'), to: `${lp('/signup')}${carry}` }}
+      footer={{
+        text: t('welcome.noAccount'),
+        action: t('welcome.signUp'),
+        to: `${lp('/signup')}${carry}`,
+      }}
     >
       <h1 className="text-[1.875rem] font-extrabold uppercase leading-[0.95] tracking-[-0.03em]">
         <span className="block text-ink-900">{t('common:brand.tagline1')}</span>
@@ -99,12 +107,20 @@ export default function LoginPage() {
       </h1>
       <p className="mt-3 text-ink-600">{t('login.subtitle')}</p>
 
-      <form className="mt-8 flex flex-col gap-4" method="post" action="#" noValidate onSubmit={onSubmit}>
+      <form
+        className="mt-8 flex flex-col gap-4"
+        method="post"
+        action="#"
+        noValidate
+        onSubmit={onSubmit}
+      >
         {login.isError ? (
           <Alert>
             {errorMessage(t, login.error)}
             {/* Accounts made with Google have no password until the owner sets one. */}
-            {config.data?.auth.google && login.error instanceof ApiError && login.error.code === 'INVALID_CREDENTIALS' ? (
+            {config.data?.auth.google &&
+            login.error instanceof ApiError &&
+            login.error.code === 'INVALID_CREDENTIALS' ? (
               <span className="mt-1 block">{t('login.googleHint')}</span>
             ) : null}
           </Alert>
@@ -141,8 +157,19 @@ export default function LoginPage() {
         >
           {t('login.forgot')}
         </Link>
-        <Checkbox label={t('login.remember')} checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-        <Button type="submit" size="lg" fullWidth loading={login.isPending} trailingIcon={ArrowForwardIcon} className="mt-2">
+        <Checkbox
+          label={t('login.remember')}
+          checked={remember}
+          onChange={(e) => setRemember(e.target.checked)}
+        />
+        <Button
+          type="submit"
+          size="lg"
+          fullWidth
+          loading={login.isPending}
+          trailingIcon={ArrowForwardIcon}
+          className="mt-2"
+        >
           {t('login.submit')}
         </Button>
       </form>

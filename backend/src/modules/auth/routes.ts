@@ -657,7 +657,9 @@ export function authRoutes(deps: AppDeps) {
         ...meta(c, c.get('ip')),
       });
       setSessionCookies(c, config, tokens);
-      return c.redirect(`${config.appUrl}${localePrefix(lang)}${safeNext(String(saved.next ?? ''))}`, 302);
+      // Signed in: the app opens in the language saved on the account, not the sign-in screen's
+      // (a Romanian account that signs in from /en/login lands on Romanian pages).
+      return c.redirect(`${config.appUrl}${localePrefix(user.locale)}${safeNext(String(saved.next ?? ''))}`, 302);
     } catch (callbackError) {
       console.error('[auth] google callback failed', callbackError);
       return fail('google');

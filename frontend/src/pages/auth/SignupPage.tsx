@@ -11,7 +11,7 @@ import { AuthLayout } from '@/components/layout/AuthLayout';
 import { LegalLink } from '@/components/legal/LegalLink';
 import { Button, Checkbox, PasswordField, TextField, toast } from '@/components/ui';
 import { CallIcon, EmailIcon, KeyIcon, PersonOutlineIcon } from '@/components/ui/icons';
-import { safeNextPath } from '@/i18n/routing';
+import { safeNextPath, signedInPath } from '@/i18n/routing';
 import { useLocale } from '@/i18n/useLocale';
 import { errorMessage, fieldErrors } from '@/lib/errors';
 import { isEmail, nameIssue, normalizePhone, passwordIssue } from '@/lib/validation';
@@ -60,8 +60,17 @@ export default function SignupPage() {
   const [remember, setRemember] = useState(restored?.remember ?? true);
   const [touched, setTouched] = useState(false);
   // After the form: the emailed code confirms the address and opens the session.
-  const [pending, setPending] = useState<Pick<PendingVerification, 'email' | 'resendAfterSec' | 'sent'> | null>(
-    restored ? { email: restored.email, resendAfterSec: restored.resendAfterSec ?? 60, sent: restored.sent } : null,
+  const [pending, setPending] = useState<Pick<
+    PendingVerification,
+    'email' | 'resendAfterSec' | 'sent'
+  > | null>(
+    restored
+      ? {
+          email: restored.email,
+          resendAfterSec: restored.resendAfterSec ?? 60,
+          sent: restored.sent,
+        }
+      : null,
   );
 
   // The address this tab just signed up with: submitting it again means "back to my code".
@@ -79,7 +88,8 @@ export default function SignupPage() {
       showCodeStep(verification.email, verification.resendAfterSec, verification.sent !== false);
     },
     onError: (error, input) => {
-      if (isApiError(error, 'EMAIL_TAKEN') && registered === input.email.trim().toLowerCase()) showCodeStep(registered);
+      if (isApiError(error, 'EMAIL_TAKEN') && registered === input.email.trim().toLowerCase())
+        showCodeStep(registered);
     },
   });
 
@@ -87,7 +97,8 @@ export default function SignupPage() {
     clearPendingCode();
     setUser(user);
     toast.success(t('signup.welcomeToast', { name: user.name }));
-    navigate(lp(next ?? homePathFor(user)), { replace: true });
+    // In the account's language: for a new account, the one it was signed up in.
+    navigate(signedInPath(next ?? homePathFor(user), user.locale), { replace: true });
   };
 
   const clientErrors: Partial<Record<Field, string>> = {};
@@ -126,7 +137,12 @@ export default function SignupPage() {
   };
 
   const showGlobalError =
-    register.isError && !(register.error instanceof ApiError && Object.keys(register.error.fields).length > 0 && register.error.code === 'VALIDATION_ERROR');
+    register.isError &&
+    !(
+      register.error instanceof ApiError &&
+      Object.keys(register.error.fields).length > 0 &&
+      register.error.code === 'VALIDATION_ERROR'
+    );
   const carry = next ? `?next=${encodeURIComponent(next)}` : '';
 
   if (pending) {
@@ -138,7 +154,15 @@ export default function SignupPage() {
           reason="signup"
           resendAfterSec={pending.resendAfterSec}
           sent={pending.sent !== false}
-          onResent={() => savePendingCode({ flow: 'signup', email: pending.email, remember, resendAfterSec: pending.resendAfterSec, sent: true })}
+          onResent={() =>
+            savePendingCode({
+              flow: 'signup',
+              email: pending.email,
+              remember,
+              resendAfterSec: pending.resendAfterSec,
+              sent: true,
+            })
+          }
           sentAt={restored?.email === pending.email ? restored.at : undefined}
           onVerified={onVerified}
           onChangeEmail={() => {
@@ -154,13 +178,21 @@ export default function SignupPage() {
   return (
     <AuthLayout
       back={`${lp('/login')}${carry}`}
-      footer={{ text: t('signup.haveAccount'), action: t('signup.logIn'), to: `${lp('/login/email')}${carry}` }}
+      footer={{
+        text: t('signup.haveAccount'),
+        action: t('signup.logIn'),
+        to: `${lp('/login/email')}${carry}`,
+      }}
     >
-      <h1 className="text-h1 font-extrabold">{invite.data ? t('signup.inviteTitle', { name: invite.data.name }) : t('signup.title')}</h1>
+      <h1 className="text-h1 font-extrabold">
+        {invite.data ? t('signup.inviteTitle', { name: invite.data.name }) : t('signup.title')}
+      </h1>
       <p className="mt-2 text-ink-600">
         {invite.data
           ? invite.data.nextVisit
-            ? t('signup.inviteVisit', { date: formatDateTime(invite.data.nextVisit, locale, timeZone) })
+            ? t('signup.inviteVisit', {
+                date: formatDateTime(invite.data.nextVisit, locale, timeZone),
+              })
             : t('signup.inviteText')
           : t('signup.subtitle')}
       </p>
@@ -172,13 +204,23 @@ export default function SignupPage() {
 
       {config.data?.auth.google ? (
         <div className="mt-6 flex flex-col gap-3">
-          <GoogleButton label={t('signup.google')} next={next} invite={invite.data ? inviteToken : null} />
+          <GoogleButton
+            label={t('signup.google')}
+            next={next}
+            invite={invite.data ? inviteToken : null}
+          />
           <GoogleTerms />
           <OrDivider label={t('signup.or')} />
         </div>
       ) : null}
 
-      <form className="mt-6 flex flex-col gap-4" method="post" action="#" noValidate onSubmit={onSubmit}>
+      <form
+        className="mt-6 flex flex-col gap-4"
+        method="post"
+        action="#"
+        noValidate
+        onSubmit={onSubmit}
+      >
         {showGlobalError ? <Alert>{errorMessage(t, register.error)}</Alert> : null}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <TextField
@@ -258,7 +300,11 @@ export default function SignupPage() {
             />
           }
         />
-        <Checkbox label={t('signup.remember')} checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+        <Checkbox
+          label={t('signup.remember')}
+          checked={remember}
+          onChange={(e) => setRemember(e.target.checked)}
+        />
         <Button type="submit" size="lg" fullWidth loading={register.isPending} className="mt-2">
           {t('signup.submit')}
         </Button>

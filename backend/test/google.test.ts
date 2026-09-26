@@ -115,6 +115,38 @@ describe('Google sign-in: callback', () => {
     expect(stored?.passwordHash).toBeNull();
   });
 
+  it('opens an existing account in its own language, whatever language the sign-in screen was in', async () => {
+    const who = identity();
+    await signInWithGoogle(ctx.deps, who, 'ro');
+    const google = (n: string) => ({ sub: who.sub, email: who.email, email_verified: true, nonce: n });
+
+    // The sign-in screen was English (begin() starts from /en), the account is Romanian.
+    const first = await begin();
+    fakeGoogle(google, () => first.nonce);
+    const romanian = await first.client.get(`/api/auth/google/callback?code=abc&state=${first.state}`);
+    expect(romanian.headers.get('location')).toBe(`${APP_ORIGIN}/home`);
+
+    await ctx.deps.col.users.updateOne({ googleId: who.sub }, { $set: { locale: 'ru' } });
+    const second = await begin('/bookings');
+    fakeGoogle(google, () => second.nonce);
+    const russian = await second.client.get(`/api/auth/google/callback?code=abc&state=${second.state}`);
+    expect(russian.headers.get('location')).toBe(`${APP_ORIGIN}/ru/bookings`);
+
+    // Signing in never changes the language saved on the account.
+    expect((await ctx.deps.col.users.findOne({ googleId: who.sub }))?.locale).toBe('ru');
+  });
+
+  it('creates the account in Romanian when the sign-in screen sent no language', async () => {
+    const client = ctx.client({ origin: null });
+    const start = await client.get('/api/auth/google/start');
+    const q = new URL(start.headers.get('location')!).searchParams;
+    const email = `plain.${Date.now()}@gmail.com`;
+    fakeGoogle((n) => ({ sub: `sub-plain-${Date.now()}`, email, email_verified: true, nonce: n }), () => q.get('nonce')!);
+    const res = await client.get(`/api/auth/google/callback?code=abc&state=${q.get('state')}`);
+    expect(res.headers.get('location')).toBe(`${APP_ORIGIN}/home`);
+    expect((await ctx.deps.col.users.findOne({ email }))?.locale).toBe('ro');
+  });
+
   it('rejects a replayed state, a wrong nonce and an unverified email', async () => {
     // State that does not match the cookie.
     const first = await begin();

@@ -28,6 +28,9 @@ export type GoogleSignIn =
  * and its email was never proven, whoever set that password may not own the inbox. The
  * password and every open session are dropped, as Firebase does; the owner keeps Google and
  * can set a new password through "Forgot password".
+ *
+ * `locale` is the language of the sign-in screen. A new account (or a claimed invite) keeps it,
+ * as the sign-up form does; an existing account keeps the language saved on it.
  */
 export async function signInWithGoogle(
   deps: AppDeps,
@@ -79,6 +82,8 @@ export async function signInWithGoogle(
     const set: Partial<UserDoc> = {
       email: identity.email,
       googleId: identity.sub,
+      // The desk left the default (Romanian); the person chose this one by signing up in it.
+      locale,
       emailVerifiedAt: now,
       termsAcceptedAt: now,
       // Staff typed the name at the desk; Google fills it in only if it was left empty.
