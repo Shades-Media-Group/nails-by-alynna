@@ -26,6 +26,8 @@ export type ServiceArt =
   | 'file'
   | `length-${LengthLevel}`
   | `refill-${LengthLevel}`;
+/** The nail shape a client asks for when booking; the master files the nails to it at the visit. */
+export type NailShape = 'square' | 'almond' | 'round' | 'stiletto';
 
 export interface User {
   id: string;
@@ -179,6 +181,8 @@ export interface Appointment {
   totalPrice: number;
   priceFrom: boolean;
   services: AppointmentLine[];
+  /** The nail shape the client asked for; null when none was given (missing from older API responses). */
+  nailShape?: NailShape | null;
   staff: { id: string; name: string; title: I18nText; color: SwatchColor } | null;
   notes: string;
   canChange: boolean;

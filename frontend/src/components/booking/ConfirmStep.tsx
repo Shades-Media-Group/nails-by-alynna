@@ -13,11 +13,13 @@ import { useLocale } from '@/i18n/useLocale';
 import { cx } from '@/lib/cx';
 import { formatDateTime, formatDuration, formatPrice } from '@/lib/format';
 import { SWATCH } from '@/lib/swatch';
-import type { Service, Slot } from '@/types/api';
+import type { NailShape, Service, Slot } from '@/types/api';
 
 interface ConfirmStepProps {
   mode: 'new' | 'reschedule';
   services: Service[];
+  /** The nail shape picked on the services step (or the booking's own, when moving it). */
+  nailShape?: NailShape | null;
   slot: Slot;
   masterName: string | null;
   needsPhone: boolean;
@@ -38,7 +40,7 @@ interface ConfirmStepProps {
 
 /** Everything the client agrees to, in one place: what, when, who, how much, and the rules. */
 export function ConfirmStep(props: ConfirmStepProps) {
-  const { mode, services, slot, masterName, needsPhone, phone, onPhone, phoneError, notes, onNotes, submitting, error, onEdit, onSubmit, promo, onPromoCode } = props;
+  const { mode, services, nailShape, slot, masterName, needsPhone, phone, onPhone, phoneError, notes, onNotes, submitting, error, onEdit, onSubmit, promo, onPromoCode } = props;
   const { t } = useTranslation(['booking', 'common']);
   const { locale } = useLocale();
   const pick = useI18nText();
@@ -87,6 +89,18 @@ export function ConfirmStep(props: ConfirmStepProps) {
             {t('flow.change')}
           </span>
         </button>
+        {/* The shape first, as it was picked; the services and their prices then run into the total. */}
+        {nailShape ? (
+          <div className="flex items-center gap-3 border-t border-ink-100 px-4 py-3">
+            <span className={cx('flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-lg', SWATCH.blush.field)}>
+              <RealisticNailArt art={`shape-${nailShape}`} color="blush" className="w-10" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[0.9375rem] font-semibold leading-snug">{t(`shape.${nailShape}`)}</span>
+              <span className="block text-sm text-ink-600">{t('shape.title')}</span>
+            </span>
+          </div>
+        ) : null}
         <ul className="divide-y divide-ink-100 border-t border-ink-100">
           {services.map((service) => {
             const color = catalog.categoryById.get(service.categoryId)?.color ?? 'blush';

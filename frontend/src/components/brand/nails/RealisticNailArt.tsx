@@ -1,22 +1,22 @@
 import { useId } from 'react';
 import { cx } from '@/lib/cx';
 import { SWATCH, type SwatchColor } from '@/lib/swatch';
-import type { ServiceArt } from '@/types/api';
 import { NATURAL, PaintContext, WHITE, mix, type Paint, type PaintName } from './paint';
-import { Scene } from './scenes';
+import { Scene, type SceneArt } from './scenes';
 
 /**
  * The realistic service illustrations: manicured fingers, toes and tools in glossy vector, in a
  * 100×100 box. Used where clients choose services (Services page, booking flow, Popular on
  * Home); everywhere else keeps the classic `NailArt`. Same props, same stored `art` values; the
  * polish takes the category's swatch colour. Gradients only (no filters), so a list stays cheap.
+ * The booking's shape picker draws the nail shapes with it too (`shape-almond`…).
  *
  * Fingers run past the bottom of the box on purpose: put it in a tile with `overflow-hidden`
  * and the tile's edge crops them, like a photo, instead of showing where a finger ends.
  */
 
 interface Props {
-  art: ServiceArt;
+  art: SceneArt;
   color: SwatchColor;
   className?: string;
   /** Adds the one-time gloss sweep (e.g. on the booking confirmation). */

@@ -5,17 +5,18 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { StepProgress } from '@/components/booking/StepProgress';
 import { Alert } from '@/components/common/Alert';
 import { PromoCodeField } from '@/components/promo/PromoCodeField';
-import { Button, ButtonLink, IconButton, SegmentedControl, Textarea, toast } from '@/components/ui';
+import { Button, ButtonLink, IconButton, SegmentedControl, Select, Textarea, toast } from '@/components/ui';
 import { AddIcon, ArrowBackIcon, ArrowForwardIcon, QrCodeIcon } from '@/components/ui/icons';
 import { useStudio } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
 import { cx } from '@/lib/cx';
 import { errorMessage, fieldErrors } from '@/lib/errors';
 import { formatDateTime, formatDuration, formatPrice, formatTime, fullName } from '@/lib/format';
+import { NAIL_SHAPES, parseNailShape } from '@/lib/nailShape';
 import { promoAmountText, promoProblemText, promoRefusal } from '@/lib/promo';
 import { scrollPageTo } from '@/lib/scroll';
 import { isApiError } from '@/services/api/client';
-import type { PromoQuote, StaffAppointment } from '@/types/api';
+import type { NailShape, PromoQuote, StaffAppointment } from '@/types/api';
 import { adminApi, adminQueries, type ClientDetail, type NewAppointmentInput } from '../api';
 import { AdminHeader } from '../components/AdminHeader';
 import { ClientPicker, type PickedClient } from '../components/ClientPicker';
@@ -69,6 +70,8 @@ export default function NewAppointmentPage() {
 
   const [picked, setPicked] = useState<{ value: PickedClient | null } | null>(null);
   const [serviceIds, setServiceIds] = useState<string[]>([]);
+  // Optional at the desk (clients booking online always pick one): the master can ask at the visit.
+  const [nailShape, setNailShape] = useState<NailShape | null>(null);
   const [staffId, setStaffId] = useState<string | null>(null);
   const [time, setTime] = useState<TimeChoice | null>(null);
   const [notes, setNotes] = useState('');
@@ -166,11 +169,13 @@ export default function NewAppointmentPage() {
       status,
       force: time.force,
       ...(promo.quote ? { promoCode: promo.quote.code } : {}),
+      ...(nailShape ? { nailShape } : {}),
     });
   };
   const restart = () => {
     setPicked({ value: null });
     setServiceIds([]);
+    setNailShape(null);
     setStaffId(null);
     setTime(null);
     setNotes('');
@@ -241,6 +246,17 @@ export default function NewAppointmentPage() {
             'services',
             t('booking.whatServices'),
             <>
+              {/* First, as in the client's booking; optional here. */}
+              <Select
+                label={`${t('booking:shape.title')} (${t('common.optional')})`}
+                value={nailShape ?? ''}
+                onChange={(e) => setNailShape(parseNailShape(e.target.value))}
+                options={[
+                  { value: '', label: t('booking.notChosen') },
+                  ...NAIL_SHAPES.map((shape) => ({ value: shape, label: t(`booking:shape.${shape}`) })),
+                ]}
+                className="sm:max-w-xs"
+              />
               <ServicePicker selected={serviceIds} onChange={chooseServices} />
               {checked.services && !valid.services ? (
                 <p className="text-sm font-semibold text-red-700" role="alert">
@@ -302,7 +318,7 @@ export default function NewAppointmentPage() {
                 rows={3}
               />
               <div className="lg:hidden">
-                <Summary client={client} serviceIds={serviceIds} staffId={staffId} time={time} catalog={catalog} teamSize={teamSize} promo={promo.quote} onRemovePromo={() => setPromoCode(null)} />
+                <Summary client={client} serviceIds={serviceIds} nailShape={nailShape} staffId={staffId} time={time} catalog={catalog} teamSize={teamSize} promo={promo.quote} onRemovePromo={() => setPromoCode(null)} />
               </div>
               <div className="lg:hidden">{submitError}</div>
             </>,
@@ -311,7 +327,7 @@ export default function NewAppointmentPage() {
 
         <aside className="hidden lg:block">
           <div className="sticky top-8 flex flex-col gap-3">
-            <Summary client={client} serviceIds={serviceIds} staffId={staffId} time={time} catalog={catalog} teamSize={teamSize} promo={promo.quote} onRemovePromo={() => setPromoCode(null)} />
+            <Summary client={client} serviceIds={serviceIds} nailShape={nailShape} staffId={staffId} time={time} catalog={catalog} teamSize={teamSize} promo={promo.quote} onRemovePromo={() => setPromoCode(null)} />
             {submitError}
             <Button size="lg" fullWidth loading={create.isPending} onClick={submit}>
               {t('booking.create')}
@@ -375,6 +391,7 @@ function SelectionLine({ client, serviceIds, catalog }: { client: PickedClient |
 function Summary({
   client,
   serviceIds,
+  nailShape,
   staffId,
   time,
   catalog,
@@ -384,6 +401,7 @@ function Summary({
 }: {
   client: PickedClient | null;
   serviceIds: string[];
+  nailShape: NailShape | null;
   staffId: string | null;
   time: TimeChoice | null;
   catalog: Catalog;
@@ -432,6 +450,8 @@ function Summary({
           ),
           chosen.length === 0,
         )}
+        {/* Optional, so only once it is chosen. */}
+        {nailShape ? row(t('booking:shape.title'), t(`booking:shape.${nailShape}`), false) : null}
         {teamSize > 1 ? row(t('booking.master'), master ? master.name : t('booking.anyMaster'), false) : null}
         {row(
           t('booking.when'),

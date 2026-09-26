@@ -6,6 +6,7 @@ import { Badge, Button, Chip } from '@/components/ui';
 import { ArrowForwardIcon, CalendarAddIcon } from '@/components/ui/icons';
 import { ART_GROUPS } from '@/lib/art';
 import { cx } from '@/lib/cx';
+import { NAIL_SHAPES } from '@/lib/nailShape';
 import { SWATCH, SWATCH_ORDER, type SwatchColor } from '@/lib/swatch';
 
 /** The two illustration looks and where each one is used. */
@@ -62,6 +63,22 @@ export default function DesignSystemPage() {
             </ul>
           </div>
         ))}
+        {/* The shapes clients pick on the booking's first step; drawn in the realistic look only. */}
+        {look === 'realistic' ? (
+          <div className="mt-6">
+            <h3 className="text-sm font-semibold text-ink-600">Nail shapes (booking)</h3>
+            <ul className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+              {NAIL_SHAPES.map((shape) => (
+                <li key={shape} className="flex flex-col items-center gap-1.5">
+                  <span className={cx('flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl p-2', SWATCH[color].field)}>
+                    <RealisticNailArt art={`shape-${shape}`} color={color} className="w-full" />
+                  </span>
+                  <code className="text-xs text-ink-600">shape-{shape}</code>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </section>
 
       <section className="gutter-x mt-10 lg:px-0" aria-labelledby="buttons-title">

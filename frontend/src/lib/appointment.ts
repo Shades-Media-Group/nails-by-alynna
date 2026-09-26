@@ -25,11 +25,13 @@ export function calendarEventFor(
 }
 
 /**
- * "Book again": the same services with the same master, straight to picking a time (as in
- * Fresha or Booksy). Back walks to the master and services steps, already filled in.
+ * "Book again": the same services, nail shape and master, straight to picking a time (as in
+ * Fresha or Booksy). Back walks to the master and services steps, already filled in. A visit
+ * without a shape (booked before shapes were asked) opens on the services step to pick one.
  */
 export function rebookQuery(appointment: Appointment): string {
   const params = new URLSearchParams({ services: appointment.services.map((s) => s.id).join(','), step: 'time' });
+  if (appointment.nailShape) params.set('shape', appointment.nailShape);
   if (appointment.staff) params.set('staff', appointment.staff.id);
   return `?${params.toString()}`;
 }

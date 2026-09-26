@@ -33,6 +33,16 @@
     "continue": "Continue",
     "clear": "Clear"
   },
+  "shape": {
+    "title": "Nail shape",
+    "hint": "Pick the shape you want; the master files it at the visit.",
+    "required": "Please pick a nail shape to continue.",
+    "square": "Square",
+    "almond": "Almond",
+    "round": "Round",
+    "stiletto": "Stiletto",
+    "line": "Nail shape: {{shape}}"
+  },
   "flow": {
     "rebookDropped": "Some services from that visit aren't offered anymore, so they were left out.",
     "title": "New booking",

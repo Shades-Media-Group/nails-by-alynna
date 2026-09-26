@@ -5,6 +5,7 @@ export { Card, CardLink } from './Card';
 export { Checkbox } from './Checkbox';
 export { Chip } from './Chip';
 export { EmptyState } from './EmptyState';
+export { FitText } from './FitText';
 export { IconButton, IconLink } from './IconButton';
 export { ListGroup, ListRow } from './ListRow';
 export { SegmentedControl } from './SegmentedControl';

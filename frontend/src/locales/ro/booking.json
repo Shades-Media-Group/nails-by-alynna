@@ -34,6 +34,16 @@
     "continue": "Continuă",
     "clear": "Golește"
   },
+  "shape": {
+    "title": "Forma unghiilor",
+    "hint": "Alege forma dorită; maestrul o pilește la vizită.",
+    "required": "Te rugăm să alegi forma unghiilor ca să continui.",
+    "square": "Pătrat",
+    "almond": "Migdală",
+    "round": "Rotund",
+    "stiletto": "Stiletto",
+    "line": "Forma unghiilor: {{shape}}"
+  },
   "flow": {
     "rebookDropped": "Unele servicii din acea vizită nu mai sunt oferite, așa că le-am scos.",
     "title": "Programare nouă",

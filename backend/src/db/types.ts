@@ -33,6 +33,10 @@ export type ServiceArt =
   | `length-${LengthLevel}`
   | `refill-${LengthLevel}`;
 
+/** The nail shapes a client can ask for when booking; the master files the nails to it at the visit. */
+export const NAIL_SHAPES = ['square', 'almond', 'round', 'stiletto'] as const;
+export type NailShape = (typeof NAIL_SHAPES)[number];
+
 export interface UserDoc {
   _id: ObjectId;
   email: string;
@@ -226,6 +230,8 @@ export interface AppointmentDoc {
   client: { name: string; surname: string; phone: string | null; email: string };
   staffId: ObjectId;
   services: AppointmentServiceLine[];
+  /** The nail shape the client asked for. Missing or null: none given (bookings from before shapes were asked, or staff left it open). */
+  nailShape?: NailShape | null;
   start: Date;
   end: Date;
   durationMin: number;
