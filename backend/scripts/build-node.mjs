@@ -2,8 +2,8 @@
 /**
  * Bundles the API into CommonJS files for Node.js hosting (host.md / Plesk Passenger).
  * Output: dist/node/{app.js, seed.js (+ maps), package.json, tmp/restart.txt}
- * No `npm install` is needed on the server — every dependency is inlined. The database only
- * accepts local connections there, so seeding runs on the server too:
+ * No `npm install` is needed on the server — every dependency is inlined. The database has no
+ * TLS, so its password stays on the server and seeding runs there too:
  *   Plesk → Node.js → Run Node.js commands → npm run seed -- --demo-users
  */
 import { execSync } from 'node:child_process';

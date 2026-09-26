@@ -60,7 +60,7 @@ yarn deploy api        # only the API (Node bundle over FTPS, then a restart)
 yarn deploy verify     # only the live checks (also: yarn deploy:verify)
 ```
 
-Add `--dry-run` to build and check without uploading. The API refuses to start in production with placeholder settings; `yarn --cwd backend check-env` shows what is missing. The API creates its tables on start; seed on the server (the database only accepts local connections): Plesk → Node.js → Run Node.js commands → `npm run seed -- --demo-users`.
+Add `--dry-run` to build and check without uploading. The API refuses to start in production with placeholder settings; `yarn --cwd backend check-env` shows what is missing. The API creates its tables on start; seed on the server (the database has no TLS, so its password stays there): Plesk → Node.js → Run Node.js commands → `npm run seed -- --demo-users`.
 
 ## iPhone notes
 

@@ -98,7 +98,7 @@ async function deployApi() {
     ['package.json', join(dist, 'package.json')],
     ['version.json', join(dist, 'version.json')],
     ['app.js.map', join(dist, 'app.js.map')],
-    // `npm run seed` on the server (host.md's PostgreSQL only accepts local connections).
+    // `npm run seed` on the server (host.md's PostgreSQL has no TLS; its password stays there).
     ['seed.js', join(dist, 'seed.js')],
     ['seed.js.map', join(dist, 'seed.js.map')],
     ['public/robots.txt', join(dist, 'public/robots.txt')],

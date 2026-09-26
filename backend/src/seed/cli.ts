@@ -11,8 +11,8 @@ import { runSeed } from './run';
  * Reads .env (or the real environment). Safe to run repeatedly; creates the tables it needs:
  *   ENV_FILE=.env.production yarn seed          (uses the production settings file)
  *   DATABASE_URL="postgres://…" SEED_ADMIN_EMAIL=… SEED_ADMIN_PASSWORD=… yarn seed
- * In production the bundled copy runs on the server (host.md's database only accepts local
- * connections): Plesk → Node.js → Run Node.js commands → `npm run seed -- --demo-users`.
+ * In production the bundled copy runs on the server (host.md's database has no TLS, so its
+ * password stays there): Plesk → Node.js → Run Node.js commands → `npm run seed -- --demo-users`.
  */
 
 async function main(): Promise<void> {
