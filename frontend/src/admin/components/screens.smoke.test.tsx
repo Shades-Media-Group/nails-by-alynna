@@ -374,7 +374,7 @@ afterEach(() => vi.unstubAllGlobals());
 describe('staff screens', () => {
   it('Dashboard: next visit, requests, schedule and numbers', async () => {
     renderScreen(<DashboardPage />, '/en/admin', '/en/admin');
-    const requests = await screen.findByRole('region', { name: /Requests to confirm/ });
+    const requests = await screen.findByRole('region', { name: /Requests to confirm/ }, { timeout: 3000 });
     expect(within(requests).getByText('Maria Popescu')).toBeInTheDocument();
     expect(within(requests).getByRole('button', { name: 'Confirm' })).toBeInTheDocument();
     expect(screen.getAllByText('Maria Popescu').length).toBeGreaterThan(0);

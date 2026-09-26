@@ -35,7 +35,12 @@ export function useSheetTurn(request: string | null, onTurn: () => void): void {
     };
     // Dialogs open and close through their `open` attribute; one can also leave the page open.
     const observer = new MutationObserver(check);
-    observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['open'] });
+    observer.observe(document.body, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['open'],
+    });
     check();
     return () => {
       observer.disconnect();

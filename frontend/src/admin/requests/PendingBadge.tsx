@@ -6,7 +6,13 @@ import { cx } from '@/lib/cx';
  * ("Today"): a peach count on the icon's corner in the phone's bar (its link is `relative`), at
  * the end of the row in the sidebar. Screen readers hear it with the label.
  */
-export function PendingBadge({ count, placement }: { count: number | undefined; placement: 'bar' | 'side' }) {
+export function PendingBadge({
+  count,
+  placement,
+}: {
+  count: number | undefined;
+  placement: 'bar' | 'side';
+}) {
   const { t } = useTranslation('admin');
   if (!count) return null;
   return (

@@ -33,7 +33,10 @@ export function PendingRequestsCard({ withMaster }: { withMaster: boolean }) {
   const search = next.toString();
 
   return (
-    <section aria-labelledby="requests-title" className="rounded-2xl bg-peach-50 p-3 ring-1 ring-inset ring-peach-100 sm:p-4">
+    <section
+      aria-labelledby="requests-title"
+      className="rounded-2xl bg-peach-50 p-4 ring-1 ring-inset ring-peach-100 sm:p-5"
+    >
       <div className="px-1">
         <h2 id="requests-title" className="flex items-center gap-2 text-h2 font-extrabold">
           {t('dashboard.requests')}
@@ -41,12 +44,13 @@ export function PendingRequestsCard({ withMaster }: { withMaster: boolean }) {
             {total}
           </span>
         </h2>
-        <p className="mt-1 text-sm text-ink-700">{t('dashboard.requestsHint')}</p>
+        <p className="mt-1 text-sm text-peach-800">{t('dashboard.requestsHint')}</p>
       </div>
       <RequestList
         requests={all ? appointments : appointments.slice(0, FIRST)}
         withMaster={withMaster && scope === 'all'}
-        className={cx('mt-3', !all && 'max-md:[&>li:nth-child(3)]:hidden')}
+        tone="peach"
+        className={cx('mt-4 px-1', !all && 'max-md:[&>li:nth-child(3)]:hidden')}
       />
       {total > 2 ? (
         <Link
@@ -55,7 +59,7 @@ export function PendingRequestsCard({ withMaster }: { withMaster: boolean }) {
           preventScrollReset
           // Wider screens show three, so there a third request needs no "See all".
           className={cx(
-            'press group mt-2 flex h-11 w-full items-center justify-center gap-1 rounded-xl text-[0.9375rem] font-semibold text-ink-900 hover:bg-peach-100',
+            'press group/all mt-3 flex h-11 w-full items-center justify-center gap-1 rounded-xl text-[0.9375rem] font-semibold text-ink-900 hover:bg-peach-100',
             !all && total <= FIRST && 'md:hidden',
           )}
         >
@@ -63,7 +67,10 @@ export function PendingRequestsCard({ withMaster }: { withMaster: boolean }) {
           {all ? (
             <ExpandMoreIcon fontSize="inherit" className="rotate-180 text-xl" />
           ) : (
-            <ChevronRightIcon fontSize="inherit" className="text-xl transition-transform duration-200 ease-(--ease-out) group-hover:translate-x-0.5" />
+            <ChevronRightIcon
+              fontSize="inherit"
+              className="text-xl transition-transform duration-200 ease-(--ease-out) group-hover/all:translate-x-0.5"
+            />
           )}
         </Link>
       ) : null}

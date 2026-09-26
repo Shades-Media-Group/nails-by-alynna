@@ -1,6 +1,13 @@
 import { ObjectId } from 'bson';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createTestContext, loginAs, registerClient, strongPassword, type TestClient, type TestContext } from './helpers';
+import {
+  createTestContext,
+  loginAs,
+  registerClient,
+  strongPassword,
+  type TestClient,
+  type TestContext,
+} from './helpers';
 
 /*
  * GET /api/admin/appointments/pending: the requests the studio still has to answer, for the
@@ -23,19 +30,40 @@ async function makeStaff(email: string, name: string) {
 }
 
 /** A booking made at the desk `minutesLater` than Monday 09:00 (its "sent" time). */
-async function book(minutesLater: number, staffId: string, start: string, status: 'pending' | 'confirmed' = 'pending') {
+async function book(
+  minutesLater: number,
+  staffId: string,
+  start: string,
+  status: 'pending' | 'confirmed' = 'pending',
+) {
   ctx.setNow(new Date(MONDAY_9.getTime() + minutesLater * 60_000));
-  const res = await owner.post('/api/admin/appointments', { clientId, serviceIds: [gelId], staffId, start, status, force: true, nailShape: 'almond' });
+  const res = await owner.post('/api/admin/appointments', {
+    clientId,
+    serviceIds: [gelId],
+    staffId,
+    start,
+    status,
+    force: true,
+    nailShape: 'almond',
+  });
   expect(res.status).toBe(201);
   return res.body.appointment.id as string;
 }
 
-const ids = (res: { body: { appointments: Array<{ id: string }> } }) => res.body.appointments.map((a) => a.id);
+const ids = (res: { body: { appointments: Array<{ id: string }> } }) =>
+  res.body.appointments.map((a) => a.id);
 
 beforeAll(async () => {
   ctx = await createTestContext();
   // The seeded owner is also the studio's first master (Alina).
-  await ctx.seed({ admin: { email: 'owner@example.com', password: strongPassword, name: 'Alina', surname: 'Owner' } });
+  await ctx.seed({
+    admin: {
+      email: 'owner@example.com',
+      password: strongPassword,
+      name: 'Alina',
+      surname: 'Owner',
+    },
+  });
   owner = await loginAs(ctx, 'owner@example.com', strongPassword);
   const catalog = await ctx.client().get('/api/catalog');
   gelId = catalog.body.services.find((s: { slug: string }) => s.slug === 'gel-polish').id;
@@ -59,7 +87,13 @@ describe('pending requests', () => {
     const master = await makeStaff('irina@example.com', 'Irina');
     const alina = (await ctx.deps.col.staff.findOne({ _id: new ObjectId(alinaId) }))!;
     const profile = new ObjectId();
-    await ctx.deps.col.staff.insertOne({ ...alina, _id: profile, name: 'Irina', userId: new ObjectId(master.id), order: 2 });
+    await ctx.deps.col.staff.insertOne({
+      ...alina,
+      _id: profile,
+      name: 'Irina',
+      userId: new ObjectId(master.id),
+      order: 2,
+    });
     irinaId = profile.toHexString();
     irina = master.client;
     // Reception: staff with no master profile of their own.
@@ -104,15 +138,31 @@ describe('pending requests', () => {
   });
 
   it('drops a request once it is answered, and once its visit is over', async () => {
-    expect((await owner.patch(`/api/admin/appointments/${tuesday}`, { status: 'confirmed' })).status).toBe(200);
-    expect((await irina.patch(`/api/admin/appointments/${forIrina}`, { status: 'cancelled', cancelReason: 'Fully booked' })).status).toBe(200);
+    expect(
+      (await owner.patch(`/api/admin/appointments/${tuesday}`, { status: 'confirmed' })).status,
+    ).toBe(200);
+    expect(
+      (
+        await irina.patch(`/api/admin/appointments/${forIrina}`, {
+          status: 'cancelled',
+          cancelReason: 'Fully booked',
+        })
+      ).status,
+    ).toBe(200);
     expect(ids(await owner.get('/api/admin/appointments/pending'))).toEqual([today]);
-    expect((await irina.get('/api/admin/appointments/pending')).body).toMatchObject({ appointments: [], total: 0 });
+    expect((await irina.get('/api/admin/appointments/pending')).body).toMatchObject({
+      appointments: [],
+      total: 0,
+    });
 
     // Today's 11:00 visit (90 minutes) is over at 12:30: nothing left to confirm.
     ctx.setNow(new Date('2026-06-01T09:31:00Z'));
     expect((await owner.post('/api/auth/refresh')).status).toBe(200);
-    expect((await owner.get('/api/admin/appointments/pending')).body).toMatchObject({ appointments: [], total: 0, scope: 'all' });
+    expect((await owner.get('/api/admin/appointments/pending')).body).toMatchObject({
+      appointments: [],
+      total: 0,
+      scope: 'all',
+    });
   });
 
   it('is for staff only', async () => {

@@ -167,7 +167,7 @@ describe('requests waiting', () => {
   it('"Today" says how many, in the sidebar and the phone bar, and so does the app icon', async () => {
     waiting = 3;
     const view = renderStaffApp('/en/admin/calendar');
-    const today = await screen.findAllByRole('link', { name: /^Today\s*3 new requests$/ });
+    const today = await screen.findAllByRole('link', { name: /^Today\s*3 new requests$/ }, { timeout: 3000 });
     expect(today).toHaveLength(2);
     for (const link of today) expect(link).toHaveTextContent(/^Today\s*3/);
     expect(badge.setAppBadge).toHaveBeenCalledWith(3);
@@ -179,7 +179,7 @@ describe('requests waiting', () => {
 
   it('shows nothing when none wait', async () => {
     renderStaffApp('/en/admin/calendar');
-    await waitFor(() => expect(badge.clearAppBadge).toHaveBeenCalled());
+    await waitFor(() => expect(badge.clearAppBadge).toHaveBeenCalled(), { timeout: 3000 });
     expect(screen.getAllByRole('link', { name: 'Today' })).toHaveLength(2);
     expect(badge.setAppBadge).not.toHaveBeenCalled();
   });

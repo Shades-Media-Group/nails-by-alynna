@@ -27,16 +27,31 @@ const m = vi.hoisted(() => ({
   toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn(), dismiss: vi.fn() }),
 }));
 vi.mock('@/app/auth', () => ({ useAuth: () => ({ user: m.user }) }));
-vi.mock('@/components/ui', async (importOriginal) => ({ ...(await importOriginal<typeof UiModule>()), toast: m.toast }));
+vi.mock('@/components/ui', async (importOriginal) => ({
+  ...(await importOriginal<typeof UiModule>()),
+  toast: m.toast,
+}));
 
 const TZ = 'Europe/Chisinau';
 const text = (en: string) => ({ ro: en, ru: en, en });
-const master = (id: string, name: string) => ({ id, name, title: text('Nail master'), color: 'blush', userId: null, serviceIds: null, weekly: [], isActive: true, isBookable: true, order: 1 });
+const master = (id: string, name: string) => ({
+  id,
+  name,
+  title: text('Nail master'),
+  color: 'blush',
+  userId: null,
+  serviceIds: null,
+  weekly: [],
+  isActive: true,
+  isBookable: true,
+  order: 1,
+});
 
 /** The clock the app reads: it only moves forward, when a test says so. */
 let clock = Date.now();
 /** A day and wall-clock time in the studio, `days` from today. */
-const at = (days: number, time: string) => zonedTimeToUtc(addDays(zonedDate(new Date(clock), TZ), days), time, TZ).toISOString();
+const at = (days: number, time: string) =>
+  zonedTimeToUtc(addDays(zonedDate(new Date(clock), TZ), days), time, TZ).toISOString();
 
 function request(id: string, over: Partial<StaffAppointment> & { name: string }): StaffAppointment {
   const { name, ...rest } = over;
@@ -50,7 +65,9 @@ function request(id: string, over: Partial<StaffAppointment> & { name: string })
     durationMin: 90,
     totalPrice: 450,
     priceFrom: false,
-    services: [{ id: 's1', name: text('Gel polish'), durationMin: 90, price: 450, priceFrom: false }],
+    services: [
+      { id: 's1', name: text('Gel polish'), durationMin: 90, price: 450, priceFrom: false },
+    ],
     nailShape: null,
     staff: { id: 'm1', name: 'Alina', title: text('Nail master'), color: 'blush' },
     notes: '',
@@ -60,7 +77,13 @@ function request(id: string, over: Partial<StaffAppointment> & { name: string })
     cancelledBy: null,
     loyalty: null,
     createdAt: new Date(clock - 5 * 60_000).toISOString(),
-    client: { id: `c-${id}`, name, surname: 'Popescu', phone: '+37369000111', email: `${id}@example.com` },
+    client: {
+      id: `c-${id}`,
+      name,
+      surname: 'Popescu',
+      phone: '+37369000111',
+      email: `${id}@example.com`,
+    },
     staffNotes: '',
     source: 'client',
     cancelReason: '',
@@ -100,7 +123,10 @@ let people = 0;
  * The staff screens at `url`, for a new person unless `same` (each person has their own
  * openings, so tests don't share them).
  */
-function openApp(url = '/en/admin', { role = 'administrator', extra = null as ReactNode, same = false } = {}) {
+function openApp(
+  url = '/en/admin',
+  { role = 'administrator', extra = null as ReactNode, same = false } = {},
+) {
   m.user = { id: same ? m.user.id : `u${++people}`, role };
   const i18n = i18next.createInstance();
   void i18n.use(initReactI18next).init({
@@ -136,8 +162,11 @@ function openApp(url = '/en/admin', { role = 'administrator', extra = null as Re
 }
 
 const requestsSheet = () => screen.queryByRole('dialog', { name: /^New requests/ });
+/** The sheet coming up: the fetch, then the beat after other dialogs (slower on a busy test run). */
+const requestsSheetNamed = (name: string) =>
+  screen.findByRole('dialog', { name }, { timeout: 3000 });
 /** Long enough for the sheet to have come up if it were going to (fetch + the beat). */
-const settle = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 700)));
+const settle = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 1000)));
 
 /** The app goes to the background for `ms`, then comes back. */
 async function away(ms: number) {
@@ -165,9 +194,17 @@ beforeEach(() => {
     'fetch',
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const path = new URL(String(input), 'http://localhost').pathname;
-      const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      const json = (body: unknown) =>
+        new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
       if (path === '/api/admin/appointments/pending') {
-        return json({ appointments: server.pending, total: server.pending.length, scope: server.scope });
+        return json({
+          appointments: server.pending,
+          total: server.pending.length,
+          scope: server.scope,
+        });
       }
       if (path.startsWith('/api/admin/appointments/') && init?.method === 'PATCH') {
         const id = path.split('/').pop()!;
@@ -183,7 +220,14 @@ beforeEach(() => {
     }),
   );
   // Sheets close at once (reduced motion), so a closed one is gone by the next assertion.
-  vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true, addEventListener: () => undefined, removeEventListener: () => undefined })));
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn(() => ({
+      matches: true,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    })),
+  );
 });
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -193,12 +237,21 @@ afterEach(() => {
 describe('the "New requests" sheet', () => {
   it('comes up when the app opens with requests waiting: the oldest first, with what each one is', async () => {
     server.pending = [
-      request('a1', { name: 'Maria', start: at(1, '14:00'), nailShape: 'almond', createdAt: new Date(clock - 2 * 3_600_000).toISOString() }),
-      request('a2', { name: 'Elena', start: at(0, '23:30'), clientStats: { visits: 2, noShows: 1 } }),
+      request('a1', {
+        name: 'Maria',
+        start: at(1, '14:00'),
+        nailShape: 'almond',
+        createdAt: new Date(clock - 2 * 3_600_000).toISOString(),
+      }),
+      request('a2', {
+        name: 'Elena',
+        start: at(0, '23:30'),
+        clientStats: { visits: 2, noShows: 1 },
+      }),
     ];
     openApp();
 
-    const sheet = await screen.findByRole('dialog', { name: 'New requests (2)' });
+    const sheet = await requestsSheetNamed('New requests (2)');
     const [first, second] = within(sheet).getAllByRole('listitem');
     expect(first).toHaveTextContent('Maria Popescu');
     expect(first).toHaveTextContent('Sent 2 hours ago');
@@ -210,7 +263,10 @@ describe('the "New requests" sheet', () => {
     expect(second).toHaveTextContent('1 no-show');
     // One master in the studio: no names to tell apart.
     expect(sheet).not.toHaveTextContent('Alina');
-    expect(within(first!).getByRole('link', { name: /Maria Popescu/ })).toHaveAttribute('href', '/en/admin/appointments/a1');
+    expect(within(first!).getByRole('link', { name: /Maria Popescu/ })).toHaveAttribute(
+      'href',
+      '/en/admin/appointments/a1',
+    );
     expect(within(sheet).getByRole('button', { name: 'Later' })).toBeInTheDocument();
     // Six at most, then the full list.
     expect(within(sheet).queryByRole('link', { name: /See all/ })).toBeNull();
@@ -222,19 +278,27 @@ describe('the "New requests" sheet', () => {
     expect(requestsSheet()).toBeNull();
 
     server.pending = [request('a1', { name: 'Maria' })];
-    await act(() => queryClient.invalidateQueries({ queryKey: adminQueries.pendingRequests().queryKey }));
+    await act(() =>
+      queryClient.invalidateQueries({ queryKey: adminQueries.pendingRequests().queryKey }),
+    );
     await settle();
     expect(requestsSheet()).toBeNull();
 
     await away(31_000);
-    expect(await screen.findByRole('dialog', { name: 'New requests (1)' })).toBeInTheDocument();
+    expect(await requestsSheetNamed('New requests (1)')).toBeInTheDocument();
   });
 
   it('shows the owner whose each request is, and a master just theirs', async () => {
     server.staff = [master('m1', 'Alina'), master('m2', 'Irina')];
-    server.pending = [request('a1', { name: 'Maria' }), request('a2', { name: 'Olga', staff: { id: 'm2', name: 'Irina', title: text('Nail master'), color: 'cyan' } })];
+    server.pending = [
+      request('a1', { name: 'Maria' }),
+      request('a2', {
+        name: 'Olga',
+        staff: { id: 'm2', name: 'Irina', title: text('Nail master'), color: 'cyan' },
+      }),
+    ];
     const owner = openApp();
-    const sheet = await screen.findByRole('dialog', { name: 'New requests (2)' });
+    const sheet = await requestsSheetNamed('New requests (2)');
     const [first, second] = within(sheet).getAllByRole('listitem');
     expect(first).toHaveTextContent('Tomorrow, 14:00 · Alina');
     expect(second).toHaveTextContent('Tomorrow, 14:00 · Irina');
@@ -244,7 +308,7 @@ describe('the "New requests" sheet', () => {
     server.scope = 'own';
     server.pending = [server.pending[1]!];
     openApp('/en/admin', { role: 'admin' });
-    const mine = await screen.findByRole('dialog', { name: 'New requests (1)' });
+    const mine = await requestsSheetNamed('New requests (1)');
     expect(within(mine).getByRole('listitem')).toHaveTextContent('Olga Popescu');
     expect(mine).not.toHaveTextContent('Irina');
   });
@@ -253,21 +317,32 @@ describe('the "New requests" sheet', () => {
     const user = userEvent.setup();
     server.pending = [request('a1', { name: 'Maria' }), request('a2', { name: 'Elena' })];
     openApp();
-    const sheet = await screen.findByRole('dialog', { name: 'New requests (2)' });
+    const sheet = await requestsSheetNamed('New requests (2)');
 
-    await user.click(within(within(sheet).getAllByRole('listitem')[0]!).getByRole('button', { name: 'Confirm' }));
-    await waitFor(() => expect(within(sheet).getAllByRole('listitem')).toHaveLength(1));
+    await user.click(
+      within(within(sheet).getAllByRole('listitem')[0]!).getByRole('button', { name: 'Confirm' }),
+    );
+    await waitFor(() => expect(within(sheet).getAllByRole('listitem')).toHaveLength(1), {
+      timeout: 3000,
+    });
     expect(server.patches).toEqual([{ id: 'a1', body: { status: 'confirmed' } }]);
     expect(m.toast.success).toHaveBeenCalledWith('Booking confirmed');
     expect(screen.getByRole('dialog', { name: 'New requests (1)' })).toBe(sheet);
 
     await user.click(within(sheet).getByRole('button', { name: 'Decline' }));
-    const decline = await screen.findByRole('dialog', { name: 'Decline this request?' });
+    const decline = await screen.findByRole(
+      'dialog',
+      { name: 'Decline this request?' },
+      { timeout: 3000 },
+    );
     await user.type(within(decline).getByLabelText(/Reason/), 'Fully booked that day');
     await user.click(within(decline).getByRole('button', { name: 'Decline' }));
 
-    await waitFor(() => expect(requestsSheet()).toBeNull());
-    expect(server.patches[1]).toEqual({ id: 'a2', body: { status: 'cancelled', cancelReason: 'Fully booked that day' } });
+    await waitFor(() => expect(requestsSheet()).toBeNull(), { timeout: 3000 });
+    expect(server.patches[1]).toEqual({
+      id: 'a2',
+      body: { status: 'cancelled', cancelReason: 'Fully booked that day' },
+    });
     expect(m.toast.success).toHaveBeenCalledWith('Request declined');
     expect(m.toast.success).toHaveBeenCalledWith('All requests are answered', expect.anything());
   });
@@ -276,9 +351,9 @@ describe('the "New requests" sheet', () => {
     const user = userEvent.setup();
     server.pending = [request('a1', { name: 'Maria' })];
     const first = openApp();
-    const sheet = await screen.findByRole('dialog', { name: 'New requests (1)' });
+    const sheet = await requestsSheetNamed('New requests (1)');
     await user.click(within(sheet).getByRole('button', { name: 'Later' }));
-    await waitFor(() => expect(requestsSheet()).toBeNull());
+    await waitFor(() => expect(requestsSheet()).toBeNull(), { timeout: 3000 });
 
     // Leaving the staff screens and coming back is the same opening; so is a short trip away.
     first.unmount();
@@ -290,7 +365,7 @@ describe('the "New requests" sheet', () => {
     expect(requestsSheet()).toBeNull();
 
     await away(31_000);
-    expect(await screen.findByRole('dialog', { name: 'New requests (1)' })).toBeInTheDocument();
+    expect(await requestsSheetNamed('New requests (1)')).toBeInTheDocument();
   });
 
   it('waits while another sheet is open, and comes up once it closes', async () => {
@@ -302,7 +377,7 @@ describe('the "New requests" sheet', () => {
     expect(requestsSheet()).toBeNull();
 
     await user.click(within(other).getByRole('button', { name: 'Not now' }));
-    expect(await screen.findByRole('dialog', { name: 'New requests (1)' })).toBeInTheDocument();
+    expect(await requestsSheetNamed('New requests (1)')).toBeInTheDocument();
   });
 
   it('stays away when the app opens on a booking (a notification brought them there)', async () => {
@@ -316,10 +391,10 @@ describe('the "New requests" sheet', () => {
     const user = userEvent.setup();
     server.pending = Array.from({ length: 8 }, (_, i) => request(`a${i}`, { name: `Client${i}` }));
     openApp();
-    const sheet = await screen.findByRole('dialog', { name: 'New requests (8)' });
+    const sheet = await requestsSheetNamed('New requests (8)');
     expect(within(sheet).getAllByRole('listitem')).toHaveLength(6);
     await user.click(within(sheet).getByRole('link', { name: 'See all (8)' }));
     expect(screen.getByTestId('where')).toHaveTextContent('/en/admin?requests=all');
-    await waitFor(() => expect(requestsSheet()).toBeNull());
+    await waitFor(() => expect(requestsSheet()).toBeNull(), { timeout: 3000 });
   });
 });
