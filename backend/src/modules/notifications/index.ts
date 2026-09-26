@@ -5,6 +5,6 @@
 export { notifyLoyaltyNext, notifyWelcome } from './account';
 export { notifyBookingChange, notifyStaffOfBooking, notifyUser, type BookingChange, type StaffBookingEvent } from './booking';
 export { deliver, type DeliveryOutcome } from './deliver';
-export { DEFAULT_PREFS, resolvePrefs } from './prefs';
+export { DEFAULT_PREFS, loyaltyEmailOnce, resolvePrefs } from './prefs';
 export { notificationRoutes } from './routes';
 export { runDueNotifications, runNotificationsExclusive, startNotificationScheduler, type TickSummary } from './scheduler';

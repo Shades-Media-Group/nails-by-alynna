@@ -73,7 +73,7 @@ async function client(prefs?: Record<string, unknown>) {
 }
 
 describe('notification preferences', () => {
-  it('start with reminders and booking updates on, and news off', async () => {
+  it('start with reminders, booking updates and the loyalty card on (email and app), and news off', async () => {
     const { client: c, user } = await registerClient(ctx);
     const res = await c.get('/api/notifications');
     expect(res.status).toBe(200);
@@ -83,7 +83,7 @@ describe('notification preferences', () => {
         bookingUpdates: { email: true, push: true },
         // Only staff see this one in Settings; it tells them about clients' bookings.
         staffBookings: { email: true, push: true },
-        loyalty: { email: false, push: true },
+        loyalty: { email: true, push: true },
         marketing: { email: false, push: false, consentAt: null },
       },
       email: { address: user.email, available: true },
@@ -107,6 +107,24 @@ describe('notification preferences', () => {
 
     // Everything else kept its value.
     expect((await c.get('/api/notifications')).body.prefs.reminders.leadMinutes).toEqual([60, 1440]);
+  });
+
+  it('turn loyalty emails on once for accounts saved while they were off by default', async () => {
+    const { client: c } = await registerClient(ctx);
+    // Saved while loyalty emails were off, with a news opt-in the switch must keep.
+    expect((await c.patch('/api/notifications/prefs', { loyalty: { email: false }, marketing: { email: true } })).status).toBe(200);
+    await ctx.deps.col.meta.deleteOne({ _id: 'loyaltyEmailDefault' });
+    const { loyaltyEmailOnce } = await import('../src/modules/notifications');
+    await loyaltyEmailOnce(ctx.deps);
+    let prefs = (await c.get('/api/notifications')).body.prefs;
+    expect(prefs.loyalty).toEqual({ email: true, push: true });
+    expect(prefs.marketing.email).toBe(true);
+
+    // Only once: switched off again afterwards, it stays off.
+    expect((await c.patch('/api/notifications/prefs', { loyalty: { email: false } })).status).toBe(200);
+    await loyaltyEmailOnce(ctx.deps);
+    prefs = (await c.get('/api/notifications')).body.prefs;
+    expect(prefs.loyalty.email).toBe(false);
   });
 });
 
