@@ -99,28 +99,28 @@ export default function AppointmentPage() {
   };
   const restore = () =>
     setStatus.mutate(
-      { id: a.id, status: 'confirmed', toast: 'restored' },
+      { id: a.id, status: 'confirmed', toast: 'restored', from: a.status },
       { onError: (error) => (isApiError(error, 'SLOT_TAKEN') ? setSheet('restoreForce') : undefined) },
     );
 
   const actions: Action[] = [];
   if (a.status === 'pending') {
-    actions.push({ key: 'confirm', label: t('appointment.confirm'), variant: 'primary', loading: busy('confirmed'), onClick: () => setStatus.mutate({ id: a.id, status: 'confirmed' }) });
+    actions.push({ key: 'confirm', label: t('appointment.confirm'), variant: 'primary', loading: busy('confirmed'), onClick: () => setStatus.mutate({ id: a.id, status: 'confirmed', from: a.status }) });
     actions.push({ key: 'decline', label: t('appointment.decline'), variant: 'outline', danger: true, onClick: () => open('cancel') });
     actions.push({ key: 'reschedule', label: t('appointment.reschedule'), variant: 'soft', onClick: () => open('reschedule') });
   } else if (a.status === 'confirmed') {
     if (started) {
-      actions.push({ key: 'complete', label: t('appointment.complete'), variant: 'primary', loading: busy('completed'), onClick: () => setStatus.mutate({ id: a.id, status: 'completed' }) });
+      actions.push({ key: 'complete', label: t('appointment.complete'), variant: 'primary', loading: busy('completed'), onClick: () => setStatus.mutate({ id: a.id, status: 'completed', from: a.status }) });
       actions.push({ key: 'noShow', label: t('appointment.noShow'), variant: 'outline', onClick: () => open('noShow') });
     }
     actions.push({ key: 'reschedule', label: t('appointment.reschedule'), variant: started ? 'soft' : 'primary', onClick: () => open('reschedule') });
     actions.push({ key: 'cancel', label: t('appointment.cancel'), variant: 'outline', danger: true, onClick: () => open('cancel') });
   } else if (a.status === 'completed') {
     actions.push({ key: 'noShow', label: t('appointment.noShow'), variant: 'outline', onClick: () => open('noShow') });
-    actions.push({ key: 'reopen', label: t('appointment.reopen'), variant: 'ghost', loading: busy('confirmed'), onClick: () => setStatus.mutate({ id: a.id, status: 'confirmed', toast: 'reopened' }) });
+    actions.push({ key: 'reopen', label: t('appointment.reopen'), variant: 'ghost', loading: busy('confirmed'), onClick: () => setStatus.mutate({ id: a.id, status: 'confirmed', toast: 'reopened', from: a.status }) });
   } else if (a.status === 'no_show') {
-    actions.push({ key: 'complete', label: t('appointment.complete'), variant: 'outline', loading: busy('completed'), onClick: () => setStatus.mutate({ id: a.id, status: 'completed' }) });
-    actions.push({ key: 'reopen', label: t('appointment.reopen'), variant: 'ghost', loading: busy('confirmed'), onClick: () => setStatus.mutate({ id: a.id, status: 'confirmed', toast: 'reopened' }) });
+    actions.push({ key: 'complete', label: t('appointment.complete'), variant: 'outline', loading: busy('completed'), onClick: () => setStatus.mutate({ id: a.id, status: 'completed', from: a.status }) });
+    actions.push({ key: 'reopen', label: t('appointment.reopen'), variant: 'ghost', loading: busy('confirmed'), onClick: () => setStatus.mutate({ id: a.id, status: 'confirmed', toast: 'reopened', from: a.status }) });
   } else {
     actions.push({ key: 'restore', label: t('appointment.restore'), variant: 'primary', loading: busy('confirmed'), onClick: restore });
   }
@@ -174,7 +174,7 @@ export default function AppointmentPage() {
         open={sheet === 'cancel'}
         onClose={() => setSheet(null)}
         onConfirm={() =>
-          setStatus.mutate({ id: a.id, status: 'cancelled', cancelReason: reason.trim(), toast: a.status === 'pending' ? 'declined' : 'cancelled' })
+          setStatus.mutate({ id: a.id, status: 'cancelled', cancelReason: reason.trim(), toast: a.status === 'pending' ? 'declined' : 'cancelled', from: a.status })
         }
         title={a.status === 'pending' ? t('appointment.declineTitle') : t('appointment.cancelTitle')}
         description={a.status === 'pending' ? t('appointment.declineText', { name: fullName(a.client) }) : t('appointment.cancelText', { name: fullName(a.client) })}
@@ -196,7 +196,7 @@ export default function AppointmentPage() {
       <ConfirmSheet
         open={sheet === 'noShow'}
         onClose={() => setSheet(null)}
-        onConfirm={() => setStatus.mutate({ id: a.id, status: 'no_show' })}
+        onConfirm={() => setStatus.mutate({ id: a.id, status: 'no_show', from: a.status })}
         title={t('appointment.noShowTitle')}
         description={t('appointment.noShowText', { name: fullName(a.client) })}
         confirmLabel={t('appointment.noShowConfirm')}
@@ -207,7 +207,7 @@ export default function AppointmentPage() {
       <ConfirmSheet
         open={sheet === 'restoreForce'}
         onClose={() => setSheet(null)}
-        onConfirm={() => setStatus.mutate({ id: a.id, status: 'confirmed', force: true, toast: 'restored' })}
+        onConfirm={() => setStatus.mutate({ id: a.id, status: 'confirmed', force: true, toast: 'restored', from: a.status })}
         title={t('appointment.restoreTakenTitle')}
         description={t('appointment.restoreTakenText')}
         confirmLabel={t('appointment.restoreAnyway')}

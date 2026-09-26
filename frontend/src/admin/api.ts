@@ -329,7 +329,10 @@ export const adminApi = {
   appointment: (id: string) => api.get<{ appointment: StaffAppointment }>(`/admin/appointments/${id}`).then((r) => r.appointment),
   createAppointment: (input: NewAppointmentInput) =>
     api.post<{ appointment: StaffAppointment }>('/admin/appointments', input).then((r) => r.appointment),
-  updateAppointment: (id: string, input: { status?: AppointmentStatus; staffNotes?: string; notes?: string; cancelReason?: string; force?: boolean }) =>
+  updateAppointment: (
+    id: string,
+    input: { status?: AppointmentStatus; staffNotes?: string; notes?: string; cancelReason?: string; force?: boolean; from?: AppointmentStatus },
+  ) =>
     api.patch<{ appointment: StaffAppointment }>(`/admin/appointments/${id}`, input).then((r) => r.appointment),
   /** staffId null keeps the current master. */
   rescheduleAppointment: (id: string, input: { start: string; staffId: string | null; force?: boolean }) =>

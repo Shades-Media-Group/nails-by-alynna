@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from '@/components/ui';
 import { useStudio } from '@/hooks/useStudio';
 import { zonedDate } from '@/lib/format';
+import { ApiError } from '@/services/api/client';
 import type { AppointmentStatus, StaffAppointment } from '@/types/api';
 import { adminApi, adminQueries, type AdminCategory, type AdminService } from '../api';
 
@@ -77,6 +78,8 @@ export interface StatusChange {
   cancelReason?: string;
   /** Restore a cancelled booking even if its time was taken meanwhile. */
   force?: boolean;
+  /** The status on screen: the server refuses the change if the booking moved on since. */
+  from?: AppointmentStatus;
   /** admin:appointment.toast.<key>; defaults to the new status. */
   toast?: string;
 }
@@ -87,12 +90,19 @@ export function useStatusChange(onDone?: (updated: StaffAppointment, change: Sta
   const queryClient = useQueryClient();
   const refresh = useRefreshBookings();
   return useMutation({
-    mutationFn: ({ id, status, cancelReason, force }: StatusChange) => adminApi.updateAppointment(id, { status, cancelReason, force }),
+    mutationFn: ({ id, status, cancelReason, force, from }: StatusChange) =>
+      adminApi.updateAppointment(id, { status, cancelReason, force, from }),
     onSuccess: (updated, change) => {
       queryClient.setQueryData(adminQueries.appointment(updated.id).queryKey, updated);
       refresh(updated.client.id);
       toast.success(t(`appointment.toast.${change.toast ?? change.status}`));
       onDone?.(updated, change);
+    },
+    onError: (error, change) => {
+      // It moved on meanwhile (the client cancelled, someone else answered): show it as it is now.
+      if (!(error instanceof ApiError && error.code === 'CONFLICT')) return;
+      void queryClient.invalidateQueries({ queryKey: adminQueries.appointment(change.id).queryKey });
+      void queryClient.invalidateQueries({ queryKey: adminQueries.pendingRequests().queryKey });
     },
   });
 }

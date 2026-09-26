@@ -253,6 +253,8 @@ export function adminAppointmentRoutes(deps: AppDeps) {
     /** The client changed her mind about the shape; null clears it. */
     nailShape: nailShapeSchema.nullable().optional(),
     force: z.boolean().default(false),
+    /** The status the screen showed: the change is refused if the booking moved on since. */
+    from: STATUS.optional(),
   });
 
   app.patch('/:id', async (c) => {
@@ -261,6 +263,11 @@ export function adminAppointmentRoutes(deps: AppDeps) {
     const input = await parseJson(c, patchSchema);
     const doc = await deps.col.appointments.findOne({ _id: id });
     if (!doc) throw notFound('Appointment');
+    // A list open for a while can be stale: a request the client cancelled meanwhile must not
+    // come back confirmed from its old row.
+    if (input.from && input.from !== doc.status) {
+      throw new AppError(409, 'CONFLICT', 'Appointment changed meanwhile; reload and retry');
+    }
     const now = deps.now();
     const set: Partial<AppointmentDoc> = { updatedAt: now };
     let promoChange: PromoStatusChange | null = null;

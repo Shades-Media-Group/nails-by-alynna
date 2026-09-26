@@ -28,6 +28,7 @@
         z-index: 1000;
         display: grid;
         place-items: center;
+        container-type: size;
         background: #fde7fc;
         transition: opacity 480ms cubic-bezier(0.22, 1, 0.36, 1), visibility 0s linear 480ms;
       }
@@ -35,24 +36,26 @@
       /* Back within the same session (see splashGate.ts): no splash, straight to the app. */
       html[data-splash='skip'] { background: #fff; }
       html[data-splash='skip'] #splash { display: none; }
+      /* The logo sits exactly where the launch image (apple-touch-startup-image) drew it, so it
+         never moves: same size (SPLASH_LOGO in scripts/brand-assets.mjs: 46% of the screen's
+         width, at most 240px wide and 30% of its height), centred on the whole screen. The iOS
+         Home Screen app lays the page out below the status bar, so the gate (splashGate.ts) sets
+         --splash-status-bar and the logo moves up by half of it. The splash itself keeps to the
+         page's top edge: iOS paints the status bar in its colour. */
       .splash__logo {
-        width: min(46vw, 240px, calc(30vh * 1.065));
+        width: min(46cqw, 240px);
+        max-height: calc((100cqh + var(--splash-status-bar, 0px)) * 0.3);
         height: auto;
-        animation: splash-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+        translate: 0 calc(var(--splash-status-bar, 0px) / -2);
       }
       .splash__gloss {
         transform: translateX(0) skewX(-18deg);
         animation: splash-gloss 1200ms 450ms cubic-bezier(0.45, 0, 0.2, 1) both;
       }
-      @keyframes splash-in {
-        from { opacity: 0; transform: translateY(6px) scale(0.96); }
-        to { opacity: 1; transform: none; }
-      }
       @keyframes splash-gloss {
         to { transform: translateX(1500px) skewX(-18deg); }
       }
       @media (prefers-reduced-motion: reduce) {
-        .splash__logo, .splash__gloss { animation: none; }
         .splash__gloss { display: none; }
       }
     </style>
