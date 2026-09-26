@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import { ObjectId } from 'bson';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { migrateNotifications } from '../src/db';
 import type { UserDoc } from '../src/db/types';

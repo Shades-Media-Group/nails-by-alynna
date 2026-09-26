@@ -228,7 +228,7 @@ describe('Google configuration', () => {
   const base = {
     APP_ENV: 'production',
     APP_URL: 'https://app.nails.example',
-    MONGODB_URI: 'mongodb://127.0.0.1:27017',
+    DATABASE_URL: 'postgres://127.0.0.1:5432/nails_by_alynna',
     JWT_SECRET: 'x'.repeat(48),
   };
 

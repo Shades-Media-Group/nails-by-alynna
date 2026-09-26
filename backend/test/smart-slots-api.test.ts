@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import { ObjectId } from 'bson';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { minutesToTime, timeToMinutes } from '../src/lib/time';
 import { invalidateSettingsCache } from '../src/modules/settings';

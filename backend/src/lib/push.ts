@@ -1,4 +1,4 @@
-import type { ObjectId } from 'mongodb';
+import type { ObjectId } from 'bson';
 import webpush from 'web-push';
 import type { AppConfig } from '../config';
 import type { AppDeps } from '../context';

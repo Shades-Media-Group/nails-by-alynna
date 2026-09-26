@@ -1,4 +1,4 @@
-import type { ObjectId } from 'mongodb';
+import type { ObjectId } from 'bson';
 
 /**
  * Clients booked in person may have no email; they get a unique address that can never

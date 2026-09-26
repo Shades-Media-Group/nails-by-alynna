@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import { ObjectId } from 'bson';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { loadConfig } from '../src/config';
 import type { AppointmentDoc } from '../src/db/types';
@@ -362,7 +362,7 @@ describe('booking updates from the studio', () => {
 describe('email delivery', () => {
   const emailJsEnv = {
     APP_ENV: 'test',
-    MONGODB_URI: 'mongodb://127.0.0.1:27017',
+    DATABASE_URL: 'postgres://127.0.0.1:5432/nails_by_alynna',
     JWT_SECRET: 'x'.repeat(48),
     EMAILJS_SERVICE_ID: 'service_test',
     EMAILJS_TEMPLATE_ID: 'template_test',

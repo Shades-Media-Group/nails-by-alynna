@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import { ObjectId } from 'bson';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { signInWithGoogle } from '../src/modules/auth/google';
 import { findInvite } from '../src/modules/auth/invites';

@@ -1,5 +1,5 @@
+import { ObjectId } from 'bson';
 import { Hono, type Context } from 'hono';
-import { ObjectId } from 'mongodb';
 import { z } from 'zod';
 import type { AppDeps, AppEnv } from '../../context';
 import { ACTIVE_STATUSES, type StaffDoc, type TimeOffDoc, type WeeklyHours } from '../../db/types';

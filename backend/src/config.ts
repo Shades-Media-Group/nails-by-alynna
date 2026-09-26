@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 /**
- * Runtime configuration, parsed once from `process.env` (Node) or the Worker `env`
- * bindings (Cloudflare). Invalid configuration fails fast with a readable message.
+ * Runtime configuration, parsed once from `process.env`. Invalid configuration fails fast with
+ * a readable message.
  */
 
 const optionalString = z
@@ -15,9 +15,11 @@ const schema = z.object({
   APP_ENV: z.enum(['development', 'test', 'production']).default('development'),
   APP_URL: z.url().default('http://localhost:5180'),
   ALLOWED_ORIGINS: optionalString,
-  MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
-  MONGODB_DB: z.string().min(1).default('nails_by_alynna'),
-  MONGODB_MAX_POOL_SIZE: z.coerce.number().int().min(1).max(100).optional(),
+  /** PostgreSQL 10+: postgres://user:password@host:5432/database */
+  DATABASE_URL: z
+    .string({ error: 'DATABASE_URL is required' })
+    .regex(/^postgres(ql)?:\/\//, 'DATABASE_URL must be a postgres:// connection string'),
+  DATABASE_POOL_SIZE: z.coerce.number().int().min(1).max(100).optional(),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   JWT_SECRET_PREVIOUS: optionalString,
   ACCESS_TOKEN_TTL_MIN: z.coerce.number().int().min(1).max(60).default(15),
@@ -65,7 +67,7 @@ export interface AppConfig {
   isProd: boolean;
   appUrl: string;
   allowedOrigins: string[];
-  mongo: { uri: string; dbName: string; maxPoolSize?: number };
+  database: { url: string; poolSize?: number };
   jwt: {
     secret: Uint8Array;
     previousSecret?: Uint8Array;
@@ -157,7 +159,7 @@ export function loadConfig(source: Record<string, unknown>): AppConfig {
     isProd,
     appUrl,
     allowedOrigins: [...allowedOrigins],
-    mongo: { uri: e.MONGODB_URI, dbName: e.MONGODB_DB, maxPoolSize: e.MONGODB_MAX_POOL_SIZE },
+    database: { url: e.DATABASE_URL, poolSize: e.DATABASE_POOL_SIZE },
     jwt: {
       secret: encoder.encode(e.JWT_SECRET),
       previousSecret: e.JWT_SECRET_PREVIOUS ? encoder.encode(e.JWT_SECRET_PREVIOUS) : undefined,

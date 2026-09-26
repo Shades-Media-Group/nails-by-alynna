@@ -1,5 +1,5 @@
+import { ObjectId } from 'bson';
 import { Hono } from 'hono';
-import { ObjectId } from 'mongodb';
 import { z } from 'zod';
 import type { AppDeps, AppEnv } from '../../context';
 import { audit } from '../../lib/audit';

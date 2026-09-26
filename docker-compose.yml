@@ -1,17 +1,21 @@
-# Local MongoDB for development: `yarn db:up` (or use a Homebrew mongod / MongoDB Atlas).
+# Local PostgreSQL for development: `yarn db:up`. Version 10, as on host.md; dev-only credentials.
 services:
-  mongo:
-    image: mongo:8
+  postgres:
+    image: postgres:10
     restart: unless-stopped
+    environment:
+      POSTGRES_USER: nba
+      POSTGRES_PASSWORD: nba
+      POSTGRES_DB: nails_by_alynna
     ports:
-      - '127.0.0.1:27017:27017'
+      - '127.0.0.1:5432:5432'
     volumes:
-      - mongo-data:/data/db
+      - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand("ping").ok']
+      test: ['CMD', 'pg_isready', '-U', 'nba', '-d', 'nails_by_alynna']
       interval: 10s
       timeout: 5s
       retries: 5
 
 volumes:
-  mongo-data:
+  postgres-data:

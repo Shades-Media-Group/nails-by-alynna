@@ -57,7 +57,7 @@ export const DEFAULT_SETTINGS: StudioSettings = {
   ],
 };
 
-// Per-runtime cache (one per Node process or Durable Object), refreshed every 30 s.
+// Per-runtime cache (one per Node process), refreshed every 30 s.
 const caches = new WeakMap<AppDeps, { value: StudioSettings; expires: number }>();
 const CACHE_MS = 30_000;
 

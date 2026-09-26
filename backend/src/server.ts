@@ -3,11 +3,11 @@ import { getConnInfo } from '@hono/node-server/conninfo';
 import type { Context } from 'hono';
 import { createApp } from './app';
 import { loadConfig, type AppConfig } from './config';
-import { migrateNotifications } from './db';
+import { describeDatabase, migrateNotifications, startTtlMonitor } from './db';
 import { timingSafeEqualStr } from './lib/crypto';
 import { loadDotEnv } from './lib/dotenv';
 import { startNotificationScheduler } from './modules/notifications';
-import { createDeps, createMongo, migrate } from './runtime';
+import { createDatabase, createDeps, migrate } from './runtime';
 
 /**
  * Node.js entry — local development and production on host.md (Plesk Node.js / Passenger).
@@ -37,8 +37,8 @@ function clientIpResolver(config: AppConfig) {
 async function main() {
   loadDotEnv(process.env.ENV_FILE ?? '.env');
   const config = loadConfig(process.env);
-  const mongo = createMongo(config);
-  const deps = createDeps(config, mongo, {
+  const db = createDatabase(config);
+  const deps = createDeps(config, db, {
     clientIp: clientIpResolver(config),
     defer: (task) => {
       task.catch((error) => console.error('[defer] background task failed', error));
@@ -50,31 +50,35 @@ async function main() {
   const app = createApp(deps);
   const hostname = process.env.HOST || '127.0.0.1';
   const server = serve({ fetch: app.fetch, port: config.port, hostname }, (info) => {
-    console.info(`[api] ${config.env} server on http://${hostname}:${info.port} (db: ${config.mongo.dbName})`);
+    console.info(`[api] ${config.env} server on http://${hostname}:${info.port} (db: ${describeDatabase(config.database.url)})`);
   });
   let stopReminders: () => void = () => undefined;
+  let stopTtl: () => void = () => undefined;
   void prepareDatabase(async () => {
-    await mongo.client.connect();
+    await db.ping();
     await migrate(deps);
     await migrateNotifications(deps.db);
   }).then(() => {
     // Reminders go out from here every minute; the Cloudflare cron (POST /api/internal/tick)
     // covers the times the host has put an idle app to sleep.
     stopReminders = startNotificationScheduler(deps);
+    // Expired sessions, codes, rate-limit windows and old logs (MongoDB's TTL indexes).
+    stopTtl = startTtlMonitor(deps.db);
   });
 
   const shutdown = async (signal: string) => {
     console.info(`[api] ${signal} received, shutting down`);
     stopReminders();
+    stopTtl();
     server.close();
-    await mongo.client.close().catch(() => undefined);
+    await db.close().catch(() => undefined);
     process.exit(0);
   };
   process.on('SIGINT', () => void shutdown('SIGINT'));
   process.on('SIGTERM', () => void shutdown('SIGTERM'));
 }
 
-/** Connects and applies indexes and defaults, retrying with backoff (2 s doubling to 60 s). */
+/** Connects, creates tables, indexes and defaults, retrying with backoff (2 s doubling to 60 s). */
 async function prepareDatabase(prepare: () => Promise<void>): Promise<void> {
   for (let delay = 2_000; ; delay = Math.min(delay * 2, 60_000)) {
     try {

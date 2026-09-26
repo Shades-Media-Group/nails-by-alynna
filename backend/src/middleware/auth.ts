@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import { ObjectId } from 'bson';
 import { createMiddleware } from 'hono/factory';
 import type { Role } from '../config';
 import type { AppDeps, AppEnv } from '../context';

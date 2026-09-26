@@ -1,5 +1,6 @@
-import { ObjectId, type Filter } from 'mongodb';
+import { ObjectId } from 'bson';
 import type { AppDeps } from '../../context';
+import type { Filter } from '../../db';
 import {
   ACTIVE_STATUSES,
   type AppointmentDoc,

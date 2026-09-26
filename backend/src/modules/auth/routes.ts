@@ -1,7 +1,7 @@
+import { ObjectId } from 'bson';
 import { Hono, type Context } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
-import { ObjectId } from 'mongodb';
 import { z } from 'zod';
 import type { Role } from '../../config';
 import type { AppDeps, AppEnv } from '../../context';

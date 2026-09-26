@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import { ObjectId } from 'bson';
 import type { AppDeps } from '../context';
 import type { AppointmentDoc, AppointmentStatus, StaffDoc, UserDoc } from '../db/types';
 import { bookingCode } from '../lib/crypto';

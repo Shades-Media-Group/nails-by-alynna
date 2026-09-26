@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import { ObjectId } from 'bson';
 import type { AppDeps } from '../../context';
 import { ACTIVE_STATUSES, type UserDoc } from '../../db/types';
 import { bookingUpdateEmail, type BookingChange } from '../../lib/emails';

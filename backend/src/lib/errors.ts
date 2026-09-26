@@ -82,6 +82,6 @@ export function validationError(error: z.ZodError): AppError {
   return new AppError(422, 'VALIDATION_ERROR', 'Validation failed', { fields });
 }
 
-/** MongoDB duplicate-key error (unique index violation). */
+/** Duplicate-key error (unique index violation): code 11000, also from the PostgreSQL adapter. */
 export const isDuplicateKey = (error: unknown): boolean =>
   (error as { code?: number } | null)?.code === 11000;

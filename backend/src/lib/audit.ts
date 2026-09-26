@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import { ObjectId } from 'bson';
 import type { AppDeps } from '../context';
 
 /** Records security-relevant and administrative actions. Never throws. */

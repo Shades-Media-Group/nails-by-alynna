@@ -1,4 +1,4 @@
-import type { ObjectId } from 'mongodb';
+import type { ObjectId } from 'bson';
 import type { Role } from '../config';
 import type { Locale } from '../lib/validation';
 

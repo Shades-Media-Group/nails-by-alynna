@@ -21,6 +21,16 @@ export default defineConfig(
     },
   },
   {
+    // The API runs on PostgreSQL; `mongodb` is a dev dependency for the adapter's types only.
+    files: ['src/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        { paths: [{ name: 'mongodb', message: 'Use the PostgreSQL adapter (src/db); import only types from mongodb.', allowTypeImports: true }] },
+      ],
+    },
+  },
+  {
     // Tests read loosely-typed JSON responses.
     files: ['test/**/*.ts'],
     rules: { '@typescript-eslint/no-explicit-any': 'off' },

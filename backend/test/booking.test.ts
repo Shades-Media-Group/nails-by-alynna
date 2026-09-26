@@ -117,7 +117,7 @@ describe('booking', () => {
 
   it('refuses clients blocked from online booking', async () => {
     const { client, user } = await registerClient(ctx);
-    const { ObjectId } = await import('mongodb');
+    const { ObjectId } = await import('bson');
     await ctx.deps.col.users.updateOne({ _id: new ObjectId(user.id) }, { $set: { bookingBlocked: true } });
     const [slot] = await slots(client, '2026-06-02');
     const res = await client.post('/api/appointments', { serviceIds: [gelId], start: slot!.start });

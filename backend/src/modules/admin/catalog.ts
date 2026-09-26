@@ -1,5 +1,5 @@
+import { ObjectId } from 'bson';
 import { Hono, type Context } from 'hono';
-import { ObjectId } from 'mongodb';
 import { z } from 'zod';
 import type { AppDeps, AppEnv } from '../../context';
 import type { CategoryDoc, ServiceDoc } from '../../db/types';

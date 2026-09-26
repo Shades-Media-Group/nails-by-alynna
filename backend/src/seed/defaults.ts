@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import { ObjectId } from 'bson';
 import type { AppDeps } from '../context';
 import type { CategoryDoc, ServiceDoc, StudioSettings } from '../db/types';
 import { isDuplicateKey } from '../lib/errors';

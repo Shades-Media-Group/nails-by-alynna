@@ -1,4 +1,4 @@
-/** Web Crypto helpers that behave identically on Node.js 22+ and Cloudflare Workers. */
+/** Web Crypto helpers (Node.js 22+). */
 
 const encoder = new TextEncoder();
 

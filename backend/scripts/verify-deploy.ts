@@ -5,26 +5,17 @@
  * security headers, SPA routing, PWA files and — when given — that the expected build
  * version is being served. Exits non-zero on any failure.
  */
-import { readFileSync } from 'node:fs';
+export {}; // an ES module (top-level await)
 
 const args = process.argv.slice(2);
 const versionFlag = args.indexOf('--version');
 const expectedVersion = versionFlag >= 0 ? args[versionFlag + 1] : process.env.EXPECTED_VERSION;
 const positional = args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '--version');
 
-function appUrlFromWrangler(): string | undefined {
-  try {
-    const raw = readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
-    return /"APP_URL"\s*:\s*"([^"]+)"/.exec(raw)?.[1];
-  } catch {
-    return undefined;
-  }
-}
-
-const base = (positional[0] ?? process.env.DEPLOY_URL ?? appUrlFromWrangler() ?? '').replace(/\/+$/, '');
+const base = (positional[0] ?? process.env.DEPLOY_URL ?? '').replace(/\/+$/, '');
 if (!/^https?:\/\//.test(base) || base.includes('example.')) {
   console.error('Usage: yarn deploy:verify https://your-app.example [--version <build-version>]');
-  console.error('(or set DEPLOY_URL, or set a real APP_URL in backend/wrangler.jsonc)');
+  console.error('(or set DEPLOY_URL)');
   process.exit(2);
 }
 

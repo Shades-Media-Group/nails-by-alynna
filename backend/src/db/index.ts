@@ -1,5 +1,5 @@
-import { MongoClient, type Collection, type Db } from 'mongodb';
 import type { AppConfig } from '../config';
+import { Database, type Collection } from './pg';
 import type {
   AppointmentDoc,
   AuditLogDoc,
@@ -40,7 +40,7 @@ export interface Collections {
   promoCodes: Collection<PromoCodeDoc>;
 }
 
-export function collections(db: Db): Collections {
+export function collections(db: Database): Collections {
   return {
     users: db.collection<UserDoc>('users'),
     sessions: db.collection<SessionDoc>('sessions'),
@@ -65,7 +65,7 @@ export function collections(db: Db): Collections {
 /** Bump when indexes change; the runtime re-applies them once per version. */
 export const SCHEMA_VERSION = 4;
 
-export async function ensureIndexes(db: Db): Promise<void> {
+export async function ensureIndexes(db: Database): Promise<void> {
   const c = collections(db);
   await Promise.all([
     c.users.createIndexes([
@@ -134,29 +134,35 @@ export async function ensureIndexes(db: Db): Promise<void> {
 const NOTIFICATIONS_SCHEMA_VERSION = 1;
 const GRANDFATHER_ID = 'emailVerificationGrandfathered';
 
+/** The indexes of the email-code, push and notification-log collections. */
+export async function ensureNotificationIndexes(db: Database): Promise<void> {
+  const c = collections(db);
+  await Promise.all([
+    c.otpCodes.createIndexes([
+      { key: { purpose: 1, email: 1, createdAt: -1 }, name: 'purpose_email' },
+      { key: { userId: 1, purpose: 1, createdAt: -1 }, name: 'user_purpose' },
+      // Kept a day past expiry (resend cooldown, attempt history), then removed.
+      { key: { expiresAt: 1 }, expireAfterSeconds: 86_400, name: 'ttl' },
+    ]),
+    c.pushSubscriptions.createIndexes([{ key: { userId: 1 }, name: 'user' }]),
+    c.notificationLog.createIndexes([
+      { key: { status: 1, retryAt: 1 }, name: 'retry', partialFilterExpression: { status: 'failed' } },
+      { key: { createdAt: 1 }, expireAfterSeconds: 180 * 86_400, name: 'ttl' },
+    ]),
+  ]);
+}
+
 /**
  * Email codes, Web Push and reminders: creates their indexes, and once marks every account
  * that existed before email codes as verified, so nobody is locked out. Idempotent; runs at
  * server start after `migrate`. (Uniqueness never depends on these indexes: the notification
  * log and push subscriptions use meaningful `_id`s.)
  */
-export async function migrateNotifications(db: Db, now: Date = new Date()): Promise<void> {
+export async function migrateNotifications(db: Database, now: Date = new Date()): Promise<void> {
   const c = collections(db);
   const schema = await c.meta.findOne({ _id: 'notificationsSchema' });
   if (schema?.value !== NOTIFICATIONS_SCHEMA_VERSION) {
-    await Promise.all([
-      c.otpCodes.createIndexes([
-        { key: { purpose: 1, email: 1, createdAt: -1 }, name: 'purpose_email' },
-        { key: { userId: 1, purpose: 1, createdAt: -1 }, name: 'user_purpose' },
-        // Kept a day past expiry (resend cooldown, attempt history), then removed.
-        { key: { expiresAt: 1 }, expireAfterSeconds: 86_400, name: 'ttl' },
-      ]),
-      c.pushSubscriptions.createIndexes([{ key: { userId: 1 }, name: 'user' }]),
-      c.notificationLog.createIndexes([
-        { key: { status: 1, retryAt: 1 }, name: 'retry', partialFilterExpression: { status: 'failed' } },
-        { key: { createdAt: 1 }, expireAfterSeconds: 180 * 86_400, name: 'ttl' },
-      ]),
-    ]);
+    await ensureNotificationIndexes(db);
     await c.meta.updateOne(
       { _id: 'notificationsSchema' },
       { $set: { value: NOTIFICATIONS_SCHEMA_VERSION, updatedAt: now } },
@@ -185,20 +191,13 @@ export async function migrateNotifications(db: Db, now: Date = new Date()): Prom
   }
 }
 
-export interface MongoHandle {
-  client: MongoClient;
-  db: Db;
+/** The PostgreSQL connection pool and its collections (see ./pg); nothing connects until first use. */
+export function createDatabase(config: AppConfig, overrides?: { poolSize?: number; schema?: string }): Database {
+  return new Database({
+    url: config.database.url,
+    poolSize: overrides?.poolSize ?? config.database.poolSize ?? 10,
+    schema: overrides?.schema,
+  });
 }
 
-export function createMongo(config: AppConfig, overrides?: { maxPoolSize?: number }): MongoHandle {
-  const client = new MongoClient(config.mongo.uri, {
-    appName: 'nails-by-alynna',
-    maxPoolSize: overrides?.maxPoolSize ?? config.mongo.maxPoolSize ?? 10,
-    minPoolSize: 0,
-    serverSelectionTimeoutMS: 5_000,
-    connectTimeoutMS: 10_000,
-    maxIdleTimeMS: 60_000,
-    retryWrites: true,
-  });
-  return { client, db: client.db(config.mongo.dbName) };
-}
+export { Database, describeDatabase, startTtlMonitor, type Filter } from './pg';

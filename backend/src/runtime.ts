@@ -1,20 +1,20 @@
 import type { AppConfig } from './config';
 import type { AppDeps } from './context';
-import { collections, createMongo, ensureIndexes, SCHEMA_VERSION, type MongoHandle } from './db';
+import { collections, createDatabase, ensureIndexes, SCHEMA_VERSION, type Database } from './db';
 import { createMailer } from './lib/mailer';
 import { createPasswordHasher } from './lib/password';
 import { syncDefaults } from './seed/defaults';
 
-/** Builds the dependency graph shared by the Node server and the Worker's Durable Object. */
+/** Builds the dependency graph shared by the server, the seed CLI and the tests. */
 export function createDeps(
   config: AppConfig,
-  mongo: MongoHandle,
+  db: Database,
   runtime: Pick<AppDeps, 'clientIp' | 'defer'> & { now?: () => Date },
 ): AppDeps {
   return {
     config,
-    db: mongo.db,
-    col: collections(mongo.db),
+    db,
+    col: collections(db),
     mailer: createMailer(config),
     passwords: createPasswordHasher(config.passwordHashCost),
     now: runtime.now ?? (() => new Date()),
@@ -23,7 +23,7 @@ export function createDeps(
   };
 }
 
-/** Applies indexes once per schema version (tracked in the `meta` collection). */
+/** Creates tables and indexes once per schema version (tracked in the `meta` collection). */
 export async function migrate(deps: AppDeps): Promise<void> {
   const current = await deps.col.meta.findOne({ _id: 'schemaVersion' });
   if (current?.value !== SCHEMA_VERSION) {
@@ -38,4 +38,4 @@ export async function migrate(deps: AppDeps): Promise<void> {
   await syncDefaults(deps, (message) => console.info(`[defaults] ${message}`));
 }
 
-export { createMongo };
+export { createDatabase };

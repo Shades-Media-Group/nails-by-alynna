@@ -1,7 +1,8 @@
+import { ObjectId } from 'bson';
 import { Hono } from 'hono';
-import { ObjectId, type Filter } from 'mongodb';
 import { z } from 'zod';
 import type { AppDeps, AppEnv } from '../../context';
+import type { Filter } from '../../db';
 import { ACTIVE_STATUSES, type UserDoc } from '../../db/types';
 import { audit } from '../../lib/audit';
 import { AppError, isDuplicateKey, notFound } from '../../lib/errors';

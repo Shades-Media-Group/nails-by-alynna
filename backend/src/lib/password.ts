@@ -1,8 +1,7 @@
 import { randomBytes, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto';
 
 /**
- * Password hashing with scrypt (memory-hard, OWASP-recommended parameters).
- * Uses `node:crypto`, which Cloudflare Workers implements natively under nodejs_compat.
+ * Password hashing with scrypt from `node:crypto` (memory-hard, OWASP-recommended parameters).
  *
  * Stored format: scrypt$N$r$p$<salt b64>$<hash b64> — self-describing, so parameters
  * can be raised later and old hashes transparently upgraded on the next login.

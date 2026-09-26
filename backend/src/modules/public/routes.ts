@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { BUILD, runtimeName, STARTED_AT } from '../../build-info';
+import { BUILD, STARTED_AT } from '../../build-info';
 import type { AppDeps, AppEnv } from '../../context';
 import { getSettings } from '../settings';
 
@@ -15,7 +15,7 @@ export function publicRoutes(deps: AppDeps) {
     const started = performance.now();
     let database: 'ok' | 'error' = 'ok';
     try {
-      await deps.db.command({ ping: 1 });
+      await deps.db.ping();
     } catch {
       database = 'error';
     }
@@ -28,7 +28,7 @@ export function publicRoutes(deps: AppDeps) {
         version: BUILD.version,
         commit: BUILD.commit,
         builtAt: BUILD.builtAt,
-        runtime: runtimeName(),
+        runtime: 'node',
         environment: deps.config.env,
         uptimeSec: Math.round((Date.now() - STARTED_AT) / 1000),
         checks: { database: { status: database, latencyMs } },

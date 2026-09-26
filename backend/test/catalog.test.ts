@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import { ObjectId } from 'bson';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { CATALOG_DEFAULTS_VERSION, DEFAULT_CATALOG, type DefaultCategory } from '../src/seed/data';
 import { syncCatalogDefaults, syncSettingsDefaults } from '../src/seed/defaults';

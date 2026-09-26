@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import { ObjectId } from 'bson';
 import type { AppDeps } from '../../context';
 import type { AppointmentDoc, I18nText, StudioSettings } from '../../db/types';
 import { base64UrlEncode, timingSafeEqualStr } from '../../lib/crypto';

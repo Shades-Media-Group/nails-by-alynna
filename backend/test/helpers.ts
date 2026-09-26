@@ -1,30 +1,30 @@
 import { inject } from 'vitest';
 import { createApp } from '../src/app';
 import { loadConfig } from '../src/config';
-import { migrateNotifications } from '../src/db';
+import { Database, migrateNotifications } from '../src/db';
 import type { MailMessage } from '../src/lib/mailer';
-import { createDeps, createMongo, migrate } from '../src/runtime';
+import { createDatabase, createDeps, migrate } from '../src/runtime';
 import { runSeed } from '../src/seed/run';
 
 export const APP_ORIGIN = 'http://localhost:5180';
 
 export async function createTestContext(env: Record<string, string> = {}) {
-  const dbName = `nba_test_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  // Every context gets its own schema in the test database, dropped on close.
+  const schema = `nba_test_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const config = loadConfig({
     APP_ENV: 'test',
     APP_URL: APP_ORIGIN,
-    MONGODB_URI: inject('mongoUri'),
-    MONGODB_DB: dbName,
+    DATABASE_URL: inject('databaseUrl'),
     JWT_SECRET: 'test-secret-'.padEnd(48, 'x'),
     PASSWORD_HASH_COST: 'fast',
     RATE_LIMITS: 'off',
     ...env,
   });
-  const mongo = createMongo(config, { maxPoolSize: 5 });
+  const db = createDatabase(config, { poolSize: 5, schema });
   let now = new Date('2026-06-01T06:00:00Z'); // Monday 09:00 in Chișinău (EEST)
   const deferred: Promise<unknown>[] = [];
   const sentMail: MailMessage[] = [];
-  const deps = createDeps(config, mongo, {
+  const deps = createDeps(config, db, {
     clientIp: (c) => c.req.header('x-test-ip') ?? '203.0.113.7',
     defer: (task) => {
       deferred.push(task);
@@ -37,7 +37,6 @@ export async function createTestContext(env: Record<string, string> = {}) {
       sentMail.push(message);
     },
   };
-  await mongo.client.connect();
   await migrate(deps);
   await migrateNotifications(deps.db, now);
   const app = createApp(deps);
@@ -61,13 +60,19 @@ export async function createTestContext(env: Record<string, string> = {}) {
     client: (opts?: ClientOptions) => new TestClient(app, opts),
     seed: (options?: Parameters<typeof runSeed>[1]) => runSeed(deps, options),
     async close() {
-      await mongo.db.dropDatabase();
-      await mongo.client.close();
+      await db.drop();
+      await db.close();
     },
   };
 }
 
 export type TestContext = Awaited<ReturnType<typeof createTestContext>>;
+
+/** A bare database handle in a schema of its own (adapter tests); `drop()` then `close()` it. */
+export function createTestDatabase(poolSize = 10): Database {
+  const schema = `nba_pg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  return new Database({ url: inject('databaseUrl'), poolSize, schema });
+}
 
 interface ClientOptions {
   origin?: string | null;

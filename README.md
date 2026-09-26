@@ -11,8 +11,8 @@ The studio's own booking app for **Nails by Alynna**, a nail salon in Chișinău
 | Part | Tech |
 | --- | --- |
 | Frontend | React 19, Vite, TypeScript, Tailwind CSS v4, TanStack Query, React Router 7 (data router), i18next, vite-plugin-pwa |
-| Backend | Hono on Node.js 22 (host.md) or Cloudflare Workers, MongoDB 7 driver, zod, jose (JWT in httpOnly cookies) |
-| Hosting | Cloudflare Worker serves the app and proxies `/api` to the API; the API runs on host.md (Plesk, Passenger); MongoDB Atlas |
+| Backend | Hono on Node.js 22 (host.md), PostgreSQL 10+ through a MongoDB-style document adapter (`backend/src/db/pg`), zod, jose (JWT in httpOnly cookies) |
+| Hosting | Cloudflare Worker serves the app and proxies `/api` to the API; the API and its PostgreSQL run on host.md (Plesk, Passenger) |
 
 ```
 frontend/   the PWA (src/pages client screens, src/admin staff screens, worker/ Cloudflare Worker)
@@ -22,11 +22,11 @@ scripts/    deploy.mjs: one command to build, upload and verify
 
 ## Getting started
 
-Requirements: Node.js 22+, Yarn 1, and MongoDB (Docker, Homebrew or an Atlas cluster).
+Requirements: Node.js 22+, Yarn 1, and PostgreSQL 10+ (Docker: `yarn db:up`).
 
 ```bash
 yarn setup                      # install root, backend and frontend
-yarn db:up                      # local MongoDB in Docker (optional)
+yarn db:up                      # local PostgreSQL 10 in Docker (DATABASE_URL in the template)
 cp backend/.env.template backend/.env   # then fill in the values it asks for
 yarn seed                       # price list, team and settings (add --demo for sample data)
 yarn dev                        # API on :8787, app on http://localhost:5180
@@ -40,7 +40,7 @@ To try the app on a phone on the same Wi-Fi, run `yarn --cwd frontend dev:lan` a
 yarn check        # typecheck, lint, tests and production builds, both apps
 ```
 
-Backend tests run against a throwaway MongoDB database (`vitest`); frontend tests cover components, flows and every staff screen against realistic data.
+Backend tests run against a throwaway PostgreSQL 10 in Docker, or `TEST_DATABASE_URL` (`vitest`); frontend tests cover components, flows and every staff screen against realistic data.
 
 ## Configuration
 
@@ -60,7 +60,7 @@ yarn deploy api        # only the API (Node bundle over FTPS, then a restart)
 yarn deploy verify     # only the live checks (also: yarn deploy:verify)
 ```
 
-Add `--dry-run` to build and check without uploading. The API refuses to start in production with placeholder settings; `yarn --cwd backend check-env` shows what is missing.
+Add `--dry-run` to build and check without uploading. The API refuses to start in production with placeholder settings; `yarn --cwd backend check-env` shows what is missing. The API creates its tables on start; seed on the server (the database only accepts local connections): Plesk → Node.js → Run Node.js commands → `npm run seed -- --demo-users`.
 
 ## iPhone notes
 

@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import { ObjectId } from 'bson';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createTestContext, loginAs, registerClient, strongPassword, type TestClient, type TestContext } from './helpers';
 

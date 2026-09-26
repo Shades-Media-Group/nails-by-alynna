@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 /**
- * Bundles the API into one CommonJS file for Node.js hosting (host.md / Plesk Passenger).
- * Output: dist/node/{app.js, app.js.map, package.json, tmp/restart.txt}
- * No `npm install` is needed on the server — every dependency is inlined.
+ * Bundles the API into CommonJS files for Node.js hosting (host.md / Plesk Passenger).
+ * Output: dist/node/{app.js, seed.js (+ maps), package.json, tmp/restart.txt}
+ * No `npm install` is needed on the server — every dependency is inlined. The database only
+ * accepts local connections there, so seeding runs on the server too:
+ *   Plesk → Node.js → Run Node.js commands → npm run seed -- --demo-users
  */
 import { execSync } from 'node:child_process';
 import { build } from 'esbuild';
@@ -28,9 +30,7 @@ await mkdir(`${OUT}/tmp`, { recursive: true });
 await mkdir(`${OUT}/public`, { recursive: true });
 await writeFile(`${OUT}/public/robots.txt`, 'User-agent: *\nDisallow: /\n');
 
-await build({
-  entryPoints: ['src/server.ts'],
-  outfile: `${OUT}/app.js`,
+const options = {
   bundle: true,
   platform: 'node',
   target: 'node20',
@@ -39,17 +39,8 @@ await build({
   minify: true,
   keepNames: true,
   legalComments: 'none',
-  // Optional MongoDB add-ons the driver loads only when configured (all try/catch-guarded).
-  external: [
-    'kerberos',
-    '@mongodb-js/zstd',
-    'snappy',
-    'socks',
-    'aws4',
-    'mongodb-client-encryption',
-    'gcp-metadata',
-    '@aws-sdk/credential-providers',
-  ],
+  // pg's optional native driver (never used) and its Cloudflare socket (Workers only).
+  external: ['pg-native', 'pg-cloudflare'],
   define: {
     'process.env.NODE_ENV': '"production"',
     __APP_VERSION__: JSON.stringify(version),
@@ -58,7 +49,9 @@ await build({
     __APP_CHANGES__: JSON.stringify(changes),
   },
   logLevel: 'info',
-});
+};
+await build({ ...options, entryPoints: ['src/server.ts'], outfile: `${OUT}/app.js` });
+await build({ ...options, entryPoints: ['src/seed/cli.ts'], outfile: `${OUT}/seed.js` });
 
 await writeFile(
   `${OUT}/package.json`,
@@ -70,7 +63,7 @@ await writeFile(
       type: 'commonjs',
       main: 'app.js',
       engines: { node: '>=20.19' },
-      scripts: { start: 'node app.js' },
+      scripts: { start: 'node app.js', seed: 'node seed.js' },
     },
     null,
     2,

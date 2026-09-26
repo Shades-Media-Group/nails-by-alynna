@@ -1,4 +1,4 @@
-import type { ObjectId } from 'mongodb';
+import type { ObjectId } from 'bson';
 import type { AppDeps } from '../../context';
 import type { NotificationLogDoc, UserDoc } from '../../db/types';
 import { isDuplicateKey } from '../../lib/errors';

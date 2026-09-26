@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import { ObjectId } from 'bson';
 import { z } from 'zod';
 import type { AppDeps } from '../../context';
 import type { OtpCodeDoc, OtpPurpose, UserDoc } from '../../db/types';

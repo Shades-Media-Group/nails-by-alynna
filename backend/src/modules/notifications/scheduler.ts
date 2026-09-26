@@ -1,4 +1,4 @@
-import type { ObjectId } from 'mongodb';
+import type { ObjectId } from 'bson';
 import type { AppDeps } from '../../context';
 import { ACTIVE_STATUSES, REMINDER_LEADS, type AppointmentDoc, type ReminderLead, type UserDoc } from '../../db/types';
 import { appointmentReminderEmail } from '../../lib/emails';

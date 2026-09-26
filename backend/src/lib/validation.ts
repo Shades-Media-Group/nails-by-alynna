@@ -1,5 +1,5 @@
+import { ObjectId } from 'bson';
 import type { Context } from 'hono';
-import { ObjectId } from 'mongodb';
 import { z } from 'zod';
 import { AppError, validationError } from './errors';
 

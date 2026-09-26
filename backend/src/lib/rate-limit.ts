@@ -2,7 +2,7 @@ import type { AppDeps } from '../context';
 import { AppError } from './errors';
 
 /**
- * Fixed-window rate limiter stored in MongoDB (works identically on Node and Workers).
+ * Fixed-window rate limiter stored in the database (the rate_limits collection).
  * One atomic upsert per hit; a TTL index removes expired windows.
  */
 export async function hitRateLimit(

@@ -8,8 +8,8 @@ web
 
 ## Stack
 
-User-specified: two directories, `frontend/` (React + Vite + TypeScript, Yarn) and `backend/` (Node.js API, MongoDB). The frontend is deployed to Cloudflare with Wrangler; the backend runs on host.md (Plesk, Node.js).
-Delegated details: Hono API bundled to a single Node.js file for Plesk/Passenger (it can also run on Cloudflare Workers with a Durable Object), MongoDB Atlas as the database, the Cloudflare Worker proxies `/api/*` to the backend so the app stays same-origin, Tailwind CSS v4 design tokens, react-i18next, TanStack Query, vite-plugin-pwa. Icons: MUI free icons, Rounded variant (user-specified).
+User-specified: two directories, `frontend/` (React + Vite + TypeScript, Yarn) and `backend/` (Node.js API, PostgreSQL). The frontend is deployed to Cloudflare with Wrangler; the backend runs on host.md (Plesk, Node.js).
+Delegated details: Hono API bundled to a single Node.js file for Plesk/Passenger, host.md's PostgreSQL 10 as the database (through a MongoDB-style adapter), the Cloudflare Worker proxies `/api/*` to the backend so the app stays same-origin, Tailwind CSS v4 design tokens, react-i18next, TanStack Query, vite-plugin-pwa. Icons: MUI free icons, Rounded variant (user-specified).
 
 ## Users
 

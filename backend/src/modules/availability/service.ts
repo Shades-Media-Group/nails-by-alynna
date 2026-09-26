@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import { ObjectId } from 'bson';
 import type { AppDeps } from '../../context';
 import { ACTIVE_STATUSES, type ServiceDoc, type StaffDoc, type StudioSettings } from '../../db/types';
 import { AppError } from '../../lib/errors';

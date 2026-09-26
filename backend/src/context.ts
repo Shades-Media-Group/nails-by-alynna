@@ -1,22 +1,22 @@
 import type { Context } from 'hono';
-import type { Db } from 'mongodb';
 import type { AppConfig } from './config';
-import type { Collections } from './db';
+import type { Collections, Database } from './db';
 import type { UserDoc } from './db/types';
 import type { Mailer } from './lib/mailer';
 import type { PasswordHasher } from './lib/password';
 
-/** Everything a request handler needs, injected once per runtime (Node process or Durable Object). */
+/** Everything a request handler needs, injected once per Node process. */
 export interface AppDeps {
   config: AppConfig;
-  db: Db;
+  /** PostgreSQL (see db/pg): `db.collection(name)`, `ping()`, `close()`. */
+  db: Database;
   col: Collections;
   mailer: Mailer;
   passwords: PasswordHasher;
   now: () => Date;
-  /** Resolves the caller's IP from the runtime (socket on Node, CF-Connecting-IP on Workers). */
+  /** Resolves the caller's IP (socket, or the proxy's header; see server.ts). */
   clientIp: (c: Context) => string;
-  /** Runs work after the response without blocking it (ctx.waitUntil on Workers). */
+  /** Runs work after the response without blocking it. */
   defer: (task: Promise<unknown>) => void;
 }
 

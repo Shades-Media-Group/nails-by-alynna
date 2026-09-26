@@ -6,6 +6,7 @@
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { loadConfig } from '../src/config';
+import { describeDatabase } from '../src/db';
 import { parseDotEnv } from '../src/lib/dotenv';
 
 const file = process.argv[2] ?? '.env.production';
@@ -26,16 +27,9 @@ try {
   process.exit(1);
 }
 
-const mongoHost = (() => {
-  try {
-    return new URL(config.mongo.uri.replace(/^mongodb(\+srv)?:/, 'http:')).hostname;
-  } catch {
-    return '(unparsable)';
-  }
-})();
 console.info(`✓ ${file} is valid for APP_ENV=${config.env}`);
 console.info(`  app            ${config.appUrl}`);
-console.info(`  database       ${mongoHost} / ${config.mongo.dbName}`);
+console.info(`  database       PostgreSQL ${describeDatabase(config.database.url)}`);
 console.info(`  proxy secret   ${config.proxySecret ? 'set' : 'MISSING (required behind the Worker)'}`);
 console.info(`  Google sign-in ${config.google ? `on (redirect ${config.google.redirectUri})` : 'off'}`);
 console.info(
