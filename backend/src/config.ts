@@ -29,7 +29,13 @@ const schema = z.object({
   GOOGLE_CLIENT_ID: optionalString,
   GOOGLE_CLIENT_SECRET: optionalString,
   RESEND_API_KEY: optionalString,
+  /** Sender shown on every email, e.g. "Nails by Alynna <studio@gmail.com>" (SMTP and Resend). */
   MAIL_FROM: optionalString,
+  /** SMTP (preferred when set), e.g. Gmail: smtp.gmail.com, 465, the address and a Google App password. */
+  SMTP_HOST: optionalString,
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(465),
+  SMTP_USER: optionalString,
+  SMTP_PASSWORD: optionalString,
   /** EmailJS (preferred when set): the three ids from the EmailJS dashboard, plus the optional private key. */
   EMAILJS_SERVICE_ID: optionalString,
   EMAILJS_TEMPLATE_ID: optionalString,
@@ -59,6 +65,7 @@ const schema = z.object({
 export type Role = 'client' | 'admin' | 'administrator';
 
 export type MailConfig =
+  | { provider: 'smtp'; host: string; port: number; user: string; password: string; from: string }
   | { provider: 'emailjs'; serviceId: string; templateId: string; publicKey: string; privateKey?: string }
   | { provider: 'resend'; resendApiKey: string; from: string };
 
@@ -132,6 +139,10 @@ export function loadConfig(source: Record<string, unknown>): AppConfig {
   if (e.GOOGLE_CLIENT_ID && !e.GOOGLE_CLIENT_ID.endsWith('.apps.googleusercontent.com')) {
     throw new Error('Invalid configuration: GOOGLE_CLIENT_ID should end with .apps.googleusercontent.com');
   }
+  const smtpParts = [e.SMTP_HOST, e.SMTP_USER, e.SMTP_PASSWORD];
+  if (smtpParts.some(Boolean) && !smtpParts.every(Boolean)) {
+    throw new Error('Invalid configuration: set SMTP_HOST, SMTP_USER and SMTP_PASSWORD together, or none');
+  }
   const emailJsParts = [e.EMAILJS_SERVICE_ID, e.EMAILJS_TEMPLATE_ID, e.EMAILJS_PUBLIC_KEY];
   if (emailJsParts.some(Boolean) && !emailJsParts.every(Boolean)) {
     throw new Error('Invalid configuration: set EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID and EMAILJS_PUBLIC_KEY together, or none');
@@ -178,7 +189,17 @@ export function loadConfig(source: Record<string, unknown>): AppConfig {
           }
         : undefined,
     mail:
-      e.EMAILJS_SERVICE_ID && e.EMAILJS_TEMPLATE_ID && e.EMAILJS_PUBLIC_KEY
+      e.SMTP_HOST && e.SMTP_USER && e.SMTP_PASSWORD
+        ? {
+            provider: 'smtp',
+            host: e.SMTP_HOST,
+            port: e.SMTP_PORT,
+            user: e.SMTP_USER,
+            // Google shows App passwords in groups of four; the spaces are not part of it.
+            password: e.SMTP_PASSWORD.replace(/\s+/g, ''),
+            from: e.MAIL_FROM || e.SMTP_USER,
+          }
+        : e.EMAILJS_SERVICE_ID && e.EMAILJS_TEMPLATE_ID && e.EMAILJS_PUBLIC_KEY
         ? {
             provider: 'emailjs',
             serviceId: e.EMAILJS_SERVICE_ID,

@@ -46,7 +46,7 @@ Backend tests run against a throwaway PostgreSQL 10 in Docker, or `TEST_DATABASE
 
 Every setting is documented in the templates, never in code:
 
-- `backend/.env.template` (development) and `backend/.env.production.template` (production): database, JWT secret, app URL, Google sign-in, email (EmailJS or Resend), web push keys, demo accounts.
+- `backend/.env.template` (development) and `backend/.env.production.template` (production): database, JWT secret, app URL, Google sign-in, email (Gmail over SMTP, EmailJS or Resend), web push keys, demo accounts.
 - `.env.deploy.template`: host.md FTP account and the API origin the Worker proxies to.
 
 The real files (`backend/.env`, `backend/.env.production`, `.env.deploy`) are git-ignored and must never be committed.

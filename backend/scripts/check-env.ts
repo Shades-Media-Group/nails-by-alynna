@@ -35,9 +35,11 @@ console.info(`  Google sign-in ${config.google ? `on (redirect ${config.google.r
 console.info(
   `  email          ${
     config.mail
-      ? config.mail.provider === 'emailjs'
-        ? `EmailJS (service ${config.mail.serviceId}, template ${config.mail.templateId}, private key ${config.mail.privateKey ? 'set' : 'not set'})`
-        : 'Resend'
+      ? config.mail.provider === 'smtp'
+        ? `SMTP ${config.mail.host}:${config.mail.port} as ${config.mail.user} (from ${config.mail.from})`
+        : config.mail.provider === 'emailjs'
+          ? `EmailJS (service ${config.mail.serviceId}, template ${config.mail.templateId}, private key ${config.mail.privateKey ? 'set' : 'not set'})`
+          : 'Resend'
       : 'off (sign-up codes, password resets and reminders are NOT emailed)'
   }`,
 );

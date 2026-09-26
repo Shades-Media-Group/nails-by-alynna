@@ -1,3 +1,4 @@
+import nodemailer from 'nodemailer';
 import type { AppConfig, MailConfig } from '../config';
 import { isPlaceholderEmail } from './placeholder-email';
 
@@ -26,17 +27,16 @@ export interface Mailer {
 export class MailError extends Error {
   readonly status: number;
   readonly body: string;
+  /** Worth trying again later (rate limit, provider hiccup, network). */
+  readonly transient: boolean;
 
-  constructor(provider: string, status: number, body: string) {
+  /** `transient` defaults to the HTTP reading of `status` (0 = no answer, 429, 5xx). */
+  constructor(provider: string, status: number, body: string, transient = status === 0 || status === 429 || status >= 500) {
     super(`${provider} responded ${status}: ${body}`);
     this.name = 'MailError';
     this.status = status;
     this.body = body;
-  }
-
-  /** Worth trying again later (rate limit, provider hiccup, network). */
-  get transient(): boolean {
-    return this.status === 0 || this.status === 429 || this.status >= 500;
+    this.transient = transient;
   }
 }
 
@@ -62,8 +62,8 @@ export function isUndeliverableAddress(email: string): boolean {
 }
 
 /**
- * EmailJS (preferred) or Resend when configured; otherwise development logs the message and
- * production drops it with a warning. Errors throw a MailError with the provider's status.
+ * SMTP (preferred), EmailJS or Resend when configured; otherwise development logs the message
+ * and production drops it with a warning. Errors throw a MailError with the provider's status.
  */
 export function createMailer(config: AppConfig): Mailer {
   const mail = config.mail;
@@ -74,7 +74,7 @@ export function createMailer(config: AppConfig): Mailer {
       working: () => !config.isProd,
       async send(message) {
         if (config.isProd) {
-          console.warn('[mail] no email provider configured (EMAILJS_* or RESEND_API_KEY/MAIL_FROM); email not sent');
+          console.warn('[mail] no email provider configured (SMTP_*, EMAILJS_* or RESEND_API_KEY/MAIL_FROM); email not sent');
           throw new MailError('Mail', 400, 'no email provider configured');
         }
         if (config.env !== 'test') {
@@ -84,7 +84,8 @@ export function createMailer(config: AppConfig): Mailer {
     };
   }
 
-  const transport = mail.provider === 'emailjs' ? emailJsTransport(mail) : resendTransport(mail);
+  const transport =
+    mail.provider === 'smtp' ? smtpTransport(mail) : mail.provider === 'emailjs' ? emailJsTransport(mail) : resendTransport(mail);
   const development = config.env === 'development';
   let refusedUntil = 0;
   return {
@@ -172,6 +173,42 @@ function emailJsTransport(mail: Extract<MailConfig, { provider: 'emailjs' }>): T
     });
     queue = run.catch(() => undefined);
     return run;
+  };
+}
+
+/**
+ * SMTP, e.g. the studio's Gmail (smtp.gmail.com:465 with a Google App password). One kept-open
+ * connection, messages one after another, which is what Gmail expects from a single sender.
+ * Server answers become MailErrors with their SMTP code: 4xx and network trouble are
+ * temporary, 5xx (a rejected login, a refused recipient) is not.
+ */
+function smtpTransport(mail: Extract<MailConfig, { provider: 'smtp' }>): Transport {
+  const transporter = nodemailer.createTransport({
+    host: mail.host,
+    port: mail.port,
+    secure: mail.port === 465,
+    auth: { user: mail.user, pass: mail.password },
+    pool: true,
+    maxConnections: 1,
+    connectionTimeout: TIMEOUT_MS,
+    greetingTimeout: TIMEOUT_MS,
+    socketTimeout: 2 * TIMEOUT_MS,
+  });
+  return async (message) => {
+    try {
+      await transporter.sendMail({
+        from: mail.from,
+        to: message.toName ? { name: message.toName, address: message.to } : message.to,
+        subject: message.subject,
+        text: message.text,
+        html: message.html,
+        ...(message.replyTo ? { replyTo: message.replyTo } : {}),
+      });
+    } catch (error) {
+      const { responseCode, message: reason } = error as { responseCode?: number; message: string };
+      // SMTP reads the other way round from HTTP: 4xx = try later, 5xx = refused for good.
+      throw new MailError('SMTP', responseCode ?? 0, reason.slice(0, 300), !responseCode || responseCode < 500);
+    }
   };
 }
 
