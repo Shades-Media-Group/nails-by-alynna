@@ -53,6 +53,8 @@
     "editCategory": "Edit category",
     "name": "Name",
     "description": "Description",
+    "details": "About the procedure",
+    "detailsHint": "Clients see this when they tap <icon/> next to the service. A blank line starts a new paragraph.",
     "price": "Price",
     "priceFrom": "Price is \"from\" (final price at the studio)",
     "duration": "Duration (minutes)",
@@ -695,6 +697,7 @@
     "fields": {
       "name": "name",
       "description": "description",
+      "details": "about the procedure",
       "price": "price",
       "durationMin": "duration",
       "categoryId": "category",

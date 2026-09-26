@@ -112,6 +112,33 @@ export const i18nTextSchema = (max = 120) =>
 export const i18nOptionalTextSchema = (max = 600) =>
   z.object({ ro: i18nField(max, false), ru: i18nField(max, false), en: i18nField(max, false) });
 
+/** An HTML tag or comment: longer texts are plain text, shown exactly as typed. */
+const MARKUP = /<\/?[a-z!][^<>]*>/i;
+
+/**
+ * Plain text as it is stored: Unix line breaks, no control characters or trailing spaces, at
+ * most one blank line in a row (a blank line starts a paragraph), trimmed.
+ */
+export function plainText(value: string): string {
+  return (
+    value
+      .replace(/\r\n?|\u2028/g, '\n')
+      .replace(/\u2029/g, '\n\n')
+      // eslint-disable-next-line no-control-regex
+      .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/g, '')
+      .replace(/[ \t]+$/gm, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+  );
+}
+
+const plainTextField = (max: number) =>
+  z.string().overwrite(plainText).max(max, 'too_long').refine((v) => !MARKUP.test(v), 'plain_text').default('');
+
+/** Several paragraphs in the three languages (each may be empty), e.g. "about the procedure". */
+export const i18nPlainTextSchema = (max: number) =>
+  z.object({ ro: plainTextField(max), ru: plainTextField(max), en: plainTextField(max) });
+
 export const dateSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'invalid_date')

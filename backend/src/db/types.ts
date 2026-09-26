@@ -162,6 +162,12 @@ export interface ServiceDoc extends ManagedDefault {
   slug: string;
   name: I18nText;
   description: I18nText;
+  /**
+   * "About the procedure": what clients read when they tap ⓘ next to the service. Plain text, a
+   * blank line starts a paragraph; a language may be empty. Missing on services saved before it
+   * existed (read as empty).
+   */
+  details?: I18nText;
   durationMin: number;
   price: number;
   /** Shows "from" before the price (final price confirmed at the studio). */

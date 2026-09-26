@@ -133,6 +133,7 @@
     "password_rules": "Cel puțin 8 caractere",
     "passwords_mismatch": "Parolele nu coincid",
     "invalid": "Valoare nevalidă",
+    "plain_text": "Doar text simplu, fără etichete HTML",
     "invalid_code": "Introdu codul din 6 cifre",
     "same_email": "Acesta este deja emailul tău"
   },

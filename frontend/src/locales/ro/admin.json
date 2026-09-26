@@ -53,6 +53,8 @@
     "editCategory": "Editează categoria",
     "name": "Denumire",
     "description": "Descriere",
+    "details": "Despre procedură",
+    "detailsHint": "Clienții văd acest text când apasă <icon/> lângă serviciu. Un rând gol începe un paragraf nou.",
     "price": "Preț",
     "priceFrom": "Preț „de la” (prețul final la salon)",
     "duration": "Durata (minute)",
@@ -711,6 +713,7 @@
     "fields": {
       "name": "denumire",
       "description": "descriere",
+      "details": "despre procedură",
       "price": "preț",
       "durationMin": "durată",
       "categoryId": "categorie",

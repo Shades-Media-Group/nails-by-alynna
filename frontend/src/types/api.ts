@@ -129,6 +129,11 @@ export interface Service {
   slug: string;
   name: I18nText;
   description: I18nText;
+  /**
+   * "About the procedure", shown behind ⓘ: plain text, a blank line starts a paragraph. Missing
+   * from a catalog the installed app cached before the API sent it.
+   */
+  details?: I18nText;
   durationMin: number;
   price: number;
   priceFrom: boolean;

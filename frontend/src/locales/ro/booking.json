@@ -27,12 +27,19 @@
     "categories": "Categorii",
     "add": "Adaugă {{name}}",
     "remove": "Elimină {{name}}",
+    "about": "Despre {{name}}",
     "empty": "Încă nu sunt servicii publicate.",
     "summary_one": "{{count}} serviciu",
     "summary_few": "{{count}} servicii",
     "summary_other": "{{count}} de servicii",
     "continue": "Continuă",
-    "clear": "Golește"
+    "clear": "Golește",
+    "details": {
+      "add": "Adaugă la programare",
+      "remove": "Elimină din programare",
+      "added": "Adăugat la programare: {{name}}",
+      "removed": "Eliminat din programare: {{name}}"
+    }
   },
   "shape": {
     "title": "Forma unghiilor",

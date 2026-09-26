@@ -133,6 +133,7 @@
     "password_rules": "Не менее 8 символов",
     "passwords_mismatch": "Пароли не совпадают",
     "invalid": "Некорректное значение",
+    "plain_text": "Только обычный текст, без HTML-тегов",
     "invalid_code": "Введите 6-значный код",
     "same_email": "Это уже ваш email"
   },

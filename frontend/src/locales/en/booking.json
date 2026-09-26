@@ -27,11 +27,18 @@
     "categories": "Categories",
     "add": "Add {{name}}",
     "remove": "Remove {{name}}",
+    "about": "About {{name}}",
     "empty": "No services are published yet.",
     "summary_one": "{{count}} service",
     "summary_other": "{{count}} services",
     "continue": "Continue",
-    "clear": "Clear"
+    "clear": "Clear",
+    "details": {
+      "add": "Add to booking",
+      "remove": "Remove from booking",
+      "added": "Added to your booking: {{name}}",
+      "removed": "Removed from your booking: {{name}}"
+    }
   },
   "shape": {
     "title": "Nail shape",
