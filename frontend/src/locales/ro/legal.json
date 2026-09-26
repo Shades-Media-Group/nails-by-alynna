@@ -26,6 +26,7 @@
           "Datele contului: prenumele și numele, adresa de email, numărul de telefon, limba preferată și parola, păstrată doar într-o formă criptată ireversibil (nu vedem și nu păstrăm parola propriu-zisă). Dacă intri cu Google: identificatorul oferit de Google contului tău, numele și emailul transmise de Google.",
           "Programările: serviciile, data și ora, maestrul, prețurile, statutul, notele pe care le scrii pentru salon și, dacă anulezi, motivul indicat.",
           "Notele pe care salonul le păstrează despre vizitele tale, de exemplu preferințe, ca să primești un serviciu constant.",
+          "Feedbackul pe care alegi să-l trimiți: stelele și comentariile despre o vizită sau despre aplicație. Le citesc maestrul vizitei și proprietarul salonului; nu se publică nicăieri.",
           "Date tehnice și de securitate: adresa IP, tipul de browser și dispozitiv, orele autentificării și evidența acțiunilor importante pentru securitate.",
           "Informații despre sănătate doar dacă alegi să le spui (de exemplu o alergie în note). Le folosim exclusiv pentru siguranța ta în timpul serviciului."
         ]
@@ -65,6 +66,7 @@
         "title": "Cât timp păstrăm datele",
         "items": [
           "Contul și istoricul programărilor: cât timp există contul. Când îți ștergi contul, datele personale se șterg, iar programările trecute rămân doar în formă anonimă, pentru evidența salonului.",
+          "Feedbackul: cât timp există contul. Când îți ștergi contul, comentariile se șterg și rămân doar stelele, fără numele tău.",
           "Sesiunile de autentificare: 12 ore sau până la un an, dacă alegi să rămâi conectat.",
           "Linkurile de resetare a parolei: 30 de minute.",
           "Evidența de securitate: un an.",

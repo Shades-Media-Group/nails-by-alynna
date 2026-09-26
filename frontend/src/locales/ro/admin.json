@@ -686,7 +686,8 @@
       "catalog": "Deschide prețurile",
       "team": "Deschide echipa",
       "settings": "Deschide setările",
-      "promo": "Deschide codurile promoționale"
+      "promo": "Deschide codurile promoționale",
+      "feedback": "Deschide feedbackul"
     },
     "meta": {
       "activated": "Acces redat",
@@ -789,6 +790,10 @@
         "activate": "Cod promoțional pornit",
         "deactivate": "Cod promoțional oprit",
         "delete": "Cod promoțional șters"
+      },
+      "feedback": {
+        "create": "Feedback trimis",
+        "update": "Feedback modificat"
       }
     }
   },

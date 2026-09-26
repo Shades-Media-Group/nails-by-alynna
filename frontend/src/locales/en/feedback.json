@@ -1,0 +1,69 @@
+{
+  "stars_one": "{{count}} star",
+  "stars_other": "{{count}} stars",
+  "scale": {
+    "1": "Poor",
+    "2": "Fair",
+    "3": "Good",
+    "4": "Very good",
+    "5": "Excellent"
+  },
+  "prompt": {
+    "title": "How was your visit with {{name}}?",
+    "titleStudio": "How was your visit?",
+    "notNow": "Not now"
+  },
+  "visit": {
+    "title": "How was your visit?",
+    "subtitle": "Only {{name}} and the studio read it. It is never published.",
+    "subtitleStudio": "Only the studio reads it. It is never published.",
+    "withMaster": "with {{name}}",
+    "rating": "Your rating",
+    "ratingRequired": "Choose from 1 to 5 stars",
+    "comment": "What went well, and what could be better?",
+    "commentHint": "Optional",
+    "notFound": "We couldn't find this visit. It may belong to another account.",
+    "notDone": "A visit can be rated once it has taken place.",
+    "closed": "Visits can be rated for two weeks after them.",
+    "writeInstead": "Write to the studio"
+  },
+  "general": {
+    "title": "Send feedback",
+    "subtitle": "Ideas, praise, or something that didn't work: it goes straight to the studio.",
+    "comment": "Your message",
+    "commentHint": "Only the studio reads it.",
+    "commentRequired": "Write a few words",
+    "rating": "How do you like the studio? (optional)"
+  },
+  "send": "Send",
+  "thanks": {
+    "title": "Thank you!",
+    "visit": "Your feedback went to {{name}} and the studio.",
+    "visitStudio": "Your feedback went to the studio.",
+    "general": "Your message went straight to the studio.",
+    "home": "Back to home"
+  },
+  "admin": {
+    "title": "Feedback",
+    "subtitleOwner": "What clients say about their visits and the app.",
+    "subtitleMaster": "What clients say about their visits with you.",
+    "average": "Average rating",
+    "outOf": "out of 5",
+    "ratings_one": "{{count}} rating",
+    "ratings_other": "{{count}} ratings",
+    "noRatings": "No ratings yet",
+    "filter": "Filter by rating",
+    "all": "All",
+    "chipLabel": "{{stars}}: {{amount}}",
+    "general": "General",
+    "visit": "Visit on {{date}}",
+    "withMaster": "with {{name}}",
+    "openBooking": "Open booking",
+    "edited": "edited",
+    "empty": "No feedback yet",
+    "emptyOwner": "After every completed visit, clients are asked how it went. Their answers and messages appear here.",
+    "emptyMaster": "After every completed visit, clients are asked how it went. What they say about your visits appears here.",
+    "emptyNone": "Feedback reaches the masters and the owner.",
+    "emptyFilter": "No feedback with this rating."
+  }
+}

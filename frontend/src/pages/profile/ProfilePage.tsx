@@ -35,6 +35,7 @@ import {
   NotificationsIcon,
   PersonOutlineIcon,
   PrivacyIcon,
+  RateReviewIcon,
   ShieldIcon,
 } from '@/components/ui/icons';
 import { useLocale } from '@/i18n/useLocale';
@@ -104,6 +105,12 @@ export default function ProfilePage() {
               label={t('profile.loyalty')}
               description={t('profile.loyaltyText')}
               to={lp('/loyalty')}
+            />
+            <ListRow
+              icon={RateReviewIcon}
+              label={t('profile.feedback')}
+              description={t('profile.feedbackText')}
+              to={lp('/feedback')}
             />
             <ListRow
               icon={LanguageIcon}

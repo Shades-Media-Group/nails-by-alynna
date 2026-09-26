@@ -26,6 +26,7 @@
           "Account details: first and last name, email address, phone number, preferred language, and your password in a one-way scrambled form (we never see or keep the password itself). If you sign in with Google: the identifier Google gives your account, and the name and email Google shares.",
           "Bookings: the services, date and time, master, prices, status, the notes you write for the studio and, if you cancel, the reason you give.",
           "Notes the studio keeps about your visits, such as preferences, so you get consistent service.",
+          "Feedback you choose to send: stars and comments about a visit or about the app. The master of that visit and the studio owner read it; it is never published.",
           "Technical and security data: IP address, browser and device type, sign-in times and a record of security-relevant actions.",
           "Health information only if you choose to share it (for example an allergy in your notes). It is used solely to keep you safe during a service."
         ]
@@ -65,6 +66,7 @@
         "title": "How long we keep it",
         "items": [
           "Account and booking history: while your account exists. When you delete your account, your personal details are erased and past bookings are kept only in anonymous form for the studio's records.",
+          "Feedback: while your account exists. When you delete your account, your comments are erased and only the stars stay, without your name.",
           "Sign-in sessions: 12 hours, or up to one year if you choose to stay signed in.",
           "Password-reset links: 30 minutes.",
           "Security records: one year.",

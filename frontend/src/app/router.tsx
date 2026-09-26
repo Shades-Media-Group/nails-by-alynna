@@ -4,7 +4,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import { RouteError } from '@/components/common/RouteError';
 import { LOCALES, type Locale } from '@/i18n/config';
 import { canonicalDefaultPath } from '@/i18n/routing';
-import { GuestOnly, RequireAuth, RequireRole } from './guards';
+import { GuestOnly, RequireAuth, RequireRole, type RouteHandle } from './guards';
 import { LocaleLayout, localeLoader } from './LocaleLayout';
 
 /** Route modules are code-split; each page downloads only when first visited. */
@@ -39,6 +39,7 @@ const adminRoutes: RouteObject = {
         { path: 'settings', lazy: page(() => import('@/admin/pages/SettingsPage')) },
         { path: 'scan', lazy: page(() => import('@/admin/pages/ScanPage')) },
         { path: 'promo', lazy: page(() => import('@/admin/pages/PromoCodesPage')) },
+        { path: 'feedback', lazy: page(() => import('@/admin/pages/FeedbackPage')) },
         {
           element: <RequireRole roles={['administrator']} />,
           children: [
@@ -92,6 +93,12 @@ function localeTree(locale: Locale): RouteObject {
               { path: 'profile/notifications', lazy: page(() => import('@/pages/profile/NotificationsPage')) },
               { path: 'studio', lazy: page(() => import('@/pages/studio/StudioPage')) },
               { path: 'loyalty', lazy: page(() => import('@/pages/loyalty/LoyaltyPage')) },
+              // Opened from the email after a visit (and from Terms): signing in comes back here.
+              {
+                path: 'feedback',
+                handle: { comeBack: true } satisfies RouteHandle,
+                lazy: page(() => import('@/pages/feedback/FeedbackPage')),
+              },
             ],
           },
           { path: 'book', lazy: page(() => import('@/pages/booking/BookingPage')) },
