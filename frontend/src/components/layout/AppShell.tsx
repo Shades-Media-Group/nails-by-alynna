@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation } from 'react-router';
 import { useAuth } from '@/app/auth';
+import { BookingStatusToasts } from '@/components/booking/BookingStatusToasts';
 import { DemoRibbon } from '@/components/common/DemoRibbon';
 import { Onboarding } from '@/components/onboarding/Onboarding';
 import { TabBar } from './TabBar';
@@ -22,13 +23,18 @@ export function AppShell() {
       </a>
       <DemoRibbon />
       <TopNav />
-      <main id="main" className="mx-auto w-full max-w-6xl pb-[calc(var(--safe-bottom)+6.5rem)] lg:px-8 lg:pb-16">
+      <main
+        id="main"
+        className="mx-auto w-full max-w-6xl pb-[calc(var(--safe-bottom)+6.5rem)] lg:px-8 lg:pb-16"
+      >
         {/* Each screen fades in; keyed so a new route never inherits the old one's state. */}
         <div key={pathname} className="animate-page">
           <Outlet />
         </div>
       </main>
       <TabBar />
+      {/* A banner when the studio confirms or moves a visit while the app is open. */}
+      {user ? <BookingStatusToasts /> : null}
       {/* First sign-in: a short intro to the app (clients only). */}
       {user?.role === 'client' ? <Onboarding key={user.id} user={user} /> : null}
     </div>

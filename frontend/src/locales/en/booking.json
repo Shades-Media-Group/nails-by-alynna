@@ -76,7 +76,8 @@
     "doneRequestTitle": "Request sent!",
     "doneRescheduledTitle": "Your visit moved",
     "doneText": "We've saved it in your bookings. See you soon!",
-    "doneRequestText": "The studio will confirm it shortly. You'll see the status in your bookings.",
+    "doneRequestText": "{{who}} will confirm it shortly. We'll let you know as soon as it's confirmed.",
+    "theStudio": "The studio",
     "addToCalendar": "Add to calendar",
     "viewBooking": "View booking",
     "backHome": "Back to home",
@@ -113,5 +114,11 @@
     "legal": "Terms and privacy",
     "address": "Address",
     "freeCancel_other": "Free cancellation or rescheduling up to {{count}} hours before the visit."
+  },
+  "live": {
+    "confirmed": "Your visit is confirmed",
+    "moved": "Your visit has a new time",
+    "with": "with {{name}}",
+    "view": "View"
   }
 }

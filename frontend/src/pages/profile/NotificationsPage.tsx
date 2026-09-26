@@ -12,7 +12,14 @@ import { useLocale } from '@/i18n/useLocale';
 import { cx } from '@/lib/cx';
 import { errorMessage } from '@/lib/errors';
 import { currentPlatform } from '@/lib/platform';
-import { disablePush, enablePush, isAppleDevice, readPushState, resyncPush, type PushState } from '@/lib/push';
+import {
+  disablePush,
+  enablePush,
+  isAppleDevice,
+  readPushState,
+  resyncPush,
+  type PushState,
+} from '@/lib/push';
 import {
   notificationsApi,
   type NotificationPrefs,
@@ -29,12 +36,13 @@ const HOME_SCREEN_NAME = 'Nails Alynna';
 /** The shared Switch is 28 px tall: widen its tap area to 44 px without changing how it looks. */
 const SWITCH_TAP_AREA = '[&_[role=switch]]:before:absolute [&_[role=switch]]:before:-inset-2';
 type DeviceState = PushState | 'loading' | 'unavailable';
-type Category = 'reminders' | 'bookingUpdates' | 'loyalty' | 'marketing';
+type Category = 'reminders' | 'bookingUpdates' | 'staffBookings' | 'loyalty' | 'marketing';
 
 function mergePrefs(prefs: NotificationPrefs, patch: NotificationPrefsPatch): NotificationPrefs {
   return {
     reminders: { ...prefs.reminders, ...patch.reminders },
     bookingUpdates: { ...prefs.bookingUpdates, ...patch.bookingUpdates },
+    staffBookings: { ...prefs.staffBookings, ...patch.staffBookings },
     loyalty: { ...prefs.loyalty, ...patch.loyalty },
     marketing: { ...prefs.marketing, ...patch.marketing },
   };
@@ -57,7 +65,9 @@ export default function NotificationsPage() {
     if (!userId || pushConfigured === undefined) return;
     let alive = true;
     const read = () => {
-      const next = pushConfigured ? readPushState(userId) : Promise.resolve<DeviceState>('unavailable');
+      const next = pushConfigured
+        ? readPushState(userId)
+        : Promise.resolve<DeviceState>('unavailable');
       void next.then((state) => {
         if (!alive) return;
         setDevice(state);
@@ -82,7 +92,11 @@ export default function NotificationsPage() {
     onMutate: async (patch) => {
       await queryClient.cancelQueries({ queryKey: KEY });
       const previous = queryClient.getQueryData<NotificationSettings>(KEY);
-      if (previous) queryClient.setQueryData<NotificationSettings>(KEY, { ...previous, prefs: mergePrefs(previous.prefs, patch) });
+      if (previous)
+        queryClient.setQueryData<NotificationSettings>(KEY, {
+          ...previous,
+          prefs: mergePrefs(previous.prefs, patch),
+        });
       return { previous };
     },
     onError: (error, _patch, context) => {
@@ -101,21 +115,44 @@ export default function NotificationsPage() {
 
   return (
     <div className="pb-10">
-      <PageHeader title={t('notifications.title')} subtitle={t('notifications.subtitle')} back backTo={lp('/profile')} />
+      <PageHeader
+        title={t('notifications.title')}
+        subtitle={t('notifications.subtitle')}
+        back
+        backTo={lp('/profile')}
+      />
       <div className="gutter-x mt-6 flex flex-col gap-7 lg:max-w-2xl lg:px-0">
         {settings.isPending ? (
-          [0, 1, 2].map((i) => <Skeleton key={i} rounded="xl" className={i === 0 ? 'h-28' : 'h-40'} />)
+          [0, 1, 2].map((i) => (
+            <Skeleton key={i} rounded="xl" className={i === 0 ? 'h-28' : 'h-40'} />
+          ))
         ) : settings.isError ? (
           <div className="flex flex-col items-start gap-3">
             <Alert>{errorMessage(t, settings.error)}</Alert>
-            <Button variant="outline" size="md" icon={RefreshIcon} onClick={() => void settings.refetch()}>
+            <Button
+              variant="outline"
+              size="md"
+              icon={RefreshIcon}
+              onClick={() => void settings.refetch()}
+            >
               {t('common:actions.retry')}
             </Button>
           </div>
         ) : (
           <>
-            {demo ? <Alert tone="info">{t('notifications.device.demo')}</Alert> : <DeviceCard state={device} userId={userId} onState={setDevice} />}
-            <Preferences settings={settings.data} device={device} loyaltyOn={loyaltyOn} readOnly={demo} onChange={(patch) => update.mutate(patch)} />
+            {demo ? (
+              <Alert tone="info">{t('notifications.device.demo')}</Alert>
+            ) : (
+              <DeviceCard state={device} userId={userId} onState={setDevice} />
+            )}
+            <Preferences
+              settings={settings.data}
+              device={device}
+              loyaltyOn={loyaltyOn}
+              staff={user?.role === 'admin' || user?.role === 'administrator'}
+              readOnly={demo}
+              onChange={(patch) => update.mutate(patch)}
+            />
           </>
         )}
       </div>
@@ -125,18 +162,31 @@ export default function NotificationsPage() {
 
 // ── This device ────────────────────────────────────────────────────────────────
 
-function DeviceCard({ state, userId, onState }: { state: DeviceState; userId: string; onState: (state: DeviceState) => void }) {
+function DeviceCard({
+  state,
+  userId,
+  onState,
+}: {
+  state: DeviceState;
+  userId: string;
+  onState: (state: DeviceState) => void;
+}) {
   const { t } = useTranslation(['account', 'common']);
   const { lp } = useLocale();
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState(false);
   const titleId = useId();
   const platform = currentPlatform();
-  const title = platform.os === 'ios' || platform.os === 'android' ? t('notifications.device.titlePhone') : t('notifications.device.titleDevice');
+  const title =
+    platform.os === 'ios' || platform.os === 'android'
+      ? t('notifications.device.titlePhone')
+      : t('notifications.device.titleDevice');
   const test = useMutation({
     mutationFn: notificationsApi.test,
     onSuccess: (result) =>
-      result.sent > 0 ? toast.success(t('notifications.device.testSent')) : toast.error(t('notifications.device.testNone')),
+      result.sent > 0
+        ? toast.success(t('notifications.device.testSent'))
+        : toast.error(t('notifications.device.testNone')),
     onError: (error) => toast.error(errorMessage(t, error)),
   });
 
@@ -168,7 +218,12 @@ function DeviceCard({ state, userId, onState }: { state: DeviceState; userId: st
   const on = state === 'on';
   const canToggle = state === 'on' || state === 'off';
   const checkAgain = (
-    <Button variant="outline" size="md" icon={RefreshIcon} onClick={() => void readPushState(userId).then(onState)}>
+    <Button
+      variant="outline"
+      size="md"
+      icon={RefreshIcon}
+      onClick={() => void readPushState(userId).then(onState)}
+    >
       {t('notifications.device.checkAgain')}
     </Button>
   );
@@ -193,7 +248,9 @@ function DeviceCard({ state, userId, onState }: { state: DeviceState; userId: st
         : t('notifications.device.deniedDesktop');
     action = checkAgain;
   } else if (state === 'unsupported') {
-    message = isAppleDevice() ? t('notifications.device.unsupportedIos') : t('notifications.device.unsupported');
+    message = isAppleDevice()
+      ? t('notifications.device.unsupportedIos')
+      : t('notifications.device.unsupported');
   } else if (state === 'no-service-worker') {
     message = t('notifications.device.preview');
   } else if (state === 'not-ready') {
@@ -204,7 +261,10 @@ function DeviceCard({ state, userId, onState }: { state: DeviceState; userId: st
   }
 
   return (
-    <section aria-labelledby={titleId} className="rounded-2xl bg-white p-4 ring-1 ring-inset ring-ink-100 sm:p-5">
+    <section
+      aria-labelledby={titleId}
+      className="rounded-2xl bg-white p-4 ring-1 ring-inset ring-ink-100 sm:p-5"
+    >
       <div className="flex items-start gap-3.5">
         <span
           className={cx(
@@ -213,7 +273,11 @@ function DeviceCard({ state, userId, onState }: { state: DeviceState; userId: st
           )}
           aria-hidden="true"
         >
-          {on ? <NotificationsActiveIcon fontSize="inherit" /> : <NotificationsOffIcon fontSize="inherit" />}
+          {on ? (
+            <NotificationsActiveIcon fontSize="inherit" />
+          ) : (
+            <NotificationsOffIcon fontSize="inherit" />
+          )}
         </span>
         <div className={cx('min-w-0 flex-1', SWITCH_TAP_AREA)}>
           {canToggle ? (
@@ -233,7 +297,13 @@ function DeviceCard({ state, userId, onState }: { state: DeviceState; userId: st
             </>
           )}
           {on ? (
-            <Button variant="outline" size="md" className="mt-3" loading={test.isPending} onClick={() => test.mutate()}>
+            <Button
+              variant="outline"
+              size="md"
+              className="mt-3"
+              loading={test.isPending}
+              onClick={() => test.mutate()}
+            >
               {t('notifications.device.test')}
             </Button>
           ) : null}
@@ -262,7 +332,17 @@ function Group({ title, text, children }: { title: string; text: ReactNode; chil
 }
 
 /** Two-option pickers sit on 44 px chips, with a check so "on" never relies on colour alone. */
-function Toggle({ selected, disabled, onClick, children }: { selected: boolean; disabled?: boolean; onClick: () => void; children: ReactNode }) {
+function Toggle({
+  selected,
+  disabled,
+  onClick,
+  children,
+}: {
+  selected: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
   return (
     <Chip
       selected={selected}
@@ -280,12 +360,15 @@ function Preferences({
   settings,
   device,
   loyaltyOn,
+  staff,
   readOnly,
   onChange,
 }: {
   settings: NotificationSettings;
   device: DeviceState;
   loyaltyOn: boolean;
+  /** Masters and the owner also hear about clients' bookings. */
+  staff: boolean;
   readOnly: boolean;
   onChange: (patch: NotificationPrefsPatch) => void;
 }) {
@@ -311,9 +394,19 @@ function Preferences({
   /** Email / app for one kind of message; the group title names them for screen readers. */
   const channels = (category: Category) => (
     <div className="flex flex-col gap-2">
-      <p className="text-[0.9375rem] font-semibold text-ink-900">{t('notifications.channels.label')}</p>
-      <div role="group" aria-label={t('notifications.channels.label')} className="flex flex-wrap gap-2">
-        <Toggle selected={prefs[category].email} disabled={readOnly} onClick={() => onChange({ [category]: { email: !prefs[category].email } })}>
+      <p className="text-[0.9375rem] font-semibold text-ink-900">
+        {t('notifications.channels.label')}
+      </p>
+      <div
+        role="group"
+        aria-label={t('notifications.channels.label')}
+        className="flex flex-wrap gap-2"
+      >
+        <Toggle
+          selected={prefs[category].email}
+          disabled={readOnly}
+          onClick={() => onChange({ [category]: { email: !prefs[category].email } })}
+        >
           {t('notifications.channels.email')}
         </Toggle>
         {pushConfigured ? (
@@ -343,7 +436,9 @@ function Preferences({
   };
 
   const consentDate = prefs.marketing.consentAt
-    ? new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(prefs.marketing.consentAt))
+    ? new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' }).format(
+        new Date(prefs.marketing.consentAt),
+      )
     : null;
 
   return (
@@ -377,7 +472,12 @@ function Preferences({
               </p>
               <div role="group" aria-labelledby={leadsId} className="flex flex-wrap gap-2">
                 {LEADS.map((lead) => (
-                  <Toggle key={lead} selected={prefs.reminders.leadMinutes.includes(lead)} disabled={readOnly} onClick={() => toggleLead(lead)}>
+                  <Toggle
+                    key={lead}
+                    selected={prefs.reminders.leadMinutes.includes(lead)}
+                    disabled={readOnly}
+                    onClick={() => toggleLead(lead)}
+                  >
                     {t(`notifications.reminders.lead.${lead}`)}
                   </Toggle>
                 ))}
@@ -388,7 +488,19 @@ function Preferences({
         ) : null}
       </Group>
 
-      <Group title={t('notifications.bookingUpdates.title')} text={t('notifications.bookingUpdates.text')}>
+      {staff ? (
+        <Group
+          title={t('notifications.staffBookings.title')}
+          text={t('notifications.staffBookings.text')}
+        >
+          {channels('staffBookings')}
+        </Group>
+      ) : null}
+
+      <Group
+        title={t('notifications.bookingUpdates.title')}
+        text={t('notifications.bookingUpdates.text')}
+      >
         {channels('bookingUpdates')}
       </Group>
 
@@ -403,7 +515,11 @@ function Preferences({
         text={
           <>
             {t('notifications.marketing.text')}
-            {consentDate ? <span className="mt-1 block text-ink-500">{t('notifications.marketing.consent', { date: consentDate })}</span> : null}
+            {consentDate ? (
+              <span className="mt-1 block text-ink-500">
+                {t('notifications.marketing.consent', { date: consentDate })}
+              </span>
+            ) : null}
           </>
         }
       >

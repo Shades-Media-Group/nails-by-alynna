@@ -791,5 +791,10 @@
         "delete": "Cod promoțional șters"
       }
     }
+  },
+  "alerts": {
+    "request": "Cerere nouă de programare",
+    "booking": "Programare nouă",
+    "open": "Deschide"
   }
 }

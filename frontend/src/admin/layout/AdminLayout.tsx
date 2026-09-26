@@ -28,6 +28,7 @@ import { cx } from '@/lib/cx';
 import { SWATCH, type SwatchColor } from '@/lib/swatch';
 import { signedOutStart } from '@/lib/platform';
 import { adminQueries } from '../api';
+import { BookingAlerts } from '../components/BookingAlerts';
 
 /** Each part of the admin has its own brand colour (a tile behind its icon), like iOS Settings. */
 type Tone = SwatchColor | 'ink';
@@ -65,19 +66,55 @@ export function AdminLayout() {
   // Staff with a master profile set their own week; reception staff have none.
   const isMaster = useQuery(adminQueries.myStaff()).isSuccess;
 
-  const items: Item[] = ([
-    { to: lp('/admin'), label: t('nav.dashboard'), icon: DashboardIcon, tone: 'blush', end: true },
-    { to: lp('/admin/calendar'), label: t('nav.calendar'), icon: CalendarIcon, tone: 'cyan' },
-    { to: lp('/admin/clients'), label: t('nav.clients'), icon: GroupIcon, tone: 'peach' },
-    { to: lp('/admin/scan'), label: t('loyalty:scan.nav'), icon: QrCodeScannerIcon, tone: 'lilac' },
-    { to: lp('/admin/services'), label: t('nav.services'), icon: SpaIcon, tone: 'mint' },
-    { to: lp('/admin/promo'), label: t('promo:admin.title'), icon: LocalOfferIcon, tone: 'blush' },
-    { to: lp('/admin/schedule'), label: t('nav.mySchedule'), icon: ScheduleIcon, tone: 'cyan', masterOnly: true },
-    { to: lp('/admin/team'), label: t('nav.team'), icon: PersonIcon, tone: 'peach' },
-    { to: lp('/admin/settings'), label: t('nav.settings'), icon: SettingsIcon, tone: 'ink' },
-    { to: lp('/admin/users'), label: t('nav.users'), icon: AdminIcon, tone: 'lilac', ownerOnly: true },
-    { to: lp('/admin/audit'), label: t('nav.audit'), icon: HistoryIcon, tone: 'ink', ownerOnly: true },
-  ] satisfies Item[]).filter((item) => (!item.ownerOnly || isOwner) && (!item.masterOnly || isMaster));
+  const items: Item[] = (
+    [
+      {
+        to: lp('/admin'),
+        label: t('nav.dashboard'),
+        icon: DashboardIcon,
+        tone: 'blush',
+        end: true,
+      },
+      { to: lp('/admin/calendar'), label: t('nav.calendar'), icon: CalendarIcon, tone: 'cyan' },
+      { to: lp('/admin/clients'), label: t('nav.clients'), icon: GroupIcon, tone: 'peach' },
+      {
+        to: lp('/admin/scan'),
+        label: t('loyalty:scan.nav'),
+        icon: QrCodeScannerIcon,
+        tone: 'lilac',
+      },
+      { to: lp('/admin/services'), label: t('nav.services'), icon: SpaIcon, tone: 'mint' },
+      {
+        to: lp('/admin/promo'),
+        label: t('promo:admin.title'),
+        icon: LocalOfferIcon,
+        tone: 'blush',
+      },
+      {
+        to: lp('/admin/schedule'),
+        label: t('nav.mySchedule'),
+        icon: ScheduleIcon,
+        tone: 'cyan',
+        masterOnly: true,
+      },
+      { to: lp('/admin/team'), label: t('nav.team'), icon: PersonIcon, tone: 'peach' },
+      { to: lp('/admin/settings'), label: t('nav.settings'), icon: SettingsIcon, tone: 'ink' },
+      {
+        to: lp('/admin/users'),
+        label: t('nav.users'),
+        icon: AdminIcon,
+        tone: 'lilac',
+        ownerOnly: true,
+      },
+      {
+        to: lp('/admin/audit'),
+        label: t('nav.audit'),
+        icon: HistoryIcon,
+        tone: 'ink',
+        ownerOnly: true,
+      },
+    ] satisfies Item[]
+  ).filter((item) => (!item.ownerOnly || isOwner) && (!item.masterOnly || isMaster));
 
   const signOut = async () => {
     await logout().catch(() => undefined);
@@ -109,17 +146,27 @@ export function AdminLayout() {
             <p className="truncate text-sm font-semibold">
               {user?.name} {user?.surname}
             </p>
-            <p className="truncate text-xs text-ink-500">{user ? t(`roles.${user.role}`, { defaultValue: user.role }) : ''}</p>
+            <p className="truncate text-xs text-ink-500">
+              {user ? t(`roles.${user.role}`, { defaultValue: user.role }) : ''}
+            </p>
           </div>
         </div>
         <div className="mt-2 flex flex-col gap-0.5">
-          <SideLink item={{ to: lp('/home'), label: t('nav.clientApp'), icon: HomeIcon, tone: 'blush' }} />
+          <SideLink
+            item={{ to: lp('/home'), label: t('nav.clientApp'), icon: HomeIcon, tone: 'blush' }}
+          />
           <button
             type="button"
             onClick={() => void signOut()}
             className="press flex h-11 items-center gap-3 rounded-xl px-2 text-[0.9375rem] font-medium text-ink-700 hover:bg-ink-50"
           >
-            <span className={cx('inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-lg', TONES.ink.tile, TONES.ink.icon)}>
+            <span
+              className={cx(
+                'inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-lg',
+                TONES.ink.tile,
+                TONES.ink.icon,
+              )}
+            >
               <LogoutIcon fontSize="inherit" />
             </span>
             {t('nav.logout')}
@@ -127,7 +174,12 @@ export function AdminLayout() {
         </div>
       </aside>
 
-      <main key={pathname} className="animate-page pb-[calc(var(--safe-bottom)+6rem)] lg:pb-12 lg:pl-64">
+      {/* A chime and a banner when a client books while the app is open. */}
+      <BookingAlerts />
+      <main
+        key={pathname}
+        className="animate-page pb-[calc(var(--safe-bottom)+6rem)] lg:pb-12 lg:pl-64"
+      >
         <div className="mx-auto w-full max-w-6xl lg:px-8">
           <Outlet />
         </div>
@@ -139,8 +191,19 @@ export function AdminLayout() {
         className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-100 bg-white pb-[var(--safe-bottom)] lg:hidden"
       >
         <ul className="mx-auto grid h-16 max-w-md grid-cols-5 items-center">
-          <BarLink to={lp('/admin')} end icon={DashboardIcon} tone="blush" label={t('nav.dashboard')} />
-          <BarLink to={lp('/admin/calendar')} icon={CalendarIcon} tone="cyan" label={t('nav.calendar')} />
+          <BarLink
+            to={lp('/admin')}
+            end
+            icon={DashboardIcon}
+            tone="blush"
+            label={t('nav.dashboard')}
+          />
+          <BarLink
+            to={lp('/admin/calendar')}
+            icon={CalendarIcon}
+            tone="cyan"
+            label={t('nav.calendar')}
+          />
           <li className="flex justify-center">
             <Link
               to={lp('/admin/appointments/new')}
@@ -150,7 +213,12 @@ export function AdminLayout() {
               <AddIcon fontSize="inherit" />
             </Link>
           </li>
-          <BarLink to={lp('/admin/clients')} icon={GroupIcon} tone="peach" label={t('nav.clients')} />
+          <BarLink
+            to={lp('/admin/clients')}
+            icon={GroupIcon}
+            tone="peach"
+            label={t('nav.clients')}
+          />
           <li className="flex justify-center">
             <button
               type="button"
@@ -168,7 +236,13 @@ export function AdminLayout() {
         <div className="flex flex-col gap-4 py-2" onClick={() => setMoreOpen(false)}>
           <ListGroup>
             {items.slice(3).map((item) => (
-              <ListRow key={item.to} icon={item.icon} iconTone={item.tone === 'ink' ? undefined : item.tone} label={item.label} to={item.to} />
+              <ListRow
+                key={item.to}
+                icon={item.icon}
+                iconTone={item.tone === 'ink' ? undefined : item.tone}
+                label={item.label}
+                to={item.to}
+              />
             ))}
           </ListGroup>
           <ListGroup>
@@ -193,7 +267,13 @@ function SideLink({ item }: { item: Item }) {
         )
       }
     >
-      <span className={cx('inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-lg', TONES[item.tone].tile, TONES[item.tone].icon)}>
+      <span
+        className={cx(
+          'inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-lg',
+          TONES[item.tone].tile,
+          TONES[item.tone].icon,
+        )}
+      >
         <item.icon fontSize="inherit" />
       </span>
       {item.label}
@@ -202,14 +282,29 @@ function SideLink({ item }: { item: Item }) {
 }
 
 /** Phones: the open section's icon sits on a pill in its own colour. */
-function BarLink({ to, icon: Icon, label, tone, end }: { to: string; icon: IconComponent; label: string; tone: Tone; end?: boolean }): ReactNode {
+function BarLink({
+  to,
+  icon: Icon,
+  label,
+  tone,
+  end,
+}: {
+  to: string;
+  icon: IconComponent;
+  label: string;
+  tone: Tone;
+  end?: boolean;
+}): ReactNode {
   return (
     <li className="flex justify-center">
       <NavLink
         to={to}
         end={end}
         className={({ isActive }) =>
-          cx('press flex h-12 w-16 flex-col items-center justify-center gap-0.5 rounded-xl transition-colors', isActive ? 'text-ink-900' : 'text-ink-600')
+          cx(
+            'press flex h-12 w-16 flex-col items-center justify-center gap-0.5 rounded-xl transition-colors',
+            isActive ? 'text-ink-900' : 'text-ink-600',
+          )
         }
       >
         {({ isActive }) => (

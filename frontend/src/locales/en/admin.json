@@ -775,5 +775,10 @@
         "delete": "Promo code deleted"
       }
     }
+  },
+  "alerts": {
+    "request": "New booking request",
+    "booking": "New booking",
+    "open": "Open"
   }
 }

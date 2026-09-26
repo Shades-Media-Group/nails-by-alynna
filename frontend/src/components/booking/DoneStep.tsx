@@ -53,7 +53,7 @@ export function DoneStep({
       <h1 className="mt-5 text-h1 font-extrabold" tabIndex={-1} ref={(el) => el?.focus()}>
         {title}
       </h1>
-      <p className="mt-2 max-w-sm text-ink-600">{pending ? t('flow.doneRequestText') : t('flow.doneText')}</p>
+      <p className="mt-2 max-w-sm text-ink-600">{pending ? t('flow.doneRequestText', { who: appointment.staff?.name ?? t('flow.theStudio') }) : t('flow.doneText')}</p>
 
       <div className="mt-6 w-full max-w-sm rounded-2xl bg-ink-50 p-4 text-left animate-rise">
         <p className="font-bold first-letter:uppercase">{formatDateTime(appointment.start, locale, timeZone)}</p>

@@ -78,7 +78,8 @@
     "doneRequestTitle": "Cererea a fost trimisă!",
     "doneRescheduledTitle": "Vizita a fost mutată",
     "doneText": "Am salvat-o în programările tale. Ne vedem curând!",
-    "doneRequestText": "Salonul o va confirma în scurt timp. Statutul îl vezi în programările tale.",
+    "doneRequestText": "{{who}} confirmă programarea în scurt timp. Îți dăm de știre imediat ce e confirmată.",
+    "theStudio": "Salonul",
     "addToCalendar": "Adaugă în calendar",
     "viewBooking": "Vezi programarea",
     "backHome": "Înapoi acasă",
@@ -116,5 +117,11 @@
     "approval": "Programările noi sunt confirmate de salon.",
     "legal": "Termeni și confidențialitate",
     "address": "Adresă"
+  },
+  "live": {
+    "confirmed": "Vizita ta este confirmată",
+    "moved": "Vizita ta are o oră nouă",
+    "with": "cu {{name}}",
+    "view": "Vezi"
   }
 }

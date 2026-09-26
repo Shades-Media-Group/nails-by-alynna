@@ -96,6 +96,8 @@ export interface ChannelPrefs {
 export interface NotificationPrefs {
   reminders: ChannelPrefs & { enabled: boolean; leadMinutes: ReminderLead[] };
   bookingUpdates: ChannelPrefs;
+  /** Staff: a client asked for, booked, moved or cancelled a visit. */
+  staffBookings: ChannelPrefs;
   loyalty: ChannelPrefs;
   marketing: ChannelPrefs & { consentAt: string | null };
 }

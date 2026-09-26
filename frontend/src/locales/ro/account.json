@@ -164,7 +164,11 @@
     },
     "bookingUpdates": {
       "title": "Modificări ale programărilor",
-      "text": "Când salonul confirmă, mută sau anulează o vizită."
+      "text": "Când te programezi și când salonul confirmă, mută sau anulează o vizită."
+    },
+    "staffBookings": {
+      "title": "Programările clienților",
+      "text": "Cereri noi de programare și vizitele pe care clienții le mută sau le anulează. Maeștrii află despre clienții lor, proprietarul despre toți."
     },
     "loyalty": {
       "title": "Recompense de fidelitate",

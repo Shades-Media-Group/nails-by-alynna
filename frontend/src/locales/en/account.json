@@ -164,7 +164,11 @@
     },
     "bookingUpdates": {
       "title": "Booking updates",
-      "text": "When the studio confirms, moves or cancels a visit."
+      "text": "When you book, and when the studio confirms, moves or cancels a visit."
+    },
+    "staffBookings": {
+      "title": "Clients' bookings",
+      "text": "New booking requests, and visits clients move or cancel. Masters hear about their own clients; the owner about everyone's."
     },
     "loyalty": {
       "title": "Loyalty rewards",
