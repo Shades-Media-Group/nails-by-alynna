@@ -796,5 +796,16 @@
     "request": "Cerere nouă de programare",
     "booking": "Programare nouă",
     "open": "Deschide"
+  },
+  "requests": {
+    "title": "Cereri noi ({{n}})",
+    "later": "Mai târziu",
+    "seeAll": "Vezi toate ({{n}})",
+    "showFewer": "Arată mai puține",
+    "allDone": "Toate cererile sunt rezolvate",
+    "sent": "Trimisă",
+    "count_one": "{{count}} cerere nouă",
+    "count_few": "{{count}} cereri noi",
+    "count_other": "{{count}} de cereri noi"
   }
 }

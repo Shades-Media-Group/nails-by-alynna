@@ -168,6 +168,10 @@ function respond(path: string): unknown {
   if (path === '/api/admin/appointments') {
     return { appointments: [appointment(), appointment({ id: 'a2', code: 'B2', status: 'pending', start: '2026-09-26T08:00:00.000Z', end: '2026-09-26T09:30:00.000Z' })] };
   }
+  if (path === '/api/admin/appointments/pending') {
+    const request = appointment({ id: 'a2', code: 'B2', status: 'pending', source: 'client', start: '2026-09-26T08:00:00.000Z', end: '2026-09-26T09:30:00.000Z' });
+    return { appointments: [request], total: 1, scope: 'all' };
+  }
   if (path.startsWith('/api/admin/appointments/')) return { appointment: appointment() };
   if (path === '/api/admin/catalog') {
     return {
@@ -324,7 +328,9 @@ afterEach(() => vi.unstubAllGlobals());
 describe('staff screens', () => {
   it('Dashboard: next visit, requests, schedule and numbers', async () => {
     renderScreen(<DashboardPage />, '/en/admin', '/en/admin');
-    expect(await screen.findByText('Requests to confirm')).toBeInTheDocument();
+    const requests = await screen.findByRole('region', { name: /Requests to confirm/ });
+    expect(within(requests).getByText('Maria Popescu')).toBeInTheDocument();
+    expect(within(requests).getByRole('button', { name: 'Confirm' })).toBeInTheDocument();
     expect(screen.getAllByText('Maria Popescu').length).toBeGreaterThan(0);
     expect(screen.getByText('In numbers')).toBeInTheDocument();
     expect(screen.getByText('Most booked, 30 days')).toBeInTheDocument();
