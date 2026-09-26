@@ -115,6 +115,22 @@ export interface PushSubscriptionInput {
   keys: { p256dh: string; auth: string };
   expirationTime?: number | null;
 }
+/** One device's answer to "Send a test notification". */
+export interface PushDelivery {
+  service: 'apple' | 'google' | 'mozilla' | 'microsoft' | 'other';
+  device: 'iphone' | 'ipad' | 'android' | 'mac' | 'windows' | 'linux' | 'chromeos' | 'other';
+  /** The push service's HTTP status; null when it could not be reached. */
+  status: number | null;
+  outcome: 'sent' | 'gone' | 'failed';
+}
+export interface PushTestResult {
+  delaySec: number;
+  sent: number;
+  devices: number;
+  failed: number;
+  removed: number;
+  deliveries: PushDelivery[];
+}
 
 /** Profile → Notifications, and this device's Web Push subscription. */
 export const notificationsApi = {
@@ -123,7 +139,8 @@ export const notificationsApi = {
   publicKey: () => api.get<{ publicKey: string | null }>('/notifications/push/key').then((r) => r.publicKey),
   subscribe: (subscription: PushSubscriptionInput) => api.post<{ ok: true }>('/notifications/push/subscribe', subscription),
   unsubscribe: (endpoint: string) => api.post<{ ok: true }>('/notifications/push/unsubscribe', { endpoint }),
-  test: () => api.post<{ sent: number; devices: number }>('/notifications/push/test'),
+  /** Sent after `delaySec` (0-10 s), time to lock the phone or close the app first. */
+  test: (delaySec = 0) => api.post<PushTestResult>('/notifications/push/test', { delaySec }),
 };
 
 export const availabilityApi = {

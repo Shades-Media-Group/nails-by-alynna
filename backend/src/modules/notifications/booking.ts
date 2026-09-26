@@ -4,6 +4,7 @@ import { ACTIVE_STATUSES, type UserDoc } from '../../db/types';
 import { bookingUpdateEmail, staffBookingEmail, type BookingChange, type StaffBookingEvent } from '../../lib/emails';
 import type { MailMessage } from '../../lib/mailer';
 import type { PushPayload } from '../../lib/push';
+import { pendingRequestCount } from '../appointments/requests';
 import { calendarLinks } from '../calendar/service';
 import { getSettings } from '../settings';
 import { appLink, bookingChangePush, staffBookingPush, visitInfo } from './content';
@@ -145,6 +146,8 @@ export async function notifyStaffOfBooking(
       const locale = user.locale;
       const visit = visitInfo(appointment, { appUrl: deps.config.appUrl, locale, settings, master: master?.name ?? null, hasAccount: true });
       const openUrl = appLink(deps.config.appUrl, locale, `/admin/appointments/${hex}`);
+      // The staff app's icon shows the requests waiting for this person, also while it's closed.
+      const badge = await pendingRequestCount(deps, user);
       const outcome = await deliver(deps, {
         key: `staff:${hex}:${event}:${moment.getTime()}:${user._id.toHexString()}`,
         kind: 'staff_booking',
@@ -165,7 +168,7 @@ export async function notifyStaffOfBooking(
             settingsUrl: appLink(deps.config.appUrl, locale, '/profile/notifications'),
           }),
         push: {
-          payload: staffBookingPush(visit, client.name, event, openUrl, locale, settings.timezone, now),
+          payload: { ...staffBookingPush(visit, client.name, event, openUrl, locale, settings.timezone, now), badge },
           options: { ttlSec: 86_400, urgency: 'high', topic: `s${hex}` },
         },
       });

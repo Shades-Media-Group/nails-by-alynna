@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router';
 import { useAuth } from '@/app/auth';
 import { BookingStatusToasts } from '@/components/booking/BookingStatusToasts';
 import { DemoRibbon } from '@/components/common/DemoRibbon';
+import { PushPrompt } from '@/components/notifications/PushPrompt';
 import { Onboarding } from '@/components/onboarding/Onboarding';
 import { TabBar } from './TabBar';
 import { TopNav } from './TopNav';
@@ -37,6 +38,8 @@ export function AppShell() {
       {user ? <BookingStatusToasts /> : null}
       {/* First sign-in: a short intro to the app (clients only). */}
       {user?.role === 'client' ? <Onboarding key={user.id} user={user} /> : null}
+      {/* Later, when they're idle on a main page: "Turn on notifications?" (clients only). */}
+      <PushPrompt audience="client" />
     </div>
   );
 }
