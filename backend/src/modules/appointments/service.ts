@@ -26,15 +26,10 @@ export function breakBetween(settings: StudioSettings, master: Pick<StaffDoc, 'b
   return Math.max(settings.bufferMin, master?.bufferMin ?? 0);
 }
 
-/**
- * Double-booking protection without transactions: after writing a placement we look for an
- * overlapping active appointment of the same master that was placed earlier (`bufferMin` apart
- * at least, see breakBetween). The earliest placement (placedAt, then _id) always wins; the
- * later one rolls itself back.
- */
-async function findEarlierOverlap(
+/** Another active booking of the same master overlapping this one, breaks included. */
+async function findOverlap(
   deps: AppDeps,
-  doc: Pick<AppointmentDoc, '_id' | 'staffId' | 'start' | 'end' | 'placedAt'>,
+  doc: Pick<AppointmentDoc, '_id' | 'staffId' | 'start' | 'end'>,
   bufferMin: number,
 ): Promise<AppointmentDoc | null> {
   const buffer = bufferMin * MINUTE;
@@ -44,11 +39,29 @@ async function findEarlierOverlap(
     status: { $in: ACTIVE_STATUSES },
     start: { $lt: new Date(doc.end.getTime() + buffer) },
     end: { $gt: new Date(doc.start.getTime() - buffer) },
-    $or: [
-      { placedAt: { $lt: doc.placedAt } },
-      { placedAt: doc.placedAt, _id: { $lt: doc._id } },
-    ],
   });
+}
+
+/**
+ * Runs `work` (write a booking, then check it against the others) while holding a PostgreSQL
+ * lock for this master, in every API process, so two bookings for the same time can't both
+ * pass the check. Waiting keeps no pool connection: a missed try gives it back and tries again
+ * shortly, so a queue of bookings can't starve the one holding the lock.
+ */
+async function withMasterLock<T>(deps: AppDeps, staffId: ObjectId, work: () => Promise<T>): Promise<T> {
+  const key = `appointments:${staffId.toHexString()}`;
+  for (let attempt = 0; attempt < 120; attempt++) {
+    const held = await deps.db.transaction(
+      async (client) => {
+        const { rows } = await client.query<{ ok: boolean }>('SELECT pg_try_advisory_xact_lock(hashtext($1)) AS ok', [key]);
+        return rows[0]?.ok ? { value: await work() } : null;
+      },
+      () => false,
+    );
+    if (held) return held.value;
+    await new Promise((resolve) => setTimeout(resolve, 15 + Math.random() * 25));
+  }
+  throw new AppError(409, 'SLOT_UNAVAILABLE', 'This time is no longer available');
 }
 
 async function resolveStaff(
@@ -206,33 +219,39 @@ export async function placeAppointment(deps: AppDeps, input: PlaceInput): Promis
     if (base.promo) await givePromoUseBack(deps, base.promo.promoId, _id);
   };
 
-  let doc: AppointmentDoc | null = null;
-  for (let attempt = 0; attempt < 4 && !doc; attempt++) {
-    const candidate: AppointmentDoc = { ...base, _id, code: bookingCode() };
-    try {
-      await deps.col.appointments.insertOne(candidate);
-      doc = candidate;
-    } catch (error) {
-      if (!isDuplicateKey(error)) {
-        await giveBack();
-        throw error;
+  const insert = async (): Promise<AppointmentDoc> => {
+    let doc: AppointmentDoc | null = null;
+    for (let attempt = 0; attempt < 4 && !doc; attempt++) {
+      const candidate: AppointmentDoc = { ...base, _id, code: bookingCode() };
+      try {
+        await deps.col.appointments.insertOne(candidate);
+        doc = candidate;
+      } catch (error) {
+        if (!isDuplicateKey(error)) {
+          await giveBack();
+          throw error;
+        }
       }
     }
-  }
-  if (!doc) {
-    await giveBack();
-    throw new AppError(500, 'INTERNAL', 'Could not allocate a booking code');
-  }
-
-  if (!input.force) {
-    const conflict = await findEarlierOverlap(deps, doc, breakBetween(settings, master));
-    if (conflict) {
-      await deps.col.appointments.deleteOne({ _id: doc._id });
+    if (!doc) {
       await giveBack();
-      throw new AppError(409, 'SLOT_TAKEN', 'Someone just booked this time');
+      throw new AppError(500, 'INTERNAL', 'Could not allocate a booking code');
     }
-  }
-  return doc;
+
+    if (!input.force) {
+      // Under the master's lock every booking written before this one is in place, so any
+      // overlap means the time was taken meanwhile.
+      const conflict = await findOverlap(deps, doc, breakBetween(settings, master));
+      if (conflict) {
+        await deps.col.appointments.deleteOne({ _id: doc._id });
+        await giveBack();
+        throw new AppError(409, 'SLOT_TAKEN', 'Someone just booked this time');
+      }
+    }
+    return doc;
+  };
+  // Staff may overlap on purpose (force): nothing to check, so nothing to wait for.
+  return input.force ? insert() : withMasterLock(deps, staffId, insert);
 }
 
 export async function rescheduleAppointment(
@@ -279,15 +298,19 @@ export async function rescheduleAppointment(
     placedAt: now,
     updatedAt: now,
   };
-  await deps.col.appointments.updateOne({ _id: appointment._id }, { $set: next });
-
-  if (!opts.force) {
+  if (opts.force) {
+    await deps.col.appointments.updateOne({ _id: appointment._id }, { $set: next });
+  } else {
     master ??= await deps.col.staff.findOne({ _id: staffId }, { projection: { bufferMin: 1 } });
-    const conflict = await findEarlierOverlap(deps, { _id: appointment._id, ...next }, breakBetween(settings, master));
-    if (conflict) {
-      await deps.col.appointments.updateOne({ _id: appointment._id }, { $set: previous });
-      throw new AppError(409, 'SLOT_TAKEN', 'Someone just booked this time');
-    }
+    const buffer = breakBetween(settings, master);
+    await withMasterLock(deps, staffId, async () => {
+      await deps.col.appointments.updateOne({ _id: appointment._id }, { $set: next });
+      const conflict = await findOverlap(deps, { _id: appointment._id, ...next }, buffer);
+      if (conflict) {
+        await deps.col.appointments.updateOne({ _id: appointment._id }, { $set: previous });
+        throw new AppError(409, 'SLOT_TAKEN', 'Someone just booked this time');
+      }
+    });
   }
   // A promo code stays only while it covers the new day and master (otherwise it comes off, with a note).
   return recheckPromoAfterMove(deps, { ...appointment, ...next }, settings);
