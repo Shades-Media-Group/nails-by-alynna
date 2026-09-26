@@ -251,7 +251,7 @@ export default defineConfig(({ mode }) => {
         workbox: {
           // Web Push: push / notificationclick handlers (public/push-sw.js; production builds only).
           importScripts: ['push-sw.js'],
-          globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,webmanifest}'],
+          globPatterns: ['**/*.{js,css,html,svg,png,webp,ico,woff2,webmanifest}'],
           // Admin code, launch screens and the version probe stay out of the install.
           globIgnores: [
             '**/assets/admin/**',

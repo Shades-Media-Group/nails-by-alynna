@@ -100,7 +100,8 @@
     "change": "Изменить",
     "withMaster": "мастер {{name}}",
     "phoneLabel": "Номер телефона",
-    "moreServices": "+ещё {{count}}"
+    "moreServices": "+ещё {{count}}",
+    "demoDone": "Демо-аккаунт: ничего не отправлено. Так выглядит экран после записи."
   },
   "calendar": {
     "title": "Nails by Alynna: {{services}}",

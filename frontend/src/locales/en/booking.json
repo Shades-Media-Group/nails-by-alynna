@@ -96,7 +96,8 @@
     "change": "Change",
     "withMaster": "with {{name}}",
     "phoneLabel": "Phone number",
-    "moreServices": "+{{count}} more"
+    "moreServices": "+{{count}} more",
+    "demoDone": "Demo account: nothing was sent. This is what you see after booking."
   },
   "calendar": {
     "title": "Nails by Alynna: {{services}}",

@@ -98,7 +98,8 @@
     "change": "Schimbă",
     "withMaster": "cu {{name}}",
     "phoneLabel": "Număr de telefon",
-    "moreServices": "+încă {{count}}"
+    "moreServices": "+încă {{count}}",
+    "demoDone": "Cont demo: nu s-a trimis nimic. Așa arată după ce trimiți o programare."
   },
   "calendar": {
     "title": "Nails by Alynna: {{services}}",

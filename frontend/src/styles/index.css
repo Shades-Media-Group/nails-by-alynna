@@ -184,15 +184,20 @@
     to { opacity: 1; transform: none; }
   }
   /* "Clock it" (booking done): three nail-to-nail taps, a spark at each touch. */
-  @keyframes clock-it-middle {
-    0% { transform: rotate(9deg); }
+  /* The "clock it" hand rises into its tile, then the index and thumb nails tap three times. */
+  @keyframes clock-it-hand {
+    from { opacity: 0; transform: translateY(40px) rotate(-8deg) scale(0.92); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes clock-it-index {
+    0% { transform: rotate(12deg); }
     18%, 44%, 70%, 100% { transform: rotate(0deg); }
-    31%, 57% { transform: rotate(7deg); }
+    31%, 57% { transform: rotate(10deg); }
   }
   @keyframes clock-it-thumb {
-    0% { transform: rotate(-6deg); }
+    0% { transform: rotate(-12deg); }
     18%, 44%, 70%, 100% { transform: rotate(0deg); }
-    31%, 57% { transform: rotate(-4deg); }
+    31%, 57% { transform: rotate(-10deg); }
   }
   @keyframes clock-it-spark {
     0%, 16%, 30%, 42%, 56%, 68% { opacity: 0; transform: scale(0.5); }
@@ -409,22 +414,33 @@
 }
 
 /* "Clock it": the middle finger and the thumb turn around their knuckles; the spark flashes where the nails meet. */
+/* Origins are in the art's own units (the hand picture sits at 0 0 512 512). */
+.clock-it-hand,
+.clock-it-index,
 .clock-it-thumb,
-.clock-it-middle,
 .clock-it-spark {
   transform-box: view-box;
+}
+.clock-it-hand {
+  transform-origin: 300px 470px;
+  animation: clock-it-hand 0.45s var(--ease-out) both;
+}
+.clock-it-index,
+.clock-it-thumb,
+.clock-it-spark {
   animation: 1.5s var(--ease-in-out) 0.2s both;
 }
-.clock-it-middle {
-  transform-origin: 52px 51px;
-  animation-name: clock-it-middle;
+/* Each nail turns around its fingertip, so its base stays hidden under the finger. */
+.clock-it-index {
+  transform-origin: 142px 278px;
+  animation-name: clock-it-index;
 }
 .clock-it-thumb {
-  transform-origin: 45px 74px;
+  transform-origin: 134px 326px;
   animation-name: clock-it-thumb;
 }
 .clock-it-spark {
-  transform-origin: 20px 45px;
+  transform-origin: 34px 280px;
   animation-name: clock-it-spark;
 }
 

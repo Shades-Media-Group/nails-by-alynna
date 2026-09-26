@@ -170,7 +170,7 @@ function LocationProbe() {
 }
 const currentSearch = () => screen.getByTestId('location').textContent ?? '';
 
-function renderBooking(url: string) {
+function renderBooking(url: string, me: typeof client = client) {
   const i18n = i18next.createInstance();
   void i18n.use(initReactI18next).init({
     lng: 'en',
@@ -183,7 +183,7 @@ function renderBooking(url: string) {
     initAsync: false,
   });
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  queryClient.setQueryData(['me'], client);
+  queryClient.setQueryData(['me'], me);
   return render(
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={queryClient}>
@@ -290,5 +290,27 @@ describe('nail shape in the booking flow', () => {
     expect(await screen.findByRole('radiogroup', { name: 'Nail shape' })).toBeInTheDocument();
     // The services of that visit are already chosen.
     expect(await screen.findByRole('button', { name: 'Remove Gel polish' })).toBeInTheDocument();
+  });
+});
+
+describe('the demo account', () => {
+  it('sees what comes after booking, and nothing is sent', async () => {
+    const user = userEvent.setup();
+    renderBooking('/en/book?services=s1&shape=almond', { ...client, isDemo: true });
+
+    await user.click(await screen.findByRole('button', { name: '10:00' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(await screen.findByRole('button', { name: 'Confirm booking' }));
+
+    expect(await screen.findByRole('heading', { name: "You're booked!" })).toBeInTheDocument();
+    expect(
+      screen.getByText('Demo account: nothing was sent. This is what you see after booking.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Nail shape: Almond')).toBeInTheDocument();
+    expect(posts).toHaveLength(0);
+    // There is no booking to open or to put in a calendar.
+    expect(screen.queryByRole('link', { name: 'View booking' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add to calendar' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Back to home' })).toBeInTheDocument();
   });
 });
