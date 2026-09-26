@@ -133,6 +133,7 @@
     "password_rules": "At least 8 characters",
     "passwords_mismatch": "Passwords don't match",
     "invalid": "Invalid value",
+    "plain_text": "Plain text only, without HTML tags",
     "invalid_code": "Enter the 6-digit code",
     "same_email": "This is already your email"
   },

@@ -48,6 +48,7 @@ export interface ServiceInput {
   categoryId: string;
   name: I18nText;
   description: I18nText;
+  details: I18nText;
   durationMin: number;
   price: number;
   priceFrom: boolean;

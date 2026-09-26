@@ -11,6 +11,21 @@ export function fillFromRo(text: I18nText): I18nText {
   return { ro: text.ro.trim(), ru: text.ru.trim() || text.ro.trim(), en: text.en.trim() || text.ro.trim() };
 }
 
+const sortedKeys = (value: unknown): unknown =>
+  Array.isArray(value)
+    ? value.map(sortedKeys)
+    : value && typeof value === 'object'
+      ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([key, v]) => [key, sortedKeys(v)]))
+      : value;
+
+/**
+ * Whether a form value still equals the saved one. Key order does not count: the API returns
+ * texts as { en, ro, ru } (the database sorts keys), the forms build { ro, ru, en }.
+ */
+export function sameValue(a: unknown, b: unknown): boolean {
+  return JSON.stringify(sortedKeys(a ?? null)) === JSON.stringify(sortedKeys(b ?? null));
+}
+
 /** Walk-ins booked without an email get an address on the reserved .invalid domain. */
 export const isPlaceholderEmail = (email: string | null | undefined): boolean => !email || email.endsWith('@no-email.invalid');
 
