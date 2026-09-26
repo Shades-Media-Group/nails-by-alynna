@@ -60,7 +60,9 @@ describe('email codes', () => {
     await ctx.flush();
     const mail = ctx.sentMail.findLast((m) => m.to === email)!;
     expect(mail.subject).toMatch(/^Подтверждение email: код \d{6}$/);
-    expect(mail.html).toContain('#FDE7FC');
+    // The studio's logo from the app, and the code on its dark pass.
+    expect(mail.html).toMatch(/src="https?:\/\/[^"]+\/email\/logo\.png"/);
+    expect(mail.html).toContain('nba-pass-ink');
     expect(mail.html).toContain('lang="ru"');
     expect(mail.text).toContain(email);
     const code = await latestCode(ctx, email);

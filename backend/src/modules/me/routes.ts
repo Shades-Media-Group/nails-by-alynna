@@ -171,7 +171,14 @@ export function meRoutes(deps: AppDeps) {
         (async () => {
           const settings = await getSettings(deps);
           await deps.mailer.send(
-            emailChangedNoticeEmail({ to: previous, name: user.name, locale: user.locale, newEmail: input.email, replyTo: settings.email || undefined }),
+            emailChangedNoticeEmail({
+              to: previous,
+              name: user.name,
+              locale: user.locale,
+              newEmail: input.email,
+              appUrl: deps.config.appUrl,
+              replyTo: settings.email || undefined,
+            }),
           );
         })().catch((error: unknown) => console.error(`[mail] email-changed notice failed: ${(error as Error).message}`)),
       );

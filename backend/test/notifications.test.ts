@@ -464,7 +464,14 @@ describe('email delivery', () => {
     expect(mail.text).toContain("hasn't confirmed");
     expect(mail.text).toContain('+37368230429');
 
-    const code = verificationCodeEmail({ to: 'a@gmail.com', name: 'Ana', locale: 'ro', code: '042917', purpose: 'verify_email' });
+    const code = verificationCodeEmail({
+      to: 'a@gmail.com',
+      name: 'Ana',
+      locale: 'ro',
+      code: '042917',
+      purpose: 'verify_email',
+      appUrl: 'https://app.test',
+    });
     expect(code.subject).toBe('Confirmă emailul: codul 042917');
     expect(code.html).toContain('042917');
     expect(code.text).toContain('042917');

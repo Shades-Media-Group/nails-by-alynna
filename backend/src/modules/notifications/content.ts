@@ -19,6 +19,8 @@ export function visitInfo(
     master: string | null;
     /** False for a walk-in client who never signed up: no links that need a login. */
     hasAccount: boolean;
+    /** Signed "Add to calendar" link (calendar/service calendarLinks), when there is one. */
+    calendarUrl?: string | null;
   },
 ): VisitInfo {
   const { settings, locale, appUrl } = opts;
@@ -39,6 +41,10 @@ export function visitInfo(
     settingsUrl: opts.hasAccount ? appLink(appUrl, locale, '/profile/notifications') : null,
     changeDeadline: new Date(appointment.start.getTime() - settings.cancellationWindowHours * HOUR),
     studioPhone: settings.phone || null,
+    lines: appointment.services.map((s) => ({ name: s.name[locale] || s.name.en || s.name.ro, price: s.price, priceFrom: s.priceFrom })),
+    total: { amount: appointment.totalPrice, from: appointment.priceFrom, currency: settings.currency || 'MDL' },
+    durationMin: appointment.durationMin,
+    calendarUrl: opts.calendarUrl ?? null,
   };
 }
 

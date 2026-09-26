@@ -174,6 +174,7 @@ async function emailCode(deps: AppDeps, opts: EmailCodeOptions, code: string): P
       locale: opts.locale,
       code,
       purpose: opts.purpose,
+      appUrl: deps.config.appUrl,
       replyTo: settings.email || undefined,
     }),
   );

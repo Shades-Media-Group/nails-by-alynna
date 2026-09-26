@@ -5,20 +5,25 @@ import type { Locale } from './validation';
 /**
  * Branded transactional emails (ro / ru / en), each with a plain-text alternative.
  *
- * Layout rules for email clients: tables and inline CSS only, one 480 px white card on the
- * blush field, ink pill buttons, the wordmark as live hot-pink text (no images to block).
- * Dark mode: Apple Mail and iOS Mail use the `prefers-color-scheme` block below; Gmail and
- * Outlook invert colours themselves, which this palette survives (no text baked into images,
- * no transparent logos). Every interpolated value is escaped; links must be http(s).
+ * The look is the studio's Wallet-style pass, the same object as the loyalty card in the app:
+ * a white page with the logo and one headline, then what the email is about (a visit, a code,
+ * the card) on a pass in the colour of its state, with a perforated stub underneath. Blush is
+ * booked or confirmed, peach waits for the master, cyan is a new time, stone is cancelled, ink
+ * is for codes and for staff.
+ *
+ * Email-client rules: tables and inline CSS only; Onest from Google Fonts where the client
+ * loads web fonts (Apple Mail, iOS Mail), the system sans elsewhere; the logo is a PNG from the
+ * app (Gmail shows no SVG) with the name as alt text. Dark mode: Apple Mail uses the
+ * `prefers-color-scheme` block below; Gmail and Outlook invert colours themselves, which this
+ * palette survives. Every interpolated value is escaped; links must be http(s).
  */
 
 const BRAND = 'Nails by Alynna';
 const INK = '#252726';
 const MUTED = '#5C605E';
-const BLUSH = '#FDE7FC';
-const HOT_PINK = '#FD2578';
-const LINE = '#EFE6EC';
-const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+const LINE = '#E9E4E7';
+const PAGE = '#FFFFFF';
+const FONT = "Onest,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 const MONO = "'SF Mono',SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace";
 
 const LOCALE_TAGS: Record<Locale, string> = { ro: 'ro-MD', ru: 'ru-MD', en: 'en-GB' };
@@ -43,84 +48,213 @@ function safeUrl(url: string | null | undefined): string | null {
   }
 }
 
-// ── Building blocks ────────────────────────────────────────────────────────────
+// ── The pass ─────────────────────────────────────────────────────────────────────
+
+/**
+ * A pass's field, its accent (the status dot), its deep tone (secondary text on the field, from
+ * the same hue, never grey), the perforation colour and the text colour.
+ */
+type ToneName = 'blush' | 'peach' | 'cyan' | 'stone' | 'ink';
+const TONES: Record<ToneName, { field: string; accent: string; deep: string; perf: string; text: string; chip: string }> = {
+  blush: { field: '#FDE7FC', accent: '#FD2578', deep: '#8F1446', perf: '#F2B9E7', text: INK, chip: '#FFFFFF' },
+  peach: { field: '#FFF3E0', accent: '#FD9B1D', deep: '#7A4400', perf: '#F6D39F', text: INK, chip: '#FFFFFF' },
+  cyan: { field: '#E6FAFC', accent: '#3DBFCC', deep: '#155C63', perf: '#AEE3E8', text: INK, chip: '#FFFFFF' },
+  stone: { field: '#F2F0F1', accent: '#8A8E8C', deep: '#4A4D4C', perf: '#D8D3D6', text: INK, chip: '#FFFFFF' },
+  ink: { field: INK, accent: '#FD2578', deep: '#D9D3D7', perf: '#4B4D4C', text: '#FFFFFF', chip: '#3A3C3B' },
+};
 
 interface Block {
   html: string;
   text: string;
 }
+const NONE: Block = { html: '', text: '' };
 
 const para = (value: string, style = `font-size:16px;line-height:1.55;color:${INK}`, cls = 'nba-text'): Block => ({
-  html: `<p class="${cls}" style="margin:0 0 20px;${style}">${escapeHtml(value)}</p>`,
+  html: `<p class="${cls}" style="margin:0 0 16px;${style}">${escapeHtml(value)}</p>`,
   text: value,
 });
 
 const small = (value: string): Block => para(value, `font-size:13px;line-height:1.5;color:${MUTED}`, 'nba-muted');
 
-function codeBlock(code: string): Block {
+/** A status on a pass: a dot in the accent colour and a short word. */
+function chip(tone: ToneName, label: string): string {
+  const t = TONES[tone];
+  return (
+    `<span class="nba-chip-${tone}" style="display:inline-block;background:${t.chip};border-radius:999px;padding:5px 11px 5px 9px;font-size:13px;line-height:16px;font-weight:600;color:${tone === 'ink' ? '#FFFFFF' : t.deep};white-space:nowrap">` +
+    `<span style="display:inline-block;width:8px;height:8px;border-radius:8px;background:${t.accent};margin-right:6px;vertical-align:1px"></span>${escapeHtml(label)}</span>`
+  );
+}
+
+/** The ticket cut between the pass and its stub: two notches and a dashed line. */
+function perforation(tone: ToneName): string {
+  const t = TONES[tone];
+  const notch = (side: 'left' | 'right') =>
+    `<td width="12" class="nba-page" style="width:12px;height:24px;background:${PAGE};border-radius:${side === 'left' ? '0 12px 12px 0' : '12px 0 0 12px'};font-size:0;line-height:0">&nbsp;</td>`;
+  return (
+    `<tr><td style="padding:0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>` +
+    notch('left') +
+    `<td style="vertical-align:middle;padding:0 6px"><div class="nba-perf-${tone}" style="border-top:2px dashed ${t.perf};height:0;font-size:0;line-height:0">&nbsp;</div></td>` +
+    notch('right') +
+    `</tr></table></td></tr>`
+  );
+}
+
+/**
+ * The pass itself: a status chip and a reference on top, the main content, and (optionally)
+ * the stub under the perforation. Corner radius 16px, colour only (no border, no shadow).
+ */
+function pass(opts: { tone: ToneName; chip: string; reference?: string | null; main: Block; stub?: Block; text?: string }): Block {
+  const t = TONES[opts.tone];
+  const reference = opts.reference
+    ? `<td align="right" class="nba-deep-${opts.tone}" style="font-family:${MONO};font-size:12px;line-height:16px;color:${t.deep};white-space:nowrap">${escapeHtml(opts.reference)}</td>`
+    : '';
+  const stub = opts.stub?.html
+    ? perforation(opts.tone) + `<tr><td style="padding:14px 20px 18px">${opts.stub.html}</td></tr>`
+    : '';
   return {
     html:
-      `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px"><tr>` +
-      `<td class="nba-code" style="background:${BLUSH};border-radius:16px;padding:16px 22px;font-family:${MONO};font-size:34px;line-height:1;font-weight:800;letter-spacing:10px;color:${INK}">${escapeHtml(code)}</td>` +
-      `</tr></table>`,
-    text: `    ${code}`,
+      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="nba-pass-${opts.tone}" style="background:${t.field};border-radius:16px;margin:0 0 20px;border-collapse:separate">` +
+      `<tr><td style="padding:18px 20px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td>${chip(opts.tone, opts.chip)}</td>${reference}</tr></table></td></tr>` +
+      `<tr><td style="padding:14px 20px ${stub ? '16px' : '20px'}">${opts.main.html}</td></tr>` +
+      stub +
+      `</table>`,
+    text: [opts.chip + (opts.reference ? ` · ${opts.reference}` : ''), opts.main.text, opts.stub?.text ?? ''].filter(Boolean).join('\n'),
   };
 }
 
+/** Text on a pass: the main colour or the deep tone of its hue. */
+const onPass = (tone: ToneName, deep = false) =>
+  deep ? { cls: `nba-deep-${tone}`, color: TONES[tone].deep } : { cls: 'nba-pass-text', color: TONES[tone].text };
+
+/** Rows of name and amount (prices), with an optional total under a dashed rule. */
+function lines(tone: ToneName, rows: Array<[string, string]>, total?: [string, string] | null): Block {
+  const main = onPass(tone);
+  const deep = onPass(tone, true);
+  const row = ([name, amount]: [string, string], strong = false, rule = false) =>
+    `<tr><td class="${strong ? main.cls : main.cls}" style="padding:${rule ? '10px' : '3px'} 12px 3px 0;font-size:15px;line-height:1.45;color:${main.color};${strong ? 'font-weight:700;' : ''}${rule ? `border-top:1px dashed ${TONES[tone].perf};` : ''}">${escapeHtml(name)}</td>` +
+    `<td align="right" class="${strong ? main.cls : deep.cls}" style="padding:${rule ? '10px' : '3px'} 0 3px;font-size:15px;line-height:1.45;white-space:nowrap;font-variant-numeric:tabular-nums;color:${strong ? main.color : deep.color};${strong ? 'font-weight:700;' : 'font-weight:600;'}${rule ? `border-top:1px dashed ${TONES[tone].perf};` : ''}">${escapeHtml(amount)}</td></tr>`;
+  const html =
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">` +
+    rows.map((r) => row(r)).join('') +
+    (total ? row(total, true, rows.length > 0) : '') +
+    `</table>`;
+  const text = [...rows, ...(total ? [total] : [])].map(([name, amount]) => `${name}: ${amount}`).join('\n');
+  return { html, text };
+}
+
+/** Plain lines of text on a pass (a note, a list of services without prices). */
+function passText(tone: ToneName, value: string, deep = true, size = 14): Block {
+  const c = onPass(tone, deep);
+  return {
+    html: `<p class="${c.cls}" style="margin:0;font-size:${size}px;line-height:1.5;color:${c.color}">${escapeHtml(value).replace(/\n/g, '<br>')}</p>`,
+    text: value,
+  };
+}
+
+/** The loyalty card's slots, as in the app: numbered circles, dashed ones carry a discount. */
+function stampRow(tone: ToneName, cycle: number, rewards: Array<{ visit: number; percent: number }>, stamped = 0): Block {
+  const t = TONES[tone];
+  const cells = Array.from({ length: cycle }, (_, i) => i + 1)
+    .map((visit) => {
+      const reward = rewards.find((r) => r.visit === visit);
+      const filled = visit <= stamped;
+      const border = filled ? 0 : reward ? 2 : 1;
+      const look = filled
+        ? `background:${t.accent};color:#FFFFFF;`
+        : reward
+          ? `background:#FFFFFF;border:2px dashed ${t.accent};color:${t.deep};`
+          : `background:#FFFFFF;border:1px solid ${t.perf};color:${t.deep};`;
+      const label = reward ? `−${reward.percent}%` : String(visit);
+      return (
+        `<td align="center" style="padding:0 1px"><div style="width:31px;height:31px;line-height:${31 - 2 * border}px;border-radius:31px;box-sizing:border-box;${look}` +
+        `font-size:${reward ? 9 : 12}px;font-weight:700;letter-spacing:-0.02em;text-align:center">${escapeHtml(label)}</div></td>`
+      );
+    })
+    .join('');
+  return {
+    html: `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${cells}</tr></table>`,
+    text: rewards.map((r) => `${r.visit}: −${r.percent}%`).join(', '),
+  };
+}
+
+/**
+ * Pill buttons as inline blocks, so a second button drops under the first on a narrow phone
+ * (or in a longer language) instead of widening the email.
+ */
 function buttons(items: Array<{ label: string; url: string | null; primary?: boolean }>): Block {
   const valid = items.flatMap((item) => {
     const url = safeUrl(item.url);
     return url ? [{ ...item, url }] : [];
   });
-  if (valid.length === 0) return { html: '', text: '' };
-  const cells = valid
+  if (valid.length === 0) return NONE;
+  const links = valid
     .map((item) => {
-      const style = item.primary
-        ? `display:inline-block;background:${INK};color:#ffffff;border:1px solid ${INK}`
-        : `display:inline-block;background:#ffffff;color:${INK};border:1px solid #D9D2D6`;
+      const look = item.primary
+        ? `background:${INK};color:#FFFFFF;border:1px solid ${INK}`
+        : `background:#FFFFFF;color:${INK};border:1px solid #D9D2D6`;
       return (
-        `<td style="padding:0 8px 8px 0"><a class="${item.primary ? 'nba-btn' : 'nba-btn-alt'}" href="${escapeHtml(item.url)}" ` +
-        `style="${style};text-decoration:none;font-family:${FONT};font-size:15px;font-weight:600;line-height:20px;padding:13px 22px;border-radius:999px;white-space:nowrap">` +
-        `${escapeHtml(item.label)}</a></td>`
+        `<a class="${item.primary ? 'nba-btn' : 'nba-btn-alt'}" href="${escapeHtml(item.url)}" ` +
+        `style="display:inline-block;margin:0 8px 8px 0;${look};text-decoration:none;font-family:${FONT};font-size:15px;font-weight:600;line-height:20px;padding:13px 22px;border-radius:999px;white-space:nowrap">` +
+        `${escapeHtml(item.label)}</a>`
       );
     })
     .join('');
   return {
-    html: `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 20px"><tr>${cells}</tr></table>`,
+    html: `<div style="margin:0 0 8px;font-size:0;line-height:0">${links}</div>`,
     text: valid.map((item) => `${item.label}: ${item.url}`).join('\n'),
   };
 }
 
-function details(rows: Array<[label: string, value: string | null | undefined]>): Block {
-  const present = rows.filter((row): row is [string, string] => Boolean(row[1]));
-  const html = present
-    .map(
-      ([label, value], index) =>
-        `<tr><td class="nba-muted nba-rule" style="padding:10px 12px 10px 0;vertical-align:top;font-size:13px;line-height:1.4;color:${MUTED};white-space:nowrap;${index > 0 ? `border-top:1px solid ${LINE};` : ''}">${escapeHtml(label)}</td>` +
-        `<td class="nba-text nba-rule" style="padding:10px 0;vertical-align:top;font-size:15px;line-height:1.45;font-weight:600;color:${INK};${index > 0 ? `border-top:1px solid ${LINE};` : ''}">${escapeHtml(value).replace(/\n/g, '<br>')}</td></tr>`,
-    )
-    .join('');
+/** A line with a link at its end ("str. Ismail 88, Chișinău · Directions"). */
+function lineWithLink(value: string | null, label: string, url: string | null): Block {
+  const safe = safeUrl(url);
+  if (!value && !safe) return NONE;
+  const link = safe
+    ? `${value ? ' · ' : ''}<a class="nba-text" href="${escapeHtml(safe)}" style="color:${INK};font-weight:600;text-decoration:underline;text-underline-offset:3px">${escapeHtml(label)}</a>`
+    : '';
   return {
-    html: `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px">${html}</table>`,
-    text: present.map(([label, value]) => `${label}: ${value.replace(/\n/g, ', ')}`).join('\n'),
+    html: `<p class="nba-text" style="margin:0 0 16px;font-size:15px;line-height:1.5;color:${INK}">${value ? escapeHtml(value) : ''}${link}</p>`,
+    text: [value, safe ? `${label}: ${safe}` : null].filter(Boolean).join('\n'),
   };
+}
+
+function linkLine(label: string, url: string | null): Block {
+  const safe = safeUrl(url);
+  if (!safe) return NONE;
+  return {
+    html: `<p style="margin:0 0 8px;font-size:13px;line-height:1.5"><a class="nba-muted" href="${escapeHtml(safe)}" style="color:${MUTED};text-decoration:underline;text-underline-offset:3px">${escapeHtml(label)}</a></p>`,
+    text: `${label}: ${safe}`,
+  };
+}
+
+/** The app's address (for the logo and the email's own images), from any absolute app link. */
+function originOf(url: string): string {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return '';
+  }
 }
 
 function render(opts: {
   locale: Locale;
   to: string;
   toName?: string;
+  /** Any absolute link into the app: the logo is loaded from the same address. */
+  appUrl: string;
   subject: string;
   preheader: string;
   heading: string;
+  lead?: string;
   blocks: Block[];
   footer: Block[];
   replyTo?: string;
 }): MailMessage {
-  const body = opts.blocks.filter((b) => b.html).map((b) => b.html).join('\n');
-  const footer = opts.footer
-    .map((b) => b.html.replace('margin:0 0 20px', 'margin:0 0 8px'))
-    .join('\n');
+  const app = originOf(opts.appUrl);
+  const home = `${app}${opts.locale === 'ro' ? '' : `/${opts.locale}`}`;
+  const lead = opts.lead ? para(opts.lead, `font-size:17px;line-height:1.5;color:${MUTED}`, 'nba-muted') : NONE;
+  const body = [lead, ...opts.blocks].filter((b) => b.html).map((b) => b.html).join('\n');
+  const footer = opts.footer.filter((b) => b.html).map((b) => b.html.replace('margin:0 0 16px', 'margin:0 0 6px')).join('\n');
   const html = `<!doctype html>
 <html lang="${opts.locale}" xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -130,39 +264,42 @@ function render(opts: {
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
 <title>${escapeHtml(opts.subject)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
 <style>
 :root{color-scheme:light dark;supported-color-schemes:light dark}
 a{color:${INK}}
 @media (prefers-color-scheme:dark){
-.nba-bg{background:#1C1B1C !important}
-.nba-card{background:#2A2C2B !important}
+.nba-page{background:#161516 !important}
 .nba-text{color:#F5F1F4 !important}
-.nba-muted{color:#C8C1C6 !important}
-.nba-rule{border-color:#3C3E3D !important}
-.nba-code{background:#1C1B1C !important;color:#FFFFFF !important}
+.nba-muted{color:#B9B2B7 !important}
+.nba-rule{border-color:#333133 !important}
 .nba-btn{background:#FFFFFF !important;color:${INK} !important;border-color:#FFFFFF !important}
-.nba-btn-alt{background:transparent !important;color:#F5F1F4 !important;border-color:#6B6F6D !important}
-.nba-brand{color:#FF5C9A !important}
+.nba-btn-alt{background:transparent !important;color:#F5F1F4 !important;border-color:#5A5C5B !important}
+.nba-pass-text{color:#FFFFFF !important}
+.nba-pass-blush{background:#3A1C35 !important}.nba-deep-blush{color:#F6B8DE !important}.nba-perf-blush{border-color:#6A3A62 !important}
+.nba-pass-peach{background:#382711 !important}.nba-deep-peach{color:#F8CF94 !important}.nba-perf-peach{border-color:#6B4E24 !important}
+.nba-pass-cyan{background:#0F3438 !important}.nba-deep-cyan{color:#A6E4EA !important}.nba-perf-cyan{border-color:#2A5F65 !important}
+.nba-pass-stone{background:#2A292A !important}.nba-deep-stone{color:#D4CFD2 !important}.nba-perf-stone{border-color:#4C4A4C !important}
+.nba-pass-ink{background:#0D0E0E !important}.nba-perf-ink{border-color:#3A3C3B !important}
+.nba-chip-blush,.nba-chip-peach,.nba-chip-cyan,.nba-chip-stone{background:#1F1E1F !important;color:#F5F1F4 !important}
 }
-[data-ogsc] .nba-text{color:#F5F1F4 !important}
-[data-ogsc] .nba-muted{color:#C8C1C6 !important}
-[data-ogsc] .nba-brand{color:#FF5C9A !important}
+[data-ogsc] .nba-text,[data-ogsc] .nba-pass-text{color:#F5F1F4 !important}
+[data-ogsc] .nba-muted{color:#B9B2B7 !important}
 </style>
 </head>
-<body class="nba-bg" style="margin:0;padding:0;background:${BLUSH};-webkit-text-size-adjust:100%">
+<body class="nba-page" style="margin:0;padding:0;background:${PAGE};-webkit-text-size-adjust:100%">
+<!-- THESIS: every message is the studio's pass, the same object as the loyalty card in the app; refuses the generic centred card with a tracked-caps wordmark. OWN-WORLD: white page, the pink logo, one tight bold headline, a 16px-radius pass in a state colour (blush, peach, cyan, stone, ink) with a perforated stub, ink pill buttons. STORY: the reader sees what happened and when at a glance, then acts with one button. FIRST VIEWPORT: logo top left, headline, one line of lead, the pass with its status chip and the time in 44px. FORM: brief-pinned (the owner chose "Wallet-pass ticket"), position 1, no seed. FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md -->
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all">${escapeHtml(opts.preheader)}&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="nba-bg" style="background:${BLUSH}">
-<tr><td align="center" style="padding:32px 16px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="nba-page" style="background:${PAGE}">
+<tr><td align="center" style="padding:28px 16px 40px">
 <!--[if mso]><table role="presentation" width="480" align="center" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="nba-card" style="max-width:480px;background:#FFFFFF;border-radius:24px">
-<tr><td style="padding:32px 28px 12px;font-family:${FONT};color:${INK}">
-<p class="nba-brand" style="margin:0 0 24px;font-size:14px;letter-spacing:.22em;text-transform:uppercase;font-weight:800;color:${HOT_PINK}">${BRAND}</p>
-<h1 class="nba-text" style="margin:0 0 16px;font-size:24px;line-height:1.25;font-weight:800;color:${INK}">${escapeHtml(opts.heading)}</h1>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;font-family:${FONT}">
+<tr><td style="padding:0 4px 28px"><a href="${escapeHtml(home)}" style="text-decoration:none"><img src="${escapeHtml(`${app}/email/logo.png`)}" width="88" alt="${BRAND}" style="display:block;border:0;width:88px;height:auto;font-family:${FONT};font-size:18px;font-weight:800;color:#FD2578"></a></td></tr>
+<tr><td style="padding:0 4px;font-family:${FONT};color:${INK}">
+<h1 class="nba-text" style="margin:0 0 10px;font-size:28px;line-height:1.15;font-weight:800;letter-spacing:-0.02em;color:${INK}">${escapeHtml(opts.heading)}</h1>
 ${body}
 </td></tr>
-</table>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px">
-<tr><td style="padding:20px 28px 0;font-family:${FONT}">
+<tr><td class="nba-rule" style="padding:18px 4px 0;border-top:1px solid ${LINE};font-family:${FONT}">
 ${footer}
 </td></tr>
 </table>
@@ -172,13 +309,14 @@ ${footer}
 </body>
 </html>`;
   const text = [
-    BRAND.toUpperCase(),
+    BRAND,
     '',
     opts.heading,
+    ...(opts.lead ? ['', opts.lead] : []),
     '',
     ...opts.blocks.filter((b) => b.text).flatMap((b) => [b.text, '']),
     '--',
-    ...opts.footer.map((b) => b.text),
+    ...opts.footer.filter((b) => b.text).map((b) => b.text),
     '',
   ].join('\n');
   return { to: opts.to, toName: opts.toName, subject: opts.subject, html, text, replyTo: opts.replyTo };
@@ -188,24 +326,76 @@ ${footer}
 
 const COMMON: Record<
   Locale,
-  { greeting: (name: string) => string; signature: string; neverShare: string }
+  {
+    greeting: (name: string) => string;
+    signature: string;
+    neverShare: string;
+    codeChip: string;
+    codeValid: string;
+    from: (value: string) => string;
+    total: string;
+    duration: (minutes: number) => string;
+    withMaster: (name: string) => string;
+  }
 > = {
   ro: {
     greeting: (name) => (name ? `Bună, ${name}!` : 'Bună!'),
     signature: `${BRAND} · Chișinău`,
     neverShare: 'Nu da nimănui acest cod. Salonul nu ți-l va cere niciodată.',
+    codeChip: 'Codul tău',
+    codeValid: 'Valabil 10 minute',
+    from: (value) => `de la ${value}`,
+    total: 'Total estimat',
+    duration: (m) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}` : `${m} min`),
+    withMaster: (name) => `cu ${name}`,
   },
   ru: {
     greeting: (name) => (name ? `Здравствуйте, ${name}!` : 'Здравствуйте!'),
     signature: `${BRAND} · Кишинёв`,
     neverShare: 'Никому не сообщайте этот код. Салон никогда его не спросит.',
+    codeChip: 'Ваш код',
+    codeValid: 'Действует 10 минут',
+    from: (value) => `от ${value}`,
+    total: 'Итого, ориентировочно',
+    duration: (m) => (m >= 60 ? `${Math.floor(m / 60)} ч${m % 60 ? ` ${m % 60} мин` : ''}` : `${m} мин`),
+    withMaster: (name) => `мастер ${name}`,
   },
   en: {
     greeting: (name) => (name ? `Hi ${name},` : 'Hi,'),
     signature: `${BRAND} · Chișinău`,
     neverShare: 'Never share this code. The studio will never ask you for it.',
+    codeChip: 'Your code',
+    codeValid: 'Valid for 10 minutes',
+    from: (value) => `from ${value}`,
+    total: 'Estimated total',
+    duration: (m) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}` : `${m} min`),
+    withMaster: (name) => `with ${name}`,
   },
 };
+
+function money(amount: number, currency: string, locale: Locale, from = false): string {
+  const value = `${new Intl.NumberFormat(LOCALE_TAGS[locale], { maximumFractionDigits: 0 }).format(amount)} ${currency}`;
+  return from ? COMMON[locale].from(value) : value;
+}
+
+/**
+ * The code on an ink pass: big tabular digits, spaced by tracking rather than a space so it
+ * copies (and autofills from Mail) as one word; how long it lasts.
+ */
+function codePass(locale: Locale, code: string, stub?: string): Block {
+  const c = COMMON[locale];
+  return pass({
+    tone: 'ink',
+    chip: c.codeChip,
+    main: {
+      html:
+        `<p class="nba-pass-text" style="margin:0;font-size:44px;line-height:1.05;font-weight:800;letter-spacing:0.12em;font-variant-numeric:tabular-nums;color:#FFFFFF">${escapeHtml(code)}</p>` +
+        `<p class="nba-deep-ink" style="margin:8px 0 0;font-size:14px;line-height:1.4;color:${TONES.ink.deep}">${escapeHtml(c.codeValid)}</p>`,
+      text: `${code} (${c.codeValid})`,
+    },
+    stub: stub ? passText('ink', stub) : undefined,
+  });
+}
 
 // ── Codes: email confirmation, new email, password reset ─────────────────────────
 
@@ -264,6 +454,8 @@ export function verificationCodeEmail(opts: {
   locale: Locale;
   code: string;
   purpose: CodeEmailPurpose;
+  /** The app's address (the logo is loaded from it). */
+  appUrl: string;
   replyTo?: string;
 }): MailMessage {
   const t = CODE_COPY[opts.purpose][opts.locale];
@@ -272,11 +464,13 @@ export function verificationCodeEmail(opts: {
     locale: opts.locale,
     to: opts.to,
     toName: opts.name,
+    appUrl: opts.appUrl,
     subject: t.subject(opts.code),
     preheader: t.body(opts.to),
     heading: t.heading,
-    blocks: [para(c.greeting(opts.name)), para(t.body(opts.to)), codeBlock(opts.code), small(c.neverShare), small(t.ignore)],
-    footer: [small(c.signature)],
+    lead: t.body(opts.to),
+    blocks: [codePass(opts.locale, opts.code, c.neverShare)],
+    footer: [small(t.ignore), small(c.signature)],
     replyTo: opts.replyTo,
   });
 }
@@ -326,37 +520,38 @@ export function passwordResetEmail(opts: {
     locale: opts.locale,
     to: opts.to,
     toName: opts.name,
+    appUrl: opts.link,
     subject: t.subject(opts.code),
     preheader: t.body,
     heading: t.heading,
+    lead: t.body,
     blocks: [
-      para(c.greeting(opts.name)),
-      para(t.body),
-      codeBlock(opts.code),
+      codePass(opts.locale, opts.code, c.neverShare),
       para(t.orLink, `font-size:15px;line-height:1.5;color:${MUTED}`, 'nba-muted'),
       buttons([{ label: t.cta, url: opts.link, primary: true }]),
-      small(c.neverShare),
-      small(t.ignore),
     ],
-    footer: [small(c.signature)],
+    footer: [small(t.ignore), small(c.signature)],
     replyTo: opts.replyTo,
   });
 }
 
-const EMAIL_CHANGED_COPY: Record<Locale, { subject: string; heading: string; body: (email: string) => string; notYou: string }> = {
+const EMAIL_CHANGED_COPY: Record<Locale, { subject: string; heading: string; body: (email: string) => string; notYou: string; chip: string }> = {
   ro: {
+    chip: 'Emailul nou',
     subject: `Emailul contului ${BRAND} a fost schimbat`,
     heading: 'Emailul contului a fost schimbat',
     body: (email) => `De acum, contul tău folosește adresa ${email}. Mesajele despre vizite ajung acolo.`,
     notYou: 'Dacă nu ai făcut tu această schimbare, contactează imediat salonul.',
   },
   ru: {
+    chip: 'Новый email',
     subject: `Email аккаунта ${BRAND} изменён`,
     heading: 'Email аккаунта изменён',
     body: (email) => `Теперь ваш аккаунт использует адрес ${email}. Письма о визитах будут приходить туда.`,
     notYou: 'Если это были не вы, срочно свяжитесь с салоном.',
   },
   en: {
+    chip: 'New email',
     subject: `Your ${BRAND} email was changed`,
     heading: 'Your email was changed',
     body: (email) => `Your account now uses ${email}. Messages about your visits go there from now on.`,
@@ -370,6 +565,8 @@ export function emailChangedNoticeEmail(opts: {
   name: string;
   locale: Locale;
   newEmail: string;
+  /** The app's address (the logo is loaded from it). */
+  appUrl: string;
   replyTo?: string;
 }): MailMessage {
   const t = EMAIL_CHANGED_COPY[opts.locale];
@@ -379,10 +576,14 @@ export function emailChangedNoticeEmail(opts: {
     locale: opts.locale,
     to: opts.to,
     toName: opts.name,
+    appUrl: opts.appUrl,
     subject: t.subject,
     preheader: t.body(masked),
     heading: t.heading,
-    blocks: [para(c.greeting(opts.name)), para(t.body(masked)), para(t.notYou)],
+    lead: t.body(masked),
+    blocks: [
+      pass({ tone: 'stone', chip: t.chip, main: passText('stone', masked, false, 22), stub: passText('stone', t.notYou) }),
+    ],
     footer: [small(c.signature)],
     replyTo: opts.replyTo,
   });
@@ -411,6 +612,12 @@ export interface VisitInfo {
   /** Last moment the client may change or cancel online (null = no online changes). */
   changeDeadline: Date | null;
   studioPhone: string | null;
+  /** Each service with its list price, the visit's length and total (the price lines on the pass). */
+  lines?: Array<{ name: string; price: number; priceFrom: boolean }>;
+  total?: { amount: number; from: boolean; currency: string } | null;
+  durationMin?: number;
+  /** Signed "Add to calendar" (.ics) link, when there is one. */
+  calendarUrl?: string | null;
 }
 
 export interface VisitTime {
@@ -451,7 +658,9 @@ const VISIT_COPY: Record<
     labels: { when: string; services: string; master: string; where: string; code: string };
     view: string;
     directions: string;
+    calendar: string;
     bookAgain: string;
+    chip: Record<'requested' | 'confirmed' | 'rescheduled' | 'cancelled', string> & { reminder: (v: VisitTime) => string };
     pending: string;
     canChange: (deadline: string) => string;
     tooLate: (phone: string | null) => string;
@@ -474,6 +683,14 @@ const VISIT_COPY: Record<
     labels: { when: 'Când', services: 'Servicii', master: 'Maestru', where: 'Unde', code: 'Codul programării' },
     view: 'Vezi programarea',
     directions: 'Cum ajungi',
+    calendar: 'Adaugă în calendar',
+    chip: {
+      requested: 'Așteaptă confirmarea',
+      confirmed: 'Confirmată',
+      rescheduled: 'Oră nouă',
+      cancelled: 'Anulată',
+      reminder: (v) => (v.relative === 'today' ? 'Azi' : v.relative === 'tomorrow' ? 'Mâine' : 'În curând'),
+    },
     bookAgain: 'Alege altă oră',
     pending: 'Salonul nu a confirmat încă această programare. Îți scriem imediat ce o confirmă.',
     canChange: (deadline) => `Vrei să schimbi ceva? Poți reprograma sau anula în aplicație până pe ${deadline}.`,
@@ -535,6 +752,14 @@ const VISIT_COPY: Record<
     labels: { when: 'Когда', services: 'Услуги', master: 'Мастер', where: 'Где', code: 'Код записи' },
     view: 'Открыть запись',
     directions: 'Как добраться',
+    calendar: 'Добавить в календарь',
+    chip: {
+      requested: 'Ждёт подтверждения',
+      confirmed: 'Подтверждена',
+      rescheduled: 'Новое время',
+      cancelled: 'Отменена',
+      reminder: (v) => (v.relative === 'today' ? 'Сегодня' : v.relative === 'tomorrow' ? 'Завтра' : 'Скоро'),
+    },
     bookAgain: 'Выбрать другое время',
     pending: 'Салон ещё не подтвердил эту запись. Мы напишем, как только это произойдёт.',
     canChange: (deadline) => `Планы изменились? Перенести или отменить запись в приложении можно до ${deadline}.`,
@@ -591,6 +816,14 @@ const VISIT_COPY: Record<
     labels: { when: 'When', services: 'Services', master: 'Master', where: 'Where', code: 'Booking code' },
     view: 'View booking',
     directions: 'Directions',
+    calendar: 'Add to calendar',
+    chip: {
+      requested: 'Awaiting confirmation',
+      confirmed: 'Confirmed',
+      rescheduled: 'New time',
+      cancelled: 'Cancelled',
+      reminder: (v) => (v.relative === 'today' ? 'Today' : v.relative === 'tomorrow' ? 'Tomorrow' : 'Coming up'),
+    },
     bookAgain: 'Book another time',
     pending: "The studio hasn't confirmed this booking yet. We'll let you know as soon as it does.",
     canChange: (deadline) => `Plans changed? You can reschedule or cancel in the app until ${deadline}.`,
@@ -653,14 +886,49 @@ export function describeVisitTime(when: VisitTime, locale: Locale): string {
   return VISIT_COPY[locale].when(when);
 }
 
-function visitDetails(t: (typeof VISIT_COPY)[Locale], visit: VisitInfo, when: VisitTime): Block {
-  return details([
-    [t.labels.when, t.when(when)],
-    [t.labels.services, visit.services.join('\n')],
-    [t.labels.master, visit.master],
-    [t.labels.where, visit.address],
-    [t.labels.code, visit.code],
-  ]);
+/**
+ * A visit on its pass: the time large, the day under it, length and master on the right; the
+ * stub lists the services, with prices and an estimated total when `prices` is on.
+ */
+function visitPass(
+  locale: Locale,
+  tone: ToneName,
+  chipLabel: string,
+  visit: VisitInfo,
+  when: VisitTime,
+  opts: { prices: boolean; aside?: string[] },
+): Block {
+  const c = COMMON[locale];
+  const main = onPass(tone);
+  const deep = onPass(tone, true);
+  const day = capitalize(when.date);
+  const aside = opts.aside ?? [
+    ...(visit.durationMin ? [c.duration(visit.durationMin)] : []),
+    ...(visit.master ? [c.withMaster(visit.master)] : []),
+  ];
+  const lead =
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>` +
+    `<td valign="bottom"><p class="${main.cls}" style="margin:0;font-size:44px;line-height:1;font-weight:800;letter-spacing:-0.02em;color:${main.color}">${escapeHtml(when.time)}</p>` +
+    `<p class="${main.cls}" style="margin:8px 0 0;font-size:16px;line-height:1.35;font-weight:600;color:${main.color}">${escapeHtml(day)}</p></td>` +
+    (aside.length
+      ? `<td valign="bottom" align="right" style="padding-left:12px"><p class="${deep.cls}" style="margin:0;font-size:14px;line-height:1.5;color:${deep.color};white-space:nowrap">${aside.map(escapeHtml).join('<br>')}</p></td>`
+      : '') +
+    `</tr></table>`;
+  const priced = opts.prices && visit.lines && visit.lines.length > 0;
+  const stub = priced
+    ? lines(
+        tone,
+        visit.lines!.map((l) => [l.name, money(l.price, visit.total?.currency ?? 'MDL', locale, l.priceFrom)]),
+        visit.total && visit.lines!.length > 1 ? [c.total, money(visit.total.amount, visit.total.currency, locale, visit.total.from)] : null,
+      )
+    : passText(tone, visit.services.join('\n'), false, 15);
+  return pass({
+    tone,
+    chip: chipLabel,
+    reference: visit.code,
+    main: { html: lead, text: [`${when.time} · ${day}`, ...aside].join(' · ') },
+    stub,
+  });
 }
 
 function changeNote(t: (typeof VISIT_COPY)[Locale], visit: VisitInfo, locale: Locale, timeZone: string, now: Date): Block {
@@ -683,21 +951,24 @@ export function appointmentReminderEmail(opts: {
   const t = VISIT_COPY[opts.locale];
   const when = visitTime(opts.visit.start, opts.locale, opts.timeZone, opts.now);
   const c = COMMON[opts.locale];
+  const pending = opts.visit.status === 'pending';
   return render({
     locale: opts.locale,
     to: opts.to,
     toName: opts.name,
+    appUrl: opts.visit.bookUrl,
     subject: t.reminder.subject(when),
     preheader: `${t.when(when)} · ${opts.visit.services.join(', ')}`,
     heading: t.reminder.heading,
+    lead: t.reminder.lead(opts.name),
     blocks: [
-      para(t.reminder.lead(opts.name)),
-      visitDetails(t, opts.visit, when),
-      opts.visit.status === 'pending' ? para(t.pending, `font-size:15px;line-height:1.5;color:${INK}`) : { html: '', text: '' },
+      visitPass(opts.locale, pending ? 'peach' : 'blush', pending ? t.chip.requested : t.chip.reminder(when), opts.visit, when, { prices: true }),
+      pending ? para(t.pending, `font-size:15px;line-height:1.5;color:${INK}`) : NONE,
       buttons([
         { label: t.view, url: opts.visit.bookingUrl, primary: true },
-        { label: t.directions, url: opts.visit.directionsUrl },
+        { label: t.calendar, url: opts.visit.calendarUrl ?? null },
       ]),
+      lineWithLink(opts.visit.address, t.directions, opts.visit.directionsUrl),
       changeNote(t, opts.visit, opts.locale, opts.timeZone, opts.now),
     ],
     footer: opts.visit.settingsUrl
@@ -727,30 +998,28 @@ export function bookingUpdateEmail(opts: {
   const when = visitTime(opts.visit.start, opts.locale, opts.timeZone, opts.now);
   const c = COMMON[opts.locale];
   const cancelled = opts.kind === 'cancelled';
+  const tone: ToneName = opts.kind === 'requested' ? 'peach' : opts.kind === 'rescheduled' ? 'cyan' : cancelled ? 'stone' : 'blush';
+  const chipLabel = t.chip[opts.kind === 'booked' ? 'confirmed' : opts.kind];
   return render({
     locale: opts.locale,
     to: opts.to,
     toName: opts.name,
+    appUrl: opts.visit.bookUrl,
     subject: copy.subject(when),
     preheader: lead,
     heading: copy.heading,
+    lead,
     blocks: [
-      para(c.greeting(opts.name)),
-      para(lead),
-      cancelled
-        ? details([
-            [t.labels.when, t.when(when)],
-            [t.labels.services, opts.visit.services.join('\n')],
-          ])
-        : visitDetails(t, opts.visit, when),
-      cancelled ? para(t.cancelled.next) : { html: '', text: '' },
+      visitPass(opts.locale, tone, chipLabel, opts.visit, when, { prices: !cancelled }),
+      cancelled ? para(t.cancelled.next) : NONE,
       cancelled
         ? buttons([{ label: t.bookAgain, url: opts.visit.bookUrl, primary: true }])
         : buttons([
             { label: t.view, url: opts.visit.bookingUrl, primary: true },
-            { label: t.directions, url: opts.visit.directionsUrl },
+            { label: t.calendar, url: opts.visit.calendarUrl ?? null },
           ]),
-      cancelled ? { html: '', text: '' } : changeNote(t, opts.visit, opts.locale, opts.timeZone, opts.now),
+      cancelled ? NONE : lineWithLink(opts.visit.address, t.directions, opts.visit.directionsUrl),
+      cancelled ? NONE : changeNote(t, opts.visit, opts.locale, opts.timeZone, opts.now),
     ],
     footer: opts.visit.settingsUrl
       ? [small(t.updatesWhy), linkLine(t.settings, opts.visit.settingsUrl), small(c.signature)]
@@ -863,37 +1132,35 @@ export function staffBookingEmail(opts: {
   const v = VISIT_COPY[opts.locale];
   const when = visitTime(opts.visit.start, opts.locale, opts.timeZone, opts.now);
   const c = COMMON[opts.locale];
+  // The staff pass is ink: who comes and when, then what they booked.
+  const who = lines('ink', [[opts.client.name, opts.client.phone ?? '']]);
+  const visit = visitPass(opts.locale, 'ink', t.heading[opts.event], opts.visit, when, {
+    prices: opts.event !== 'cancelled',
+    aside: [
+      ...(opts.visit.durationMin ? [c.duration(opts.visit.durationMin)] : []),
+      ...(opts.visit.master ? [c.withMaster(opts.visit.master)] : []),
+    ],
+  });
   return render({
     locale: opts.locale,
     to: opts.to,
     toName: opts.name,
+    appUrl: opts.openUrl,
     subject: t.subject[opts.event](opts.client.name, v.when(when)),
     preheader: t.lead[opts.event],
     heading: t.heading[opts.event],
+    lead: t.lead[opts.event],
     blocks: [
-      para(t.lead[opts.event]),
-      details([
-        [t.labels.client, opts.client.name],
-        [t.labels.phone, opts.client.phone],
-        [v.labels.when, v.when(when)],
-        [v.labels.services, opts.visit.services.join('\n')],
-        [v.labels.master, opts.visit.master],
-        [v.labels.code, opts.visit.code],
-      ]),
+      {
+        html: visit.html.replace('<tr><td style="padding:14px 20px 16px">', `<tr><td style="padding:0 20px 12px">${who.html}</td></tr><tr><td style="padding:14px 20px 16px">`),
+        text: `${who.text}\n${visit.text}`,
+      },
       buttons([{ label: t.open[opts.event], url: opts.openUrl, primary: true }]),
     ],
     footer: [small(t.why), linkLine(v.settings, opts.settingsUrl), small(c.signature)],
   });
 }
 
-function linkLine(label: string, url: string | null): Block {
-  const safe = safeUrl(url);
-  if (!safe) return { html: '', text: '' };
-  return {
-    html: `<p class="nba-muted" style="margin:0 0 8px;font-size:13px;line-height:1.5;color:${MUTED}"><a class="nba-muted" href="${escapeHtml(safe)}" style="color:${MUTED};text-decoration:underline">${escapeHtml(label)}</a></p>`,
-    text: `${label}: ${safe}`,
-  };
-}
 
 // ── Welcome and loyalty ───────────────────────────────────────────────────────
 
@@ -908,9 +1175,11 @@ const WELCOME_COPY: Record<
     book: string;
     install: string;
     installNote: string;
+    card: string;
   }
 > = {
   ro: {
+    card: 'Cardul tău de fidelitate',
     subject: 'Bun venit la Nails by Alynna',
     heading: 'Contul tău e gata',
     body: 'Te programezi într-un minut: alegi serviciile, maestrul și ora potrivită. Programările, memento-urile și cardul de fidelitate sunt toate în aplicație.',
@@ -921,6 +1190,7 @@ const WELCOME_COPY: Record<
     installNote: 'Pe telefon, adaugă aplicația pe ecranul principal: se deschide pe tot ecranul și primești memento-uri.',
   },
   ru: {
+    card: 'Ваша карта лояльности',
     subject: 'Добро пожаловать в Nails by Alynna',
     heading: 'Ваш аккаунт готов',
     body: 'Запись занимает минуту: выберите услуги, мастера и удобное время. Записи, напоминания и карта лояльности — всё в приложении.',
@@ -931,6 +1201,7 @@ const WELCOME_COPY: Record<
     installNote: 'На телефоне добавьте приложение на экран «Домой»: оно откроется на весь экран, и вы будете получать напоминания.',
   },
   en: {
+    card: 'Your loyalty card',
     subject: 'Welcome to Nails by Alynna',
     heading: 'Your account is ready',
     body: 'Booking takes a minute: pick services, a master and a time that suits you. Your bookings, reminders and loyalty card are all in the app.',
@@ -960,17 +1231,20 @@ export function welcomeEmail(opts: {
   const c = COMMON[opts.locale];
   const base = `${opts.appUrl.replace(/\/$/, '')}${localeSegment(opts.locale)}`;
   const rewards = opts.rewards.map((r) => t.reward(r.visit, r.percent)).join(', ');
+  const cycle = Math.max(0, ...opts.rewards.map((r) => r.visit));
   return render({
     locale: opts.locale,
     to: opts.to,
     toName: opts.name,
+    appUrl: opts.appUrl,
     subject: t.subject,
     preheader: t.body,
     heading: t.heading,
+    lead: t.body,
     blocks: [
-      para(c.greeting(opts.name)),
-      para(t.body),
-      rewards ? para(t.loyalty(rewards)) : { html: '', text: '' },
+      rewards && cycle > 0 && cycle <= 12
+        ? pass({ tone: 'blush', chip: t.card, main: stampRow('blush', cycle, opts.rewards), stub: passText('blush', t.loyalty(rewards)) })
+        : NONE,
       buttons([
         { label: t.book, url: `${base}/book`, primary: true },
         { label: t.install, url: `${base}/app` },
@@ -982,20 +1256,29 @@ export function welcomeEmail(opts: {
   });
 }
 
-const LOYALTY_NEXT_COPY: Record<Locale, { subject: (percent: number) => string; heading: (percent: number) => string; body: string; book: string }> = {
+const LOYALTY_NEXT_COPY: Record<
+  Locale,
+  { subject: (percent: number) => string; heading: (percent: number) => string; body: string; book: string; card: string; next: string }
+> = {
   ro: {
+    card: 'Cardul de fidelitate',
+    next: 'la următoarea vizită',
     subject: (percent) => `Următoarea vizită are −${percent}%`,
     heading: (percent) => `Următoarea ta vizită are −${percent}%`,
     body: 'Mulțumim pentru vizită! Cardul de fidelitate a ajuns la reducere: se aplică la salon, la prețul următoarei vizite.',
     book: 'Programează-te',
   },
   ru: {
+    card: 'Карта лояльности',
+    next: 'на следующий визит',
     subject: (percent) => `Следующий визит со скидкой −${percent}%`,
     heading: (percent) => `Ваш следующий визит −${percent}%`,
     body: 'Спасибо за визит! На карте лояльности набралась скидка: она применяется в салоне к стоимости следующего визита.',
     book: 'Записаться',
   },
   en: {
+    card: 'Loyalty card',
+    next: 'off your next visit',
     subject: (percent) => `Your next visit is ${percent}% off`,
     heading: (percent) => `Your next visit is ${percent}% off`,
     body: 'Thank you for coming in! Your loyalty card has reached a discount: it is applied at the studio, on the price of your next visit.',
@@ -1008,14 +1291,30 @@ export function loyaltyNextEmail(opts: { to: string; name: string; locale: Local
   const t = LOYALTY_NEXT_COPY[opts.locale];
   const c = COMMON[opts.locale];
   const base = `${opts.appUrl.replace(/\/$/, '')}${localeSegment(opts.locale)}`;
+  const main = onPass('blush');
+  const deep = onPass('blush', true);
   return render({
     locale: opts.locale,
     to: opts.to,
     toName: opts.name,
+    appUrl: opts.appUrl,
     subject: t.subject(opts.percent),
     preheader: t.body,
     heading: t.heading(opts.percent),
-    blocks: [para(c.greeting(opts.name)), para(t.body), buttons([{ label: t.book, url: `${base}/book`, primary: true }])],
+    lead: t.body,
+    blocks: [
+      pass({
+        tone: 'blush',
+        chip: t.card,
+        main: {
+          html:
+            `<p class="${main.cls}" style="margin:0;font-size:44px;line-height:1;font-weight:800;letter-spacing:-0.02em;color:${main.color}">−${opts.percent}%</p>` +
+            `<p class="${deep.cls}" style="margin:8px 0 0;font-size:16px;line-height:1.35;font-weight:600;color:${deep.color}">${escapeHtml(t.next)}</p>`,
+          text: `−${opts.percent}% ${t.next}`,
+        },
+      }),
+      buttons([{ label: t.book, url: `${base}/book`, primary: true }]),
+    ],
     footer: [small(c.signature)],
   });
 }

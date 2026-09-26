@@ -4,6 +4,7 @@ import { ACTIVE_STATUSES, type UserDoc } from '../../db/types';
 import { bookingUpdateEmail, staffBookingEmail, type BookingChange, type StaffBookingEvent } from '../../lib/emails';
 import type { MailMessage } from '../../lib/mailer';
 import type { PushPayload } from '../../lib/push';
+import { calendarLinks } from '../calendar/service';
 import { getSettings } from '../settings';
 import { appLink, bookingChangePush, staffBookingPush, visitInfo } from './content';
 import { deliver, type DeliveryOutcome } from './deliver';
@@ -40,9 +41,11 @@ export async function notifyBookingChange(
 
     const user = await deps.col.users.findOne({ _id: appointment.clientId });
     if (!user) return 'skipped';
-    const [settings, master] = await Promise.all([
+    const hasAccount = Boolean(user.passwordHash || user.googleId);
+    const [settings, master, calendar] = await Promise.all([
       getSettings(deps),
       deps.col.staff.findOne({ _id: appointment.staffId }, { projection: { name: 1 } }),
+      hasAccount && kind !== 'cancelled' ? calendarLinks(deps, [appointment]) : Promise.resolve(new Map<string, string>()),
     ]);
     const locale = user.locale;
     const visit = visitInfo(appointment, {
@@ -50,7 +53,8 @@ export async function notifyBookingChange(
       locale,
       settings,
       master: master?.name ?? null,
-      hasAccount: Boolean(user.passwordHash || user.googleId),
+      hasAccount,
+      calendarUrl: calendar.get(appointment._id.toHexString()) ?? null,
     });
     const hex = id.toHexString();
     const moment =

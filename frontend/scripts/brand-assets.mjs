@@ -7,6 +7,7 @@
  *     → src/assets/brand/mark.svg       "nails by alynna" (no NAIL SALON line) for compact spots (committed)
  *     → public/favicon.svg, favicon.ico, icons/*.png  PWA + browser icons   (generated)
  *     → public/splash/*.png             iOS launch screens (apple-touch-startup-image)
+ *     → public/email/logo.png           "nails by alynna" for emails (PNG: Gmail shows no SVG)
  *
  * Runs automatically before `dev` and `build` (skips work when nothing changed), so every
  * deploy ships icons and launch screens that match the current logo.
@@ -141,6 +142,7 @@ export async function generateBrandAssets({ force = false, log = console.info } 
   await mkdir(OUT_APP, { recursive: true });
   await mkdir(resolve(OUT_PUBLIC, 'icons'), { recursive: true });
   await mkdir(resolve(OUT_PUBLIC, 'splash'), { recursive: true });
+  await mkdir(resolve(OUT_PUBLIC, 'email'), { recursive: true });
 
   await writeFile(resolve(OUT_APP, 'logo.svg'), standaloneSvg(paths, lockupBox, 'Nails by Alynna'));
   await writeFile(resolve(OUT_APP, 'mark.svg'), standaloneSvg(mark, markBox, 'Nails by Alynna'));
@@ -189,8 +191,16 @@ export async function generateBrandAssets({ force = false, log = console.info } 
     }),
   );
 
+  // Emails show the mark 88 px wide at the top: drawn at 3× on a transparent ground, so it sits
+  // on the white page and on a mail app's dark background alike.
+  const emailWidth = 312;
+  const emailHeight = Math.round(emailWidth * (markBox.h / markBox.w));
+  await png(composeSvg({ width: emailWidth, height: emailHeight, art, artBox: markBox, artWidth: emailWidth })).toFile(
+    resolve(OUT_PUBLIC, 'email/logo.png'),
+  );
+
   await writeFile(STAMP, `${hash}\n`);
-  log(`[brand] generated logo, mark, favicon, ${icons.length} icons and ${SPLASH_SCREENS.length} launch screens`);
+  log(`[brand] generated logo, mark, favicon, ${icons.length} icons, ${SPLASH_SCREENS.length} launch screens and the email logo`);
   return { skipped: false };
 }
 

@@ -74,7 +74,7 @@ describe('a client books', () => {
     for (const [email, since] of [[master.email, before.master], [ownerEmail, before.owner]] as const) {
       expect(subjectsTo(email, since)).toEqual([expect.stringMatching(/^New request: Ana Rusu, Tomorrow, \d\d:\d\d$/)]);
       const mail = mailsTo(email).at(-1)!;
-      expect(mail.text).toMatch(/Phone: \+?373/);
+      expect(mail.text).toMatch(/Ana Rusu: \+?373/);
       expect(mail.html).toContain(`/en/admin/appointments/${appointment.id}`);
     }
   });

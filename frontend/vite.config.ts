@@ -256,6 +256,8 @@ export default defineConfig(({ mode }) => {
           globIgnores: [
             '**/assets/admin/**',
             '**/splash/**',
+            // Pictures for emails, loaded by mail apps, never by the installed app.
+            '**/email/**',
             'version.json',
             // Onest subsets the app never renders (ro/ru/en need latin, latin-ext, cyrillic).
             '**/onest-{math,symbols,vietnamese}-*.woff2',
