@@ -47,13 +47,45 @@ export const SPLASH_SCREENS = [
   { w: 1024, h: 1366, dpr: 2 }, // iPad Pro 12.9"
 ];
 
-export const splashFileName = (s) => `splash/apple-splash-${s.w * s.dpr}x${s.h * s.dpr}.png`;
+/** Every launch screen in both orientations: iOS picks the launch image by orientation. */
+export const LAUNCH_SCREENS = SPLASH_SCREENS.flatMap((s) => [
+  { ...s, orientation: 'portrait' },
+  { ...s, orientation: 'landscape' },
+]);
 
+/** The screen a launch image covers, in CSS px: w × h in portrait, h × w in landscape. */
+export const launchScreenSize = (s) =>
+  s.orientation === 'landscape' ? { width: s.h, height: s.w } : { width: s.w, height: s.h };
+
+export const splashFileName = (s) => {
+  const { width, height } = launchScreenSize(s);
+  return `splash/apple-splash-${width * s.dpr}x${height * s.dpr}.png`;
+};
+
+/** iOS matches device-width/height against the portrait size in both orientations. */
 export function splashLinkTags() {
-  return SPLASH_SCREENS.map(
+  return LAUNCH_SCREENS.map(
     (s) =>
-      `<link rel="apple-touch-startup-image" href="/${splashFileName(s)}" media="screen and (device-width: ${s.w}px) and (device-height: ${s.h}px) and (-webkit-device-pixel-ratio: ${s.dpr}) and (orientation: portrait)">`,
+      `<link rel="apple-touch-startup-image" href="/${splashFileName(s)}" media="screen and (device-width: ${s.w}px) and (device-height: ${s.h}px) and (-webkit-device-pixel-ratio: ${s.dpr}) and (orientation: ${s.orientation})">`,
   ).join('\n    ');
+}
+
+/**
+ * The splash logo on a screen: 46% of its width, at most 240 px wide and at most 30% of its
+ * height, centred. index.html sizes the in-page splash logo with the same numbers (a test holds
+ * them together), so the launch image hands over to the page without the logo moving.
+ */
+export const SPLASH_LOGO = { width: 0.46, maxWidth: 240, maxHeight: 0.3 };
+
+/** Where the splash logo's box (the logo.svg viewBox, `box`) sits on a screen, in CSS px. */
+export function splashLogoRect(screen, box) {
+  const width = Math.min(
+    screen.width * SPLASH_LOGO.width,
+    SPLASH_LOGO.maxWidth,
+    screen.height * SPLASH_LOGO.maxHeight * (box.w / box.h),
+  );
+  const height = width * (box.h / box.w);
+  return { x: (screen.width - width) / 2, y: (screen.height - height) / 2, width, height };
 }
 
 // ── SVG helpers ───────────────────────────────────────────────────────────────
@@ -83,9 +115,17 @@ function bbox(paths) {
 
 const pathsMarkup = (paths) => paths.map((p) => `<path d="${p.d}" fill="${p.fill}"/>`).join('');
 
+/** A standalone SVG's viewBox: the artwork's box rounded out to whole units. */
+const viewBoxOf = (box) => ({
+  x: Math.floor(box.x),
+  y: Math.floor(box.y),
+  w: Math.ceil(box.w) + 1,
+  h: Math.ceil(box.h) + 1,
+});
+
 function standaloneSvg(paths, box, title) {
-  const vb = `${Math.floor(box.x)} ${Math.floor(box.y)} ${Math.ceil(box.w) + 1} ${Math.ceil(box.h) + 1}`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}" role="img" aria-label="${title}"><title>${title}</title>${pathsMarkup(paths)}</svg>\n`;
+  const vb = viewBoxOf(box);
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" role="img" aria-label="${title}"><title>${title}</title>${pathsMarkup(paths)}</svg>\n`;
 }
 
 /** Places artwork (with its own viewBox) centred on a canvas. */
@@ -180,13 +220,20 @@ export async function generateBrandAssets({ force = false, log = console.info } 
     await png(svg).toFile(resolve(OUT_PUBLIC, icon.file));
   }
 
-  // iOS launch screens mirror the in-app splash: blush field, full logo lockup centred.
+  // iOS launch screens are the in-page splash, pixel for pixel: the blush field and the lockup's
+  // box (logo.svg's viewBox, which index.html draws) placed by splashLogoRect.
+  const logoBox = viewBoxOf(lockupBox);
   await Promise.all(
-    SPLASH_SCREENS.map((s) => {
-      const width = s.w * s.dpr;
-      const height = s.h * s.dpr;
-      const artWidth = Math.min(width * 0.46, height * 0.3 * (lockupBox.w / lockupBox.h), 240 * s.dpr);
-      const svg = composeSvg({ width, height, background: BRAND_BACKGROUND, art: lockupArt, artBox: lockupBox, artWidth });
+    LAUNCH_SCREENS.map((s) => {
+      const screen = launchScreenSize(s);
+      const svg = composeSvg({
+        width: screen.width * s.dpr,
+        height: screen.height * s.dpr,
+        background: BRAND_BACKGROUND,
+        art: lockupArt,
+        artBox: logoBox,
+        artWidth: splashLogoRect(screen, logoBox).width * s.dpr,
+      });
       return png(svg).toFile(resolve(OUT_PUBLIC, splashFileName(s)));
     }),
   );
@@ -200,7 +247,7 @@ export async function generateBrandAssets({ force = false, log = console.info } 
   );
 
   await writeFile(STAMP, `${hash}\n`);
-  log(`[brand] generated logo, mark, favicon, ${icons.length} icons, ${SPLASH_SCREENS.length} launch screens and the email logo`);
+  log(`[brand] generated logo, mark, favicon, ${icons.length} icons, ${LAUNCH_SCREENS.length} launch screens and the email logo`);
   return { skipped: false };
 }
 
