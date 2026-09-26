@@ -184,20 +184,31 @@
     to { opacity: 1; transform: none; }
   }
   /* "Clock it" (booking done): three nail-to-nail taps, a spark at each touch. */
-  /* The "clock it" hand rises into its tile, then the index and thumb nails tap three times. */
+  /*
+   * The "clock it" hand rises into its tile, then the thumb taps its nail on the index nail three
+   * times (touching at 18%, 44% and 70%): three pictures of the thumb swap in steps, like the
+   * meme's GIF, and the thumb nail turns with them.
+   */
   @keyframes clock-it-hand {
     from { opacity: 0; transform: translateY(40px) rotate(-8deg) scale(0.92); }
     to { opacity: 1; transform: none; }
   }
-  @keyframes clock-it-index {
-    0% { transform: rotate(12deg); }
-    18%, 44%, 70%, 100% { transform: rotate(0deg); }
-    31%, 57% { transform: rotate(10deg); }
+  @keyframes clock-it-open {
+    0%, 30%, 56% { opacity: 1; }
+    10%, 36%, 62%, 100% { opacity: 0; }
+  }
+  @keyframes clock-it-mid {
+    0%, 18%, 30%, 44%, 56%, 70%, 100% { opacity: 0; }
+    10%, 24%, 36%, 50%, 62% { opacity: 1; }
+  }
+  @keyframes clock-it-rest {
+    0%, 24%, 50% { opacity: 0; }
+    18%, 44%, 70%, 100% { opacity: 1; }
   }
   @keyframes clock-it-thumb {
-    0% { transform: rotate(-12deg); }
+    0%, 30%, 56% { transform: rotate(-6deg); }
+    10%, 24%, 36%, 50%, 62% { transform: rotate(-3deg); }
     18%, 44%, 70%, 100% { transform: rotate(0deg); }
-    31%, 57% { transform: rotate(-10deg); }
   }
   @keyframes clock-it-spark {
     0%, 16%, 30%, 42%, 56%, 68% { opacity: 0; transform: scale(0.5); }
@@ -414,9 +425,8 @@
 }
 
 /* "Clock it": the middle finger and the thumb turn around their knuckles; the spark flashes where the nails meet. */
-/* Origins are in the art's own units (the hand picture sits at 0 0 512 512). */
+/* Origins are in the art's own units (the hand pictures sit at 0 0 512 512). */
 .clock-it-hand,
-.clock-it-index,
 .clock-it-thumb,
 .clock-it-spark {
   transform-box: view-box;
@@ -425,23 +435,25 @@
   transform-origin: 300px 470px;
   animation: clock-it-hand 0.45s var(--ease-out) both;
 }
-.clock-it-index,
-.clock-it-thumb,
-.clock-it-spark {
-  animation: 1.5s var(--ease-in-out) 0.2s both;
+/* Each keyframes name goes in an `animation` shorthand: Tailwind keeps a theme's keyframes only
+   when one names them, and drops those named by `animation-name` alone. */
+.clock-it-open {
+  animation: clock-it-open 1.5s steps(1, end) 0.2s both;
 }
-/* Each nail turns around its fingertip, so its base stays hidden under the finger. */
-.clock-it-index {
-  transform-origin: 142px 278px;
-  animation-name: clock-it-index;
+.clock-it-mid {
+  animation: clock-it-mid 1.5s steps(1, end) 0.2s both;
 }
+.clock-it-rest {
+  animation: clock-it-rest 1.5s steps(1, end) 0.2s both;
+}
+/* The thumb's base, where the pictures bend it. */
 .clock-it-thumb {
-  transform-origin: 134px 326px;
-  animation-name: clock-it-thumb;
+  transform-origin: 250px 470px;
+  animation: clock-it-thumb 1.5s steps(1, end) 0.2s both;
 }
 .clock-it-spark {
-  transform-origin: 34px 280px;
-  animation-name: clock-it-spark;
+  transform-origin: 46px 290px;
+  animation: clock-it-spark 1.5s var(--ease-in-out) 0.2s both;
 }
 
 @utility no-scrollbar {
