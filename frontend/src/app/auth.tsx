@@ -40,7 +40,8 @@ export const STAFF_ROLES: Role[] = ['admin', 'administrator'];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-  const me = useQuery({ queryKey: ME_KEY, queryFn: fetchMe, staleTime: 5 * 60_000, retry: 1 });
+  // A minute: changes made by the studio (name, phone, bookings paused) show on the next return.
+  const me = useQuery({ queryKey: ME_KEY, queryFn: fetchMe, staleTime: 60_000, retry: 1 });
   const [signedOut, setSignedOut] = useState(false);
 
   const setUser = useCallback(

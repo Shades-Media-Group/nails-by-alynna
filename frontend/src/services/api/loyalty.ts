@@ -1,4 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
+import { LIVE } from '@/services/queries';
 import type { LoyaltyCard } from '@/types/api';
 import { api } from './client';
 
@@ -8,5 +9,5 @@ export const loyaltyApi = {
 };
 
 export const loyaltyQueries = {
-  mine: () => queryOptions({ queryKey: ['loyalty'], queryFn: loyaltyApi.mine, staleTime: 60_000 }),
+  mine: () => queryOptions({ queryKey: ['loyalty'], queryFn: loyaltyApi.mine, ...LIVE }),
 };

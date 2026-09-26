@@ -2,6 +2,7 @@ import { keepPreviousData, queryOptions } from '@tanstack/react-query';
 import type { Locale } from '@/i18n/config';
 import type { SwatchColor } from '@/lib/swatch';
 import { api } from '@/services/api/client';
+import { LIVE } from '@/services/queries';
 import type { AppointmentStatus, Category, I18nText, Role, Service, ServiceArt, StaffAppointment } from '@/types/api';
 
 /*
@@ -332,8 +333,9 @@ export const adminQueries = {
   staff: () => queryOptions({ queryKey: ['admin', 'staff'], queryFn: adminApi.staff, staleTime: 60_000 }),
   myStaff: () => queryOptions({ queryKey: ['admin', 'staff', 'me'], queryFn: adminApi.myStaff, staleTime: 60_000, retry: false }),
   appointments: (params: AppointmentsParams) =>
-    queryOptions({ queryKey: ['admin', 'appointments', params], queryFn: () => adminApi.appointments(params), staleTime: 15_000 }),
-  appointment: (id: string) => queryOptions({ queryKey: ['admin', 'appointment', id], queryFn: () => adminApi.appointment(id), staleTime: 15_000 }),
+    queryOptions({ queryKey: ['admin', 'appointments', params], queryFn: () => adminApi.appointments(params), staleTime: 15_000, ...LIVE }),
+  appointment: (id: string) =>
+    queryOptions({ queryKey: ['admin', 'appointment', id], queryFn: () => adminApi.appointment(id), staleTime: 15_000, ...LIVE }),
   clients: (params: { q?: string; page?: number; limit?: number }) =>
     queryOptions({
       queryKey: ['admin', 'clients', params],

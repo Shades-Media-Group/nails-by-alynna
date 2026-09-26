@@ -32,7 +32,15 @@ self.addEventListener('push', function (event) {
     options.tag = tag;
     options.renotify = true;
   }
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(
+    Promise.all([
+      self.registration.showNotification(title, options),
+      // An open app fetches what it shows again at once (lib/liveUpdates.ts).
+      self.clients.matchAll({ type: 'window' }).then(function (windows) {
+        for (var i = 0; i < windows.length; i++) windows[i].postMessage({ type: 'nba:push', tag: tag || null });
+      }),
+    ]),
+  );
 });
 
 self.addEventListener('notificationclick', function (event) {

@@ -25,7 +25,8 @@ export default function LoyaltyPage() {
   const { locale, lp } = useLocale();
   const { currency, timeZone } = useStudio();
   const { user } = useAuth();
-  const card = useQuery(loyaltyQueries.mine());
+  // The card is open at the desk while a master scans it: a new stamp shows within seconds.
+  const card = useQuery({ ...loyaltyQueries.mine(), refetchInterval: 4_000 });
   const nextText = useNextRewardText();
 
   if (card.isPending) {

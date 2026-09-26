@@ -6,7 +6,9 @@ import { createRoot } from 'react-dom/client';
 import { App } from '@/app/App';
 import { initI18n } from '@/i18n';
 import { splitLocale } from '@/i18n/routing';
+import { listenForPushes } from '@/lib/liveUpdates';
 import { isStandalone } from '@/lib/platform';
+import { queryClient } from '@/services/queries';
 
 const { locale } = splitLocale(window.location.pathname);
 
@@ -17,6 +19,9 @@ if (import.meta.env.DEV && 'serviceWorker' in navigator) {
     for (const registration of registrations) void registration.unregister();
   });
 }
+
+// A push arrives while the app is open: what's on screen is fetched again right away.
+listenForPushes(queryClient);
 
 // Installed on the Home Screen: ask the browser to keep this app's data (sign-in, preferences)
 // even when the phone runs low on space.
