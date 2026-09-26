@@ -4,6 +4,7 @@ import {
   localizePath,
   preferredLocale,
   safeNextPath,
+  signedInPath,
   splitLocale,
   switchLocaleUrl,
 } from './routing';
@@ -43,6 +44,14 @@ describe('locale routing', () => {
     expect(preferredLocale(null, ['mo'])).toBe('ro');
     expect(preferredLocale(null, ['de-DE', 'fr'])).toBe('en');
     expect(preferredLocale('xx', [])).toBe('en');
+  });
+
+  it('lands a signed-in person in the language saved on their account, Romanian by default', () => {
+    expect(signedInPath('/admin', 'ro')).toBe('/admin');
+    expect(signedInPath('/home', 'ru')).toBe('/ru/home');
+    expect(signedInPath('/bookings/1?x=1', 'en')).toBe('/en/bookings/1?x=1');
+    expect(signedInPath('/home', undefined)).toBe('/home');
+    expect(signedInPath('/home', 'de')).toBe('/home');
   });
 
   it('only accepts same-app redirect targets', () => {

@@ -8,7 +8,7 @@ import { Alert } from '@/components/common/Alert';
 import { AuthLayout } from '@/components/layout/AuthLayout';
 import { Button, ButtonLink } from '@/components/ui';
 import { ArrowForwardIcon } from '@/components/ui/icons';
-import { safeNextPath } from '@/i18n/routing';
+import { safeNextPath, signedInPath } from '@/i18n/routing';
 import { errorMessage } from '@/lib/errors';
 import { useLocale } from '@/i18n/useLocale';
 import { authApi } from '@/services/api/endpoints';
@@ -38,7 +38,8 @@ export default function WelcomePage() {
     mutationFn: authApi.demo,
     onSuccess: (user) => {
       setUser(user);
-      navigate(lp(homePathFor(user)), { replace: true });
+      // In the account's language (the shared demo accounts are Romanian).
+      navigate(signedInPath(homePathFor(user), user.locale), { replace: true });
     },
   });
   // One-tap demo buttons are hidden for now; the client demo opens with demo / demo instead.

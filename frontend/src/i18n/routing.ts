@@ -24,7 +24,12 @@ export function localizePath(path: string, locale: Locale): string {
 }
 
 /** Same page in another language (keeps query and hash). */
-export function switchLocaleUrl(pathname: string, search: string, hash: string, target: Locale): string {
+export function switchLocaleUrl(
+  pathname: string,
+  search: string,
+  hash: string,
+  target: Locale,
+): string {
   const { rest } = splitLocale(pathname);
   return `${localizePath(rest, target)}${search}${hash}`;
 }
@@ -40,7 +45,10 @@ export function canonicalDefaultPath(pathname: string, search = '', hash = ''): 
  * Language for a visitor landing on "/": their previous choice if any, else the first
  * supported browser language, else English.
  */
-export function preferredLocale(saved: string | null | undefined, browserLanguages: readonly string[]): Locale {
+export function preferredLocale(
+  saved: string | null | undefined,
+  browserLanguages: readonly string[],
+): Locale {
   if (isLocale(saved)) return saved;
   for (const tag of browserLanguages) {
     const base = tag.toLowerCase().split('-')[0];
@@ -48,6 +56,15 @@ export function preferredLocale(saved: string | null | undefined, browserLanguag
     if (isLocale(base)) return base;
   }
   return FALLBACK_LOCALE;
+}
+
+/**
+ * Where a signed-in person lands (their home, or the page sign-in was asked for): in the
+ * language saved on their account, not the one the sign-in screen happened to be in. Accounts
+ * are Romanian unless the person chose another language.
+ */
+export function signedInPath(path: string, accountLocale: string | null | undefined): string {
+  return localizePath(path, isLocale(accountLocale) ? accountLocale : DEFAULT_LOCALE);
 }
 
 /** Only same-app relative paths are accepted as post-login destinations. */

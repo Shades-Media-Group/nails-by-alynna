@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '@/app/auth';
 import { Logo } from '@/components/brand/Logo';
+import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
 import { Avatar, ListGroup, ListRow, Sheet } from '@/components/ui';
 import {
   AddIcon,
@@ -13,6 +14,7 @@ import {
   GroupIcon,
   HistoryIcon,
   HomeIcon,
+  LanguageIcon,
   LocalOfferIcon,
   LogoutIcon,
   MoreHorizIcon,
@@ -123,8 +125,9 @@ export function AdminLayout() {
 
   return (
     <div className="min-h-dvh bg-ink-50/60">
-      {/* Computers: sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-ink-100 bg-white px-4 pb-4 pt-5 lg:flex">
+      {/* Computers: sidebar. On a short laptop screen it scrolls, so the language and "Log out"
+          at the bottom stay within reach. */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col overflow-y-auto overscroll-contain border-r border-ink-100 bg-white px-4 pb-4 pt-5 lg:flex">
         <Link to={lp('/admin')} className="flex items-center gap-2 px-2">
           <Logo variant="mark" className="w-12" />
         </Link>
@@ -152,6 +155,19 @@ export function AdminLayout() {
           </div>
         </div>
         <div className="mt-2 flex flex-col gap-0.5">
+          {/* The language of this app, and of the emails and notifications this person gets. */}
+          <div className="flex h-11 items-center gap-3 px-2">
+            <span
+              className={cx(
+                'inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-lg',
+                TONES.ink.tile,
+                TONES.ink.icon,
+              )}
+            >
+              <LanguageIcon fontSize="inherit" />
+            </span>
+            <LanguageSwitcher compact touch className="flex-1" />
+          </div>
           <SideLink
             item={{ to: lp('/home'), label: t('nav.clientApp'), icon: HomeIcon, tone: 'blush' }}
           />
@@ -246,6 +262,11 @@ export function AdminLayout() {
             ))}
           </ListGroup>
           <ListGroup>
+            <ListRow
+              icon={LanguageIcon}
+              label={t('common:language.label')}
+              trailing={<LanguageSwitcher compact touch />}
+            />
             <ListRow icon={HomeIcon} iconTone="blush" label={t('nav.clientApp')} to={lp('/home')} />
             <ListRow icon={LogoutIcon} label={t('nav.logout')} onClick={() => void signOut()} />
           </ListGroup>

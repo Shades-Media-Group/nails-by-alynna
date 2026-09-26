@@ -107,11 +107,13 @@ describe('invite a walk-in client', () => {
     const { clientId } = await bookWalkIn('Ana');
     const { token } = await invite(clientId);
     const claim = await findInvite(ctx.deps, token);
-    const result = await signInWithGoogle(ctx.deps, { sub: 'google-ana', email: 'ana.g@gmail.com', givenName: 'Anna' }, 'ro', { claim });
+    // Signed up from the Russian sign-up screen.
+    const result = await signInWithGoogle(ctx.deps, { sub: 'google-ana', email: 'ana.g@gmail.com', givenName: 'Anna' }, 'ru', { claim });
     expect(result.ok && String(result.user._id)).toBe(clientId);
     const stored = await ctx.deps.col.users.findOne({ _id: new ObjectId(clientId) });
-    // The name typed at the desk stays; the Google account and verified email are added.
-    expect(stored).toMatchObject({ name: 'Ana', email: 'ana.g@gmail.com', googleId: 'google-ana' });
+    // The name typed at the desk stays; the Google account, verified email and the language
+    // the person signed up in are added.
+    expect(stored).toMatchObject({ name: 'Ana', email: 'ana.g@gmail.com', googleId: 'google-ana', locale: 'ru' });
     expect(stored?.emailVerifiedAt).toBeInstanceOf(Date);
     expect(await findInvite(ctx.deps, token)).toBeNull();
   });
