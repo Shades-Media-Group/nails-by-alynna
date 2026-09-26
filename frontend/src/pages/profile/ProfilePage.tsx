@@ -9,7 +9,17 @@ import { ResendCodeButton } from '@/components/auth/ResendCodeButton';
 import { Alert } from '@/components/common/Alert';
 import { DataExportSheet } from '@/components/profile/DataExportSheet';
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
-import { Avatar, Button, ListGroup, ListRow, PasswordField, Sheet, Skeleton, TextField, toast } from '@/components/ui';
+import {
+  Avatar,
+  Button,
+  ListGroup,
+  ListRow,
+  PasswordField,
+  Sheet,
+  Skeleton,
+  TextField,
+  toast,
+} from '@/components/ui';
 import {
   CookieIcon,
   DeleteIcon,
@@ -50,7 +60,9 @@ export default function ProfilePage() {
   const close = () => setPanel(null);
 
   if (!user) return null;
-  const memberSince = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(new Date(user.createdAt));
+  const memberSince = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(
+    new Date(user.createdAt),
+  );
 
   const signOut = async () => {
     // The next person using this phone must not get this account's notifications.
@@ -75,47 +87,97 @@ export default function ProfilePage() {
       <div className="gutter-x mt-6 flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start lg:px-0">
         <div className="flex flex-col gap-6">
           <ListGroup title={t('profile.title')}>
-            <ListRow icon={PersonOutlineIcon} label={t('profile.details')} description={t('profile.detailsText')} onClick={() => setPanel('details')} />
+            <ListRow
+              icon={PersonOutlineIcon}
+              label={t('profile.details')}
+              description={t('profile.detailsText')}
+              onClick={() => setPanel('details')}
+            />
             <ListRow
               icon={NotificationsIcon}
               label={t('profile.notifications')}
               description={t('profile.notificationsText')}
               to={lp('/profile/notifications')}
             />
-            <ListRow icon={LoyaltyIcon} label={t('profile.loyalty')} description={t('profile.loyaltyText')} to={lp('/loyalty')} />
-            <ListRow icon={LanguageIcon} label={t('profile.language')} trailing={<LanguageSwitcher compact />} />
+            <ListRow
+              icon={LoyaltyIcon}
+              label={t('profile.loyalty')}
+              description={t('profile.loyaltyText')}
+              to={lp('/loyalty')}
+            />
+            <ListRow
+              icon={LanguageIcon}
+              label={t('profile.language')}
+              trailing={<LanguageSwitcher compact />}
+            />
           </ListGroup>
 
           <ListGroup title={t('profile.security')}>
             {user.isDemo ? (
-              <ListRow icon={KeyIcon} label={t('profile.passwordChange')} description={t('profile.demoLocked')} trailing={<Locked />} />
+              <ListRow
+                icon={KeyIcon}
+                label={t('profile.passwordChange')}
+                description={t('profile.demoLocked')}
+                trailing={<Locked />}
+              />
             ) : (
               <ListRow
                 icon={KeyIcon}
                 label={user.hasPassword ? t('profile.passwordChange') : t('profile.passwordSet')}
-                description={user.hasPassword ? undefined : user.hasGoogle ? t('profile.passwordSetText') : t('profile.passwordSetPlain')}
+                description={
+                  user.hasPassword
+                    ? undefined
+                    : user.hasGoogle
+                      ? t('profile.passwordSetText')
+                      : t('profile.passwordSetPlain')
+                }
                 onClick={() => setPanel('password')}
               />
             )}
-            <ListRow icon={DevicesIcon} label={t('profile.devices')} description={t('profile.devicesText')} onClick={() => setPanel('devices')} />
+            <ListRow
+              icon={DevicesIcon}
+              label={t('profile.devices')}
+              description={t('profile.devicesText')}
+              onClick={() => setPanel('devices')}
+            />
           </ListGroup>
         </div>
 
         <div className="flex flex-col gap-6">
           <ListGroup title={t('profile.privacy')}>
             <ListRow icon={CookieIcon} label={t('profile.cookies')} onClick={openConsentSettings} />
-            <ListRow icon={DownloadIcon} label={t('profile.export')} description={t('profile.exportText')} onClick={() => setPanel('export')} />
+            <ListRow
+              icon={DownloadIcon}
+              label={t('profile.export')}
+              description={t('profile.exportText')}
+              onClick={() => setPanel('export')}
+            />
             <ListRow icon={PrivacyIcon} label={t('profile.privacyPolicy')} to={lp('/privacy')} />
-            <ListRow icon={ShieldIcon} label={t('profile.terms')} to={lp('/terms')} />
+            <ListRow
+              icon={ShieldIcon}
+              label={t('profile.terms')}
+              description={t('profile.termsText')}
+              to={lp('/terms')}
+            />
           </ListGroup>
 
           <ListGroup title={t('profile.app')}>
             <ListRow icon={InstallIcon} label={t('profile.install')} to={lp('/app')} />
             <ListRow icon={LogoutIcon} label={t('profile.logout')} onClick={() => void signOut()} />
             {user.isDemo ? (
-              <ListRow icon={DeleteIcon} label={t('profile.delete')} description={t('profile.demoLocked')} trailing={<Locked />} />
+              <ListRow
+                icon={DeleteIcon}
+                label={t('profile.delete')}
+                description={t('profile.demoLocked')}
+                trailing={<Locked />}
+              />
             ) : (
-              <ListRow icon={DeleteIcon} tone="danger" label={t('profile.delete')} onClick={() => setPanel('delete')} />
+              <ListRow
+                icon={DeleteIcon}
+                tone="danger"
+                label={t('profile.delete')}
+                onClick={() => setPanel('delete')}
+              />
             )}
           </ListGroup>
         </div>
@@ -123,7 +185,12 @@ export default function ProfilePage() {
 
       <footer className="gutter-x mt-10 text-center text-xs text-ink-500 lg:px-0">
         <p>{t('profile.version', { version: BUILD.version })}</p>
-        <a href="https://shades.md" target="_blank" rel="noopener noreferrer" className="mt-1 inline-block font-semibold text-ink-700 underline-offset-4 hover:underline">
+        <a
+          href="https://shades.md"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-1 inline-block font-semibold text-ink-700 underline-offset-4 hover:underline"
+        >
           {t('profile.credit')}
         </a>
       </footer>
@@ -131,13 +198,20 @@ export default function ProfilePage() {
       <DetailsSheet open={panel === 'details'} onClose={close} />
       <DataExportSheet open={panel === 'export'} onClose={close} />
       <PasswordSheet open={panel === 'password'} onClose={close} />
-      <DevicesSheet open={panel === 'devices'} onClose={close} onSignedOutEverywhere={() => void signOut()} />
+      <DevicesSheet
+        open={panel === 'devices'}
+        onClose={close}
+        onSignedOutEverywhere={() => void signOut()}
+      />
       <DeleteSheet open={panel === 'delete'} onClose={close} />
     </div>
   );
 }
 
-type DetailsView = { step: 'details'; changedTo?: string } | { step: 'email' } | { step: 'code'; email: string; resendAfterSec: number };
+type DetailsView =
+  | { step: 'details'; changedTo?: string }
+  | { step: 'email' }
+  | { step: 'code'; email: string; resendAfterSec: number };
 type DetailsFields = { name: string; surname: string; phone: string };
 
 function DetailsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -145,13 +219,21 @@ function DetailsSheet({ open, onClose }: { open: boolean; onClose: () => void })
   const { user } = useAuth();
   const [view, setView] = useState<DetailsView>({ step: 'details' });
   // Kept here, so a detour through "Change email" never loses what was typed.
-  const [form, setForm] = useState<DetailsFields>({ name: user?.name ?? '', surname: user?.surname ?? '', phone: user?.phone ?? '' });
+  const [form, setForm] = useState<DetailsFields>({
+    name: user?.name ?? '',
+    surname: user?.surname ?? '',
+    phone: user?.phone ?? '',
+  });
   const close = () => {
     onClose();
     setView({ step: 'details' });
   };
   const title =
-    view.step === 'details' ? t('profile.details') : view.step === 'email' ? t('profile.emailChange.title') : t('profile.emailChange.codeTitle');
+    view.step === 'details'
+      ? t('profile.details')
+      : view.step === 'email'
+        ? t('profile.emailChange.title')
+        : t('profile.emailChange.codeTitle');
 
   return (
     <Sheet open={open} onClose={close} title={title}>
@@ -181,7 +263,13 @@ function DetailsSheet({ open, onClose }: { open: boolean; onClose: () => void })
 }
 
 /** Change email, step 1: the new address (and the password, when the account has one). */
-function EmailChangeForm({ onBack, onSent }: { onBack: () => void; onSent: (email: string, resendAfterSec: number) => void }) {
+function EmailChangeForm({
+  onBack,
+  onSent,
+}: {
+  onBack: () => void;
+  onSent: (email: string, resendAfterSec: number) => void;
+}) {
   const { t } = useTranslation(['account', 'common']);
   const { locale } = useLocale();
   const { user } = useAuth();
@@ -189,12 +277,19 @@ function EmailChangeForm({ onBack, onSent }: { onBack: () => void; onSent: (emai
   const [password, setPassword] = useState('');
   const [touched, setTouched] = useState(false);
   const start = useMutation({
-    mutationFn: () => meApi.startEmailChange({ email: email.trim().toLowerCase(), ...(user?.hasPassword ? { password } : {}), locale }),
+    mutationFn: () =>
+      meApi.startEmailChange({
+        email: email.trim().toLowerCase(),
+        ...(user?.hasPassword ? { password } : {}),
+        locale,
+      }),
     onSuccess: (verification) => onSent(verification.email, verification.resendAfterSec),
   });
   const server = fieldErrors(t, start.error);
-  const emailError = touched && !isEmail(email) ? t('common:validation.invalid_email') : server.email;
-  const passwordError = touched && user?.hasPassword && !password ? t('common:validation.required') : server.password;
+  const emailError =
+    touched && !isEmail(email) ? t('common:validation.invalid_email') : server.email;
+  const passwordError =
+    touched && user?.hasPassword && !password ? t('common:validation.required') : server.password;
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -230,7 +325,9 @@ function EmailChangeForm({ onBack, onSent }: { onBack: () => void; onSent: (emai
           error={passwordError}
         />
       ) : null}
-      {start.isError && Object.keys(server).length === 0 ? <Alert>{errorMessage(t, start.error)}</Alert> : null}
+      {start.isError && Object.keys(server).length === 0 ? (
+        <Alert>{errorMessage(t, start.error)}</Alert>
+      ) : null}
       <Button type="submit" size="lg" fullWidth loading={start.isPending}>
         {t('profile.emailChange.send')}
       </Button>
@@ -288,7 +385,12 @@ function EmailCodeForm({
     >
       <div className="flex flex-col gap-2">
         <p className="text-[0.9375rem] text-ink-600">
-          <Trans t={t} i18nKey="profile.emailChange.codeText" values={{ email }} components={{ email: <strong className="break-all font-semibold text-ink-900" /> }} />
+          <Trans
+            t={t}
+            i18nKey="profile.emailChange.codeText"
+            values={{ email }}
+            components={{ email: <strong className="break-all font-semibold text-ink-900" /> }}
+          />
         </p>
         <p className="text-sm text-ink-600">{t('auth:verify.spam')}</p>
       </div>
@@ -311,11 +413,20 @@ function EmailCodeForm({
         busy={confirm.isPending}
         autoFocus
       />
-      <Button type="submit" size="lg" fullWidth loading={confirm.isPending} disabled={code.length < 6}>
+      <Button
+        type="submit"
+        size="lg"
+        fullWidth
+        loading={confirm.isPending}
+        disabled={code.length < 6}
+      >
         {t('profile.emailChange.confirm')}
       </Button>
       <div className="-mt-2 flex flex-col">
-        <ResendCodeButton seconds={resendAfterSec} onResend={() => meApi.resendEmailChange(email, locale)} />
+        <ResendCodeButton
+          seconds={resendAfterSec}
+          onResend={() => meApi.resendEmailChange(email, locale)}
+        />
         <Button variant="ghost" size="md" fullWidth onClick={onBack}>
           {t('auth:verify.otherEmail')}
         </Button>
@@ -344,7 +455,11 @@ function DetailsForm({
   const [touched, setTouched] = useState(false);
   const save = useMutation({
     mutationFn: () =>
-      meApi.update({ name: form.name.trim(), surname: form.surname.trim(), phone: normalizePhone(form.phone) ?? form.phone }),
+      meApi.update({
+        name: form.name.trim(),
+        surname: form.surname.trim(),
+        phone: normalizePhone(form.phone) ?? form.phone,
+      }),
     onSuccess: (updated) => {
       setUser(updated);
       toast.success(t('profile.saved'));
@@ -358,25 +473,58 @@ function DetailsForm({
     if (n) errors.name = t(`common:validation.${n}`);
     const s = nameIssue(form.surname);
     if (s) errors.surname = t(`common:validation.${s}`);
-    if (form.phone && !normalizePhone(form.phone)) errors.phone = t('common:validation.invalid_phone');
+    if (form.phone && !normalizePhone(form.phone))
+      errors.phone = t('common:validation.invalid_phone');
   }
   const server = fieldErrors(t, save.error);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
     setTouched(true);
-    if (nameIssue(form.name) || nameIssue(form.surname) || (form.phone && !normalizePhone(form.phone))) return;
+    if (
+      nameIssue(form.name) ||
+      nameIssue(form.surname) ||
+      (form.phone && !normalizePhone(form.phone))
+    )
+      return;
     save.mutate();
   };
 
   return (
     <form id="details-form" className="flex flex-col gap-4 py-2" onSubmit={submit} noValidate>
-      {changedTo ? <Alert tone="success">{t('profile.emailChange.changed', { email: changedTo })}</Alert> : null}
+      {changedTo ? (
+        <Alert tone="success">{t('profile.emailChange.changed', { email: changedTo })}</Alert>
+      ) : null}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <TextField label={t('profile.name')} autoComplete="given-name" autoCapitalize="words" disabled={user?.isDemo} value={form.name} onChange={(e) => onForm({ ...form, name: e.target.value })} error={errors.name ?? server.name} />
-        <TextField label={t('profile.surname')} autoComplete="family-name" autoCapitalize="words" disabled={user?.isDemo} value={form.surname} onChange={(e) => onForm({ ...form, surname: e.target.value })} error={errors.surname ?? server.surname} />
+        <TextField
+          label={t('profile.name')}
+          autoComplete="given-name"
+          autoCapitalize="words"
+          disabled={user?.isDemo}
+          value={form.name}
+          onChange={(e) => onForm({ ...form, name: e.target.value })}
+          error={errors.name ?? server.name}
+        />
+        <TextField
+          label={t('profile.surname')}
+          autoComplete="family-name"
+          autoCapitalize="words"
+          disabled={user?.isDemo}
+          value={form.surname}
+          onChange={(e) => onForm({ ...form, surname: e.target.value })}
+          error={errors.surname ?? server.surname}
+        />
       </div>
-      <TextField label={t('profile.phone')} type="tel" inputMode="tel" autoComplete="tel" disabled={user?.isDemo} value={form.phone} onChange={(e) => onForm({ ...form, phone: e.target.value })} error={errors.phone ?? server.phone} />
+      <TextField
+        label={t('profile.phone')}
+        type="tel"
+        inputMode="tel"
+        autoComplete="tel"
+        disabled={user?.isDemo}
+        value={form.phone}
+        onChange={(e) => onForm({ ...form, phone: e.target.value })}
+        error={errors.phone ?? server.phone}
+      />
       {/* Not typed here: the address changes through its own flow (a code to the new one). */}
       <div className="flex flex-col gap-1.5">
         <span className="text-sm font-medium text-ink-700">{t('profile.email')}</span>
@@ -400,7 +548,9 @@ function DetailsForm({
             <span className="min-w-0 flex-1 text-[0.9375rem] text-ink-900 [overflow-wrap:anywhere]">
               <EmailText email={user?.email ?? ''} />
             </span>
-            <span className="shrink-0 text-sm font-semibold text-rose-700 underline-offset-4 group-hover:underline">{t('profile.changeEmail')}</span>
+            <span className="shrink-0 text-sm font-semibold text-rose-700 underline-offset-4 group-hover:underline">
+              {t('profile.changeEmail')}
+            </span>
           </button>
         )}
         <p id={emailHintId} className="pl-1 text-sm text-ink-600">
@@ -411,7 +561,9 @@ function DetailsForm({
         <Alert tone="info">{t('common:errors.codes.DEMO_READ_ONLY')}</Alert>
       ) : (
         <>
-          {save.isError && Object.keys(server).length === 0 ? <Alert>{errorMessage(t, save.error)}</Alert> : null}
+          {save.isError && Object.keys(server).length === 0 ? (
+            <Alert>{errorMessage(t, save.error)}</Alert>
+          ) : null}
           <Button type="submit" size="lg" fullWidth loading={save.isPending}>
             {t('profile.save')}
           </Button>
@@ -428,7 +580,11 @@ function PasswordSheet({ open, onClose }: { open: boolean; onClose: () => void }
   const [next, setNext] = useState('');
   const [touched, setTouched] = useState(false);
   const change = useMutation({
-    mutationFn: () => meApi.changePassword({ ...(user?.hasPassword ? { currentPassword: current } : {}), newPassword: next }),
+    mutationFn: () =>
+      meApi.changePassword({
+        ...(user?.hasPassword ? { currentPassword: current } : {}),
+        newPassword: next,
+      }),
     onSuccess: () => {
       if (user) setUser({ ...user, hasPassword: true });
       toast.success(t('profile.passwordChanged'));
@@ -448,9 +604,27 @@ function PasswordSheet({ open, onClose }: { open: boolean; onClose: () => void }
   };
 
   return (
-    <Sheet open={open} onClose={onClose} title={user?.hasPassword ? t('profile.passwordChange') : t('profile.passwordSet')} description={user?.hasPassword ? undefined : user?.hasGoogle ? t('profile.passwordSetText') : t('profile.passwordSetPlain')}>
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title={user?.hasPassword ? t('profile.passwordChange') : t('profile.passwordSet')}
+      description={
+        user?.hasPassword
+          ? undefined
+          : user?.hasGoogle
+            ? t('profile.passwordSetText')
+            : t('profile.passwordSetPlain')
+      }
+    >
       <form className="flex flex-col gap-4 py-2" onSubmit={submit} noValidate>
-        <input type="email" name="username" autoComplete="username" value={user?.email ?? ''} readOnly hidden />
+        <input
+          type="email"
+          name="username"
+          autoComplete="username"
+          value={user?.email ?? ''}
+          readOnly
+          hidden
+        />
         {user?.hasPassword ? (
           <PasswordField
             label={t('profile.currentPassword')}
@@ -467,7 +641,9 @@ function PasswordSheet({ open, onClose }: { open: boolean; onClose: () => void }
           onChange={(e) => setNext(e.target.value)}
           error={touched && issue ? t(`common:validation.${issue}`) : server.newPassword}
         />
-        {change.isError && Object.keys(server).length === 0 ? <Alert>{errorMessage(t, change.error)}</Alert> : null}
+        {change.isError && Object.keys(server).length === 0 ? (
+          <Alert>{errorMessage(t, change.error)}</Alert>
+        ) : null}
         <Button type="submit" size="lg" fullWidth loading={change.isPending}>
           {t('profile.save')}
         </Button>
@@ -476,7 +652,15 @@ function PasswordSheet({ open, onClose }: { open: boolean; onClose: () => void }
   );
 }
 
-function DevicesSheet({ open, onClose, onSignedOutEverywhere }: { open: boolean; onClose: () => void; onSignedOutEverywhere: () => void }) {
+function DevicesSheet({
+  open,
+  onClose,
+  onSignedOutEverywhere,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSignedOutEverywhere: () => void;
+}) {
   const { t } = useTranslation(['account', 'common']);
   const { locale } = useLocale();
   const { timeZone } = useStudio();
@@ -505,7 +689,14 @@ function DevicesSheet({ open, onClose, onSignedOutEverywhere }: { open: boolean;
       title={t('profile.devices')}
       description={t('profile.devicesText')}
       footer={
-        <Button variant="outline" size="md" fullWidth loading={all.isPending} onClick={() => all.mutate()} className="text-red-700">
+        <Button
+          variant="outline"
+          size="md"
+          fullWidth
+          loading={all.isPending}
+          onClick={() => all.mutate()}
+          className="text-red-700"
+        >
           {t('profile.logoutAll')}
         </Button>
       }
@@ -523,13 +714,24 @@ function DevicesSheet({ open, onClose, onSignedOutEverywhere }: { open: boolean;
                   <DevicesIcon fontSize="inherit" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[0.9375rem] font-semibold">{deviceName(session.userAgent)}</span>
+                  <span className="block truncate text-[0.9375rem] font-semibold">
+                    {deviceName(session.userAgent)}
+                  </span>
                   <span className="block text-sm text-ink-600">
-                    {session.current ? t('profile.thisDevice') : t('profile.lastActive', { date: formatDateTime(session.lastUsedAt, locale, timeZone) })}
+                    {session.current
+                      ? t('profile.thisDevice')
+                      : t('profile.lastActive', {
+                          date: formatDateTime(session.lastUsedAt, locale, timeZone),
+                        })}
                   </span>
                 </span>
                 {session.current ? null : (
-                  <Button size="sm" variant="ghost" loading={revoke.isPending && revoke.variables === session.id} onClick={() => revoke.mutate(session.id)}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    loading={revoke.isPending && revoke.variables === session.id}
+                    onClick={() => revoke.mutate(session.id)}
+                  >
                     {t('profile.signOutDevice')}
                   </Button>
                 )}
@@ -543,8 +745,30 @@ function DevicesSheet({ open, onClose, onSignedOutEverywhere }: { open: boolean;
 /** "iPhone · Safari" from a user agent, good enough to recognise your own devices. */
 function deviceName(userAgent: string): string {
   const ua = userAgent || '';
-  const device = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Mac OS X/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'Linux' : '';
-  const browser = /Edg\//.test(ua) ? 'Edge' : /OPR\//.test(ua) ? 'Opera' : /Firefox\//.test(ua) ? 'Firefox' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : '';
+  const device = /iPhone/.test(ua)
+    ? 'iPhone'
+    : /iPad/.test(ua)
+      ? 'iPad'
+      : /Android/.test(ua)
+        ? 'Android'
+        : /Mac OS X/.test(ua)
+          ? 'Mac'
+          : /Windows/.test(ua)
+            ? 'Windows'
+            : /Linux/.test(ua)
+              ? 'Linux'
+              : '';
+  const browser = /Edg\//.test(ua)
+    ? 'Edge'
+    : /OPR\//.test(ua)
+      ? 'Opera'
+      : /Firefox\//.test(ua)
+        ? 'Firefox'
+        : /Chrome\//.test(ua)
+          ? 'Chrome'
+          : /Safari\//.test(ua)
+            ? 'Safari'
+            : '';
   return [device, browser].filter(Boolean).join(' · ') || ua.slice(0, 40) || '?';
 }
 
@@ -571,14 +795,26 @@ function DeleteSheet({ open, onClose }: { open: boolean; onClose: () => void }) 
       title={t('profile.deleteTitle')}
       description={t('profile.deleteText')}
       footer={
-        <Button variant="danger" size="md" fullWidth loading={remove.isPending} disabled={user?.hasPassword && !password} onClick={() => remove.mutate()}>
+        <Button
+          variant="danger"
+          size="md"
+          fullWidth
+          loading={remove.isPending}
+          disabled={user?.hasPassword && !password}
+          onClick={() => remove.mutate()}
+        >
           {t('profile.deleteConfirm')}
         </Button>
       }
     >
       <div className="flex flex-col gap-3 py-2">
         {user?.hasPassword ? (
-          <PasswordField label={t('profile.deletePassword')} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <PasswordField
+            label={t('profile.deletePassword')}
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
         ) : null}
         {remove.isError ? <Alert>{errorMessage(t, remove.error)}</Alert> : null}
       </div>

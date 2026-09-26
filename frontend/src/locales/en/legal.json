@@ -1,6 +1,10 @@
 {
   "updated": "Last updated: {{date}}",
   "contents": "On this page",
+  "testNotice": {
+    "title": "This is a test app",
+    "body": "Nails by Alynna here is a demo project for trying the app out, not a real business. Bookings, prices, discounts and promo codes are not real offers: nothing is sold or charged, no contract is formed, and no fees or penalties apply. Please don't enter anything you want to keep private."
+  },
   "operatorFull": "{{legalName}}, IDNO {{legalId}}",
   "contactLine": "{{contact}}",
   "privacy": {
@@ -126,7 +130,7 @@
         "id": "provider",
         "title": "Who provides the service",
         "body": [
-          "The app is operated by {{operator}} ({{studio}}, {{place}}). Contact: {{contact}}."
+          "This app is a test project run by {{operator}} ({{studio}}, {{place}}). It is not a real business. Contact: {{contact}}."
         ]
       },
       {
@@ -142,21 +146,19 @@
         "id": "bookings",
         "title": "Bookings",
         "items": [
-          "A booking reserves a time with a master for the services you chose. It is confirmed right away, or, when the studio reviews requests, once the studio accepts it.",
-          "Prices in the app are indicative. The final price depends on length, design and materials, and is confirmed at the studio before the work starts.",
-          "Durations are estimates used to plan the day.",
-          "You pay at the studio after the visit. The app does not take payments."
+          "Bookings made here are for trying the app out: no real appointment, sale or contract results from them.",
+          "A booking reserves a time with a master for the services you chose. It is confirmed right away, or, when the studio reviews requests, once the master accepts it.",
+          "Prices in the app are examples. Durations are estimates used to plan the day.",
+          "The app never takes payments, and nothing is charged."
         ]
       },
       {
         "id": "changes",
         "title": "Changes and cancellations",
         "items": [
-          "You can change or cancel a booking for free in the app until {{hours}} hours before it starts. The exact deadline is shown on each booking.",
-          "After that, please call or write to the studio.",
-          "If you are late, the service may be shortened or moved so other clients are not kept waiting.",
-          "After repeated missed visits the studio may turn off online booking for your account; you can still book by contacting the studio.",
-          "If the studio has to move or cancel your visit, for example because of illness, it tells you as soon as possible and offers another time."
+          "You can change or cancel a booking in the app until {{hours}} hours before it starts. The exact deadline is shown on each booking.",
+          "There are no fees or penalties for cancelling, moving or missing a booking.",
+          "If a booking has to be moved or cancelled on the studio's side, you are told in the app and by email."
         ]
       },
       {
@@ -178,14 +180,14 @@
         "id": "liability",
         "title": "Responsibility",
         "body": [
-          "The studio is responsible for its services under the consumer protection law of the Republic of Moldova (Law no. 105/2003). Nothing in these terms limits your rights as a consumer. The app is provided as it is: we work to keep it available and correct, but cannot promise it always will be."
+          "This is a test app, provided as it is, for trying it out, with no guarantee that it is available, correct or complete. No services are sold through it."
         ]
       },
       {
         "id": "complaints",
         "title": "Questions and complaints",
         "body": [
-          "Talk to us first: {{contact}}. You can also contact the Agency for Consumer Protection and Market Surveillance (APCSP). These terms are governed by the law of the Republic of Moldova, and disputes go to its competent courts."
+          "Questions or feedback about the app: {{contact}}."
         ]
       },
       {

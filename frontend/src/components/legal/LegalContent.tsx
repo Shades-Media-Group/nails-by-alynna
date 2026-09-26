@@ -1,3 +1,4 @@
+import { Alert } from '@/components/common/Alert';
 import { useTranslation } from 'react-i18next';
 import { useStudio } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
@@ -44,7 +45,11 @@ export function LegalContent({ doc, inSheet = false }: { doc: LegalDoc; inSheet?
     interpolation: { escapeValue: false },
   };
   const sections = t(`${doc}.sections`, { returnObjects: true, ...values }) as Section[];
-  const updated = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${LEGAL_UPDATED}T12:00:00Z`));
+  const updated = new Intl.DateTimeFormat(locale, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(`${LEGAL_UPDATED}T12:00:00Z`));
   const anchor = (id: string) => (inSheet ? `legal-sheet-${id}` : id);
 
   // Contents links scroll in place. A plain #hash click would add a history entry the router
@@ -54,11 +59,14 @@ export function LegalContent({ doc, inSheet = false }: { doc: LegalDoc; inSheet?
     const target = document.getElementById(anchor(id));
     if (!target) return;
     event.preventDefault();
-    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? 'auto'
+      : 'smooth';
     if (inSheet) {
       const box = target.closest<HTMLElement>('[data-sheet-body]');
       if (!box) return;
-      const top = target.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop - 12;
+      const top =
+        target.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop - 12;
       box.scrollTo({ top, behavior });
       return;
     }
@@ -68,9 +76,20 @@ export function LegalContent({ doc, inSheet = false }: { doc: LegalDoc; inSheet?
 
   return (
     <>
-      {inSheet ? null : <h1 className="text-h1 font-extrabold lg:text-[2.25rem]">{t(`${doc}.title`)}</h1>}
-      <p className={inSheet ? 'text-sm text-ink-500' : 'mt-1 text-sm text-ink-500'}>{t('updated', { date: updated })}</p>
-      <p className="mt-4 max-w-[68ch] text-[0.9375rem] leading-relaxed text-ink-700">{t(`${doc}.intro`, values)}</p>
+      {inSheet ? null : (
+        <h1 className="text-h1 font-extrabold lg:text-[2.25rem]">{t(`${doc}.title`)}</h1>
+      )}
+      <p className={inSheet ? 'text-sm text-ink-500' : 'mt-1 text-sm text-ink-500'}>
+        {t('updated', { date: updated })}
+      </p>
+      {/* Said first, in every document: this is a demo project, not a business. */}
+      <Alert tone="info" className="mt-4 max-w-[68ch]">
+        <p className="font-semibold">{t('testNotice.title')}</p>
+        <p className="mt-0.5">{t('testNotice.body')}</p>
+      </Alert>
+      <p className="mt-4 max-w-[68ch] text-[0.9375rem] leading-relaxed text-ink-700">
+        {t(`${doc}.intro`, values)}
+      </p>
 
       <nav aria-label={t('contents')} className="mt-6 rounded-2xl bg-ink-50 p-4">
         <p className="text-sm font-semibold text-ink-600">{t('contents')}</p>
@@ -97,7 +116,10 @@ export function LegalContent({ doc, inSheet = false }: { doc: LegalDoc; inSheet?
             aria-labelledby={`${anchor(section.id)}-title`}
             className="max-w-[68ch] scroll-mt-20"
           >
-            <h2 id={`${anchor(section.id)}-title`} className={inSheet ? 'text-h3 font-extrabold' : 'text-h2 font-extrabold'}>
+            <h2
+              id={`${anchor(section.id)}-title`}
+              className={inSheet ? 'text-h3 font-extrabold' : 'text-h2 font-extrabold'}
+            >
               <span className="mr-2 tabular text-ink-400">{index + 1}.</span>
               {section.title}
             </h2>

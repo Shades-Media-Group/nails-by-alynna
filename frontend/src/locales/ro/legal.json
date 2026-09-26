@@ -1,6 +1,10 @@
 {
   "updated": "Ultima actualizare: {{date}}",
   "contents": "Pe această pagină",
+  "testNotice": {
+    "title": "Aceasta este o aplicație de test",
+    "body": "Nails by Alynna de aici este un proiect demonstrativ pentru testarea aplicației, nu o afacere reală. Programările, prețurile, reducerile și codurile promoționale nu sunt oferte reale: nu se vinde și nu se plătește nimic, nu se încheie niciun contract și nu se aplică taxe sau penalități. Te rugăm să nu introduci date pe care vrei să le păstrezi private."
+  },
   "operatorFull": "{{legalName}}, IDNO {{legalId}}",
   "contactLine": "{{contact}}",
   "privacy": {
@@ -126,7 +130,7 @@
         "id": "provider",
         "title": "Cine oferă serviciul",
         "body": [
-          "Aplicația este administrată de {{operator}} ({{studio}}, {{place}}). Contact: {{contact}}."
+          "Aplicația este un proiect de test administrat de {{operator}} ({{studio}}, {{place}}). Nu este o afacere reală. Contact: {{contact}}."
         ]
       },
       {
@@ -142,21 +146,19 @@
         "id": "bookings",
         "title": "Programările",
         "items": [
-          "O programare rezervă o oră la un maestru pentru serviciile alese. Se confirmă imediat sau, când salonul verifică cererile, după ce salonul o acceptă.",
-          "Prețurile din aplicație sunt orientative. Prețul final depinde de lungime, design și materiale și se confirmă la salon înainte de începerea lucrului.",
-          "Duratele sunt estimări folosite pentru planificarea zilei.",
-          "Plătești la salon, după vizită. Aplicația nu primește plăți."
+          "Programările făcute aici servesc la testarea aplicației: din ele nu rezultă nicio programare reală, vânzare sau contract.",
+          "O programare rezervă o oră la un maestru pentru serviciile alese. Se confirmă imediat sau, când salonul verifică cererile, după ce maestrul o acceptă.",
+          "Prețurile din aplicație sunt exemple. Duratele sunt estimări folosite pentru planificarea zilei.",
+          "Aplicația nu primește plăți și nu se încasează nimic."
         ]
       },
       {
         "id": "changes",
         "title": "Modificări și anulări",
         "items": [
-          "Poți modifica sau anula gratuit o programare în aplicație cu până la {{hours}} ore înainte de începere. Termenul exact apare la fiecare programare.",
-          "După acest termen, te rugăm să suni sau să scrii salonului.",
-          "Dacă întârzii, serviciul poate fi scurtat sau mutat, ca ceilalți clienți să nu aștepte.",
-          "După mai multe vizite ratate, salonul poate opri programarea online pentru contul tău; te poți programa în continuare contactând salonul.",
-          "Dacă salonul trebuie să mute sau să anuleze vizita, de exemplu din cauza unei boli, te anunță cât mai repede și îți propune altă oră."
+          "Poți modifica sau anula o programare în aplicație cu până la {{hours}} ore înainte de începere. Termenul exact apare la fiecare programare.",
+          "Nu există taxe sau penalități pentru anularea, mutarea sau ratarea unei programări.",
+          "Dacă o programare trebuie mutată sau anulată din partea salonului, afli în aplicație și prin email."
         ]
       },
       {
@@ -178,14 +180,14 @@
         "id": "liability",
         "title": "Răspundere",
         "body": [
-          "Salonul răspunde pentru serviciile sale conform legislației privind protecția consumatorilor a Republicii Moldova (Legea nr. 105/2003). Nimic din acești termeni nu îți limitează drepturile de consumator. Aplicația este oferită așa cum este: ne străduim să fie disponibilă și corectă, dar nu putem garanta că va fi mereu așa."
+          "Aceasta este o aplicație de test, oferită așa cum este, pentru încercare, fără nicio garanție că este disponibilă, corectă sau completă. Prin ea nu se vând servicii."
         ]
       },
       {
         "id": "complaints",
         "title": "Întrebări și reclamații",
         "body": [
-          "Vorbește mai întâi cu noi: {{contact}}. Te poți adresa și Agenției pentru Protecția Consumatorilor și Supravegherea Pieței (APCSP). Acești termeni sunt guvernați de legea Republicii Moldova, iar litigiile se soluționează de instanțele ei competente."
+          "Întrebări sau păreri despre aplicație: {{contact}}."
         ]
       },
       {

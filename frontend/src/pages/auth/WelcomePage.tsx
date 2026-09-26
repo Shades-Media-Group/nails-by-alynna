@@ -14,7 +14,13 @@ import { useLocale } from '@/i18n/useLocale';
 import { authApi } from '@/services/api/endpoints';
 import { queries } from '@/services/queries';
 
-const OAUTH_ERRORS = ['google', 'google_cancelled', 'google_conflict', 'google_disabled', 'account_disabled'];
+const OAUTH_ERRORS = [
+  'google',
+  'google_cancelled',
+  'google_conflict',
+  'google_disabled',
+  'account_disabled',
+];
 const SHOW_DEMO_BUTTONS = false;
 
 /** Figma "App Prototype _select_login": pick email or Google. */
@@ -40,7 +46,11 @@ export default function WelcomePage() {
 
   return (
     <AuthLayout
-      footer={{ text: t('welcome.noAccount'), action: t('welcome.signUp'), to: `${lp('/signup')}${carry}` }}
+      footer={{
+        text: t('welcome.noAccount'),
+        action: t('welcome.signUp'),
+        to: `${lp('/signup')}${carry}`,
+      }}
     >
       <Logo className="mx-auto w-[7.25rem] lg:hidden" />
 
@@ -55,7 +65,12 @@ export default function WelcomePage() {
       ) : null}
 
       <div className="mt-7 flex flex-col gap-3">
-        <ButtonLink to={`${lp('/login/email')}${carry}`} variant="soft" trailingIcon={ArrowForwardIcon} fullWidth>
+        <ButtonLink
+          to={`${lp('/login/email')}${carry}`}
+          variant="soft"
+          trailingIcon={ArrowForwardIcon}
+          fullWidth
+        >
           {t('welcome.email')}
         </ButtonLink>
 
@@ -67,6 +82,8 @@ export default function WelcomePage() {
           </>
         ) : null}
       </div>
+
+      <p className="mt-5 text-center text-xs text-ink-500">{t('welcome.testApp')}</p>
 
       {demoRoles.length > 0 ? (
         <section aria-labelledby="demo-title" className="mt-8 rounded-xl bg-peach-50 p-4">
