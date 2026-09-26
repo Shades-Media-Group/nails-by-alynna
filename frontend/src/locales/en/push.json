@@ -1,0 +1,88 @@
+{
+  "softAsk": {
+    "title": "Get a notification when the master confirms",
+    "titleBooked": "Get a reminder before your visit",
+    "textPhone": "On this phone, even with the app closed. Reminders and changes to your visit arrive the same way.",
+    "textDevice": "On this device, even with the app closed. Reminders and changes to your visit arrive the same way.",
+    "staffTitle": "Hear about new bookings right away",
+    "staffText": "New booking requests arrive on this device and need a quick answer.",
+    "action": "Turn on notifications"
+  },
+  "hint": {
+    "install": "On iPhone, notifications need the app on your Home Screen.",
+    "installLink": "How to add it",
+    "blocked": "Notifications are blocked.",
+    "unblockIos": "Turn them on in Settings → Notifications → {{app}}.",
+    "unblockAndroid": "Allow them in the phone's Settings → Apps → Chrome (or Nails by Alynna) → Notifications.",
+    "unblockDesktop": "Allow them with the icon next to the address bar.",
+    "notHerePhone": "This phone isn't getting app notifications yet.",
+    "notHereDevice": "This device isn't getting app notifications yet.",
+    "turnOn": "Turn on",
+    "unsupported": "This browser can't show app notifications.",
+    "preview": "App notifications work in the published app, not in this preview."
+  },
+  "prompt": {
+    "clientTitle": "Turn on notifications?",
+    "clientText": "We'll tell you on this phone, and by email:",
+    "clientPoints": {
+      "confirm": "when the master confirms or moves your visit",
+      "remind": "before each visit, so you don't miss it",
+      "loyalty": "when your loyalty card earns a discount"
+    },
+    "staffTitle": "Turn on notifications",
+    "staffText": "New booking requests arrive here and need a quick answer. With notifications on, you see them even when the app is closed.",
+    "staffPoints": {
+      "requests": "new booking requests, the moment they arrive",
+      "changes": "visits clients move or cancel"
+    },
+    "installTitle": "Notifications on your iPhone",
+    "installText": "Add the app to your Home Screen first: notifications arrive there, even when it's closed.",
+    "installAction": "Show me how",
+    "enable": "Turn on notifications",
+    "later": "Not now"
+  },
+  "result": {
+    "onPhone": "Notifications are on for this phone.",
+    "onDevice": "Notifications are on for this device.",
+    "dismissed": "No problem. You can turn them on any time in Profile → Notifications.",
+    "notReady": "Notifications are still getting ready on this device. Try again in a moment.",
+    "saveFailed": "Notifications are on, but your choices weren't saved. Check them in Profile → Notifications."
+  },
+  "banner": {
+    "staffBlocked": "Notifications are blocked on this device: new booking requests won't reach you.",
+    "fix": "How to fix it"
+  },
+  "test": {
+    "action": "Send a test notification",
+    "countdown": "Sending in {{count}} s",
+    "countdownHint": "Lock the phone or close the app now to see it arrive.",
+    "sending": "Sending…",
+    "sent_one": "Sent to {{count}} device.",
+    "sent_other": "Sent to {{count}} devices.",
+    "none": "No device got it. Turn notifications off and on again on this phone.",
+    "lost": "If the notification arrived, everything works. If not, check that notifications are allowed for this app in the phone's settings.",
+    "device": {
+      "iphone": "iPhone",
+      "ipad": "iPad",
+      "android": "Android",
+      "mac": "Mac or iPad",
+      "windows": "Windows",
+      "linux": "Linux",
+      "chromeos": "Chromebook",
+      "other": "Device"
+    },
+    "service": {
+      "apple": "Apple",
+      "google": "Google",
+      "mozilla": "Mozilla",
+      "microsoft": "Microsoft",
+      "other": "the push service"
+    },
+    "outcome": {
+      "sent": "sent via {{service}}",
+      "gone": "no longer subscribed, removed",
+      "failed": "{{service}} refused it ({{status}})",
+      "unreachable": "{{service}} didn't answer"
+    }
+  }
+}

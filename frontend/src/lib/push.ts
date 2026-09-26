@@ -27,6 +27,30 @@ export type PushState =
   | 'off'
   | 'on';
 
+/** This device as the screens show it: also while it is being read, or when the API has no push. */
+export type DeviceState = PushState | 'loading' | 'unavailable';
+
+/**
+ * The gentle asks (after booking, top of Notifications): a button while a tap can still turn
+ * notifications on, one line when only the phone can (install the app, unblock), else nothing.
+ */
+export type SoftAsk = 'ask' | 'install' | 'blocked';
+
+export function softAskFor(state: DeviceState): SoftAsk | null {
+  switch (state) {
+    case 'off':
+    case 'not-ready':
+      return 'ask';
+    case 'needs-install':
+      return 'install';
+    case 'denied':
+      return 'blocked';
+    default:
+      // on, unsupported, no service worker, API without push, still reading.
+      return null;
+  }
+}
+
 const OWNER_KEY = 'nba:push-owner';
 
 function isApple(): boolean {
@@ -38,7 +62,8 @@ function isApple(): boolean {
 export function pushCapability(): 'ok' | 'unsupported' | 'needs-install' {
   if (typeof window === 'undefined') return 'unsupported';
   if (isApple() && !currentPlatform().standalone) return 'needs-install';
-  const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  const supported =
+    'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
   return supported ? 'ok' : 'unsupported';
 }
 
@@ -68,7 +93,9 @@ export async function readPushState(userId: string): Promise<PushState> {
 
 /** VAPID public key (base64url) → the bytes PushManager.subscribe expects. */
 export function urlBase64ToUint8Array(value: string): Uint8Array<ArrayBuffer> {
-  const padded = `${value}${'='.repeat((4 - (value.length % 4)) % 4)}`.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = `${value}${'='.repeat((4 - (value.length % 4)) % 4)}`
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
   const raw = window.atob(padded);
   const bytes = new Uint8Array(new ArrayBuffer(raw.length));
   for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
@@ -91,20 +118,29 @@ function toInput(subscription: PushSubscription): PushSubscriptionInput {
 }
 
 /**
- * Asks for permission (call it straight from the tap: Safari only shows the prompt for a user
- * gesture), subscribes this device and registers it with the API for `userId`.
+ * Asks for permission, subscribes this device and registers it with the API for `userId`.
+ * Call it straight from the tap, before anything else is awaited: Safari shows the prompt only
+ * for a user gesture. Pass the VAPID key when it is known already (GET /notifications), so the
+ * subscription follows the permission without a round trip.
  */
-export async function enablePush(userId: string): Promise<PushState> {
+export async function enablePush(
+  userId: string,
+  { publicKey: knownKey }: { publicKey?: string | null } = {},
+): Promise<PushState> {
   const capability = pushCapability();
   if (capability !== 'ok') return capability;
-  const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
+  const permission =
+    Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
   if (permission === 'denied') return 'denied';
   if (permission !== 'granted') return 'off';
 
-  const reg = await registration();
+  const [reg, publicKey] = await Promise.all([
+    registration(),
+    knownKey ? Promise.resolve(knownKey) : notificationsApi.publicKey(),
+  ]);
   if (!reg) return noWorker();
-  const publicKey = await notificationsApi.publicKey();
-  if (!publicKey) throw new ApiError(503, 'PUSH_UNAVAILABLE', 'Push notifications are not configured');
+  if (!publicKey)
+    throw new ApiError(503, 'PUSH_UNAVAILABLE', 'Push notifications are not configured');
   const key = urlBase64ToUint8Array(publicKey);
 
   let subscription = await reg.pushManager.getSubscription();
@@ -113,7 +149,10 @@ export async function enablePush(userId: string): Promise<PushState> {
     await subscription.unsubscribe().catch(() => undefined);
     subscription = null;
   }
-  subscription ??= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+  subscription ??= await reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: key,
+  });
   await notificationsApi.subscribe(toInput(subscription));
   storage.set(OWNER_KEY, userId);
   return 'on';
@@ -125,8 +164,13 @@ export async function disablePush(): Promise<void> {
   const reg = await registration(1_500);
   const subscription = await reg?.pushManager.getSubscription();
   if (!subscription) return;
-  await notificationsApi.unsubscribe(subscription.endpoint).catch(() => undefined);
-  await subscription.unsubscribe().catch(() => undefined);
+  // Best effort: the API also forgets it after signing out, or when the push service drops it.
+  await notificationsApi
+    .unsubscribe(subscription.endpoint)
+    .catch((error: unknown) => console.warn('[push] the API kept this device', error));
+  await subscription
+    .unsubscribe()
+    .catch((error: unknown) => console.warn('[push] could not unsubscribe', error));
 }
 
 /**
@@ -140,7 +184,8 @@ export async function resyncPush(userId: string): Promise<void> {
     const reg = await registration();
     const subscription = await reg?.pushManager.getSubscription();
     if (subscription) await notificationsApi.subscribe(toInput(subscription));
-  } catch {
-    // Offline or signed out meanwhile: the Notifications screen tries again.
+  } catch (error) {
+    // Offline or signed out meanwhile: the next start or the Notifications screen tries again.
+    console.warn('[push] could not re-attach this device', error);
   }
 }

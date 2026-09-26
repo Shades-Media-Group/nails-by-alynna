@@ -29,10 +29,14 @@ function fakeWindow(url: string, extra: Partial<FakeWindow> = {}): FakeWindow {
   return win;
 }
 
+/** What the worker passes to showNotification (timestamp and renotify included). */
+type Shown = NotificationOptions & { timestamp?: number; renotify?: boolean };
+type ShowNotification = (title: string, options: Shown) => Promise<void>;
+
 function worker({
   language = 'ro-RO',
   windows = [] as FakeWindow[],
-  showNotification = vi.fn(async () => undefined),
+  showNotification = vi.fn<ShowNotification>(async () => undefined),
 } = {}) {
   const listeners: Record<string, (event: unknown) => void> = {};
   const self = {
@@ -133,9 +137,7 @@ describe('push-sw.js: every push shows a notification', () => {
         data: { url: '/' },
       }),
     );
-    const untagged = empty.showNotification.mock.calls[0]![1] as NotificationOptions & {
-      renotify?: boolean;
-    };
+    const untagged = empty.showNotification.mock.calls[0]![1];
     expect(untagged.tag).toBeUndefined();
     expect(untagged.renotify).toBeUndefined();
 
@@ -148,17 +150,14 @@ describe('push-sw.js: every push shows a notification', () => {
 
     const wrongTypes = worker({ language: 'fr-FR' });
     await wrongTypes.push({ title: 42, body: ['x'], tag: {}, timestamp: 'soon' });
-    const [title, options] = wrongTypes.showNotification.mock.calls[0]! as [
-      string,
-      NotificationOptions,
-    ];
+    const [title, options] = wrongTypes.showNotification.mock.calls[0]!;
     expect(title).toBe('Nails by Alynna');
     expect(options.body).toBe('Ai o noutate. Atinge ca să deschizi aplicația.');
     expect(options.timestamp).toBeGreaterThan(0);
   });
 
   it('still shows the words when the full notification is refused', async () => {
-    const showNotification = vi.fn(async (_title: string, options: NotificationOptions) => {
+    const showNotification = vi.fn<ShowNotification>(async (_title, options) => {
       if (options.badge) throw new TypeError('badge not allowed');
     });
     const sw = worker({ showNotification });

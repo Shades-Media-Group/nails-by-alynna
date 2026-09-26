@@ -1,0 +1,89 @@
+{
+  "softAsk": {
+    "title": "Primește o notificare când maestrul confirmă",
+    "titleBooked": "Primește un memento înainte de vizită",
+    "textPhone": "Pe acest telefon, chiar și cu aplicația închisă. Mementourile și schimbările vizitei vin la fel.",
+    "textDevice": "Pe acest dispozitiv, chiar și cu aplicația închisă. Mementourile și schimbările vizitei vin la fel.",
+    "staffTitle": "Află imediat de programările noi",
+    "staffText": "Cererile noi de programare ajung pe acest dispozitiv și au nevoie de un răspuns rapid.",
+    "action": "Activează notificările"
+  },
+  "hint": {
+    "install": "Pe iPhone, notificările au nevoie de aplicația de pe ecranul principal.",
+    "installLink": "Cum o adaug",
+    "blocked": "Notificările sunt blocate.",
+    "unblockIos": "Pornește-le din Configurări → Notificări → {{app}}.",
+    "unblockAndroid": "Permite-le din Setările telefonului → Aplicații → Chrome (sau Nails by Alynna) → Notificări.",
+    "unblockDesktop": "Permite-le din iconița de lângă bara de adresă.",
+    "notHerePhone": "Acest telefon încă nu primește notificări din aplicație.",
+    "notHereDevice": "Acest dispozitiv încă nu primește notificări din aplicație.",
+    "turnOn": "Pornește",
+    "unsupported": "Acest browser nu poate afișa notificări din aplicație.",
+    "preview": "Notificările din aplicație funcționează în aplicația publicată, nu în această previzualizare."
+  },
+  "prompt": {
+    "clientTitle": "Activezi notificările?",
+    "clientText": "Îți dăm de știre pe acest telefon și pe email:",
+    "clientPoints": {
+      "confirm": "când maestrul confirmă sau mută vizita",
+      "remind": "înainte de fiecare vizită, ca să n-o scapi",
+      "loyalty": "când cardul de fidelitate ajunge la o reducere"
+    },
+    "staffTitle": "Activează notificările",
+    "staffText": "Cererile noi de programare ajung aici și au nevoie de un răspuns rapid. Cu notificările pornite, le vezi chiar și cu aplicația închisă.",
+    "staffPoints": {
+      "requests": "cereri noi de programare, imediat ce apar",
+      "changes": "vizite mutate sau anulate de clienți"
+    },
+    "installTitle": "Notificări pe iPhone",
+    "installText": "Adaugă mai întâi aplicația pe ecranul principal: notificările ajung acolo, chiar și când e închisă.",
+    "installAction": "Arată-mi cum",
+    "enable": "Activează notificările",
+    "later": "Nu acum"
+  },
+  "result": {
+    "onPhone": "Notificările sunt pornite pe acest telefon.",
+    "onDevice": "Notificările sunt pornite pe acest dispozitiv.",
+    "dismissed": "Nicio problemă. Le poți porni oricând din Profil → Notificări.",
+    "notReady": "Notificările se pregătesc încă pe acest dispozitiv. Încearcă din nou peste câteva clipe.",
+    "saveFailed": "Notificările sunt pornite, dar alegerile nu s-au salvat. Verifică-le în Profil → Notificări."
+  },
+  "banner": {
+    "staffBlocked": "Notificările sunt blocate pe acest dispozitiv: cererile noi de programare nu ajung la tine.",
+    "fix": "Cum repar"
+  },
+  "test": {
+    "action": "Trimite o notificare de test",
+    "countdown": "Se trimite în {{count}} s",
+    "countdownHint": "Blochează telefonul sau închide aplicația acum, ca s-o vezi cum sosește.",
+    "sending": "Se trimite…",
+    "sent_one": "Trimisă pe {{count}} dispozitiv.",
+    "sent_few": "Trimisă pe {{count}} dispozitive.",
+    "sent_other": "Trimisă pe {{count}} de dispozitive.",
+    "none": "Niciun dispozitiv n-a primit-o. Oprește și pornește din nou notificările pe acest telefon.",
+    "lost": "Dacă notificarea a sosit, totul funcționează. Dacă nu, verifică dacă notificările sunt permise pentru aplicație în setările telefonului.",
+    "device": {
+      "iphone": "iPhone",
+      "ipad": "iPad",
+      "android": "Android",
+      "mac": "Mac sau iPad",
+      "windows": "Windows",
+      "linux": "Linux",
+      "chromeos": "Chromebook",
+      "other": "Dispozitiv"
+    },
+    "service": {
+      "apple": "Apple",
+      "google": "Google",
+      "mozilla": "Mozilla",
+      "microsoft": "Microsoft",
+      "other": "serviciul de notificări"
+    },
+    "outcome": {
+      "sent": "trimisă prin {{service}}",
+      "gone": "nu mai e abonat, eliminat",
+      "failed": "{{service}} a refuzat-o ({{status}})",
+      "unreachable": "{{service}} nu a răspuns"
+    }
+  }
+}
