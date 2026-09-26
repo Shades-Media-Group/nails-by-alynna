@@ -16,6 +16,9 @@ export { default as CalendarIcon } from '@mui/icons-material/CalendarMonthRounde
 export { default as CallIcon } from '@mui/icons-material/CallRounded';
 export { default as CategoryIcon } from '@mui/icons-material/CategoryRounded';
 export { default as ChatIcon } from '@mui/icons-material/ChatRounded';
+export { default as RateReviewIcon } from '@mui/icons-material/RateReviewRounded';
+export { default as StarIcon } from '@mui/icons-material/StarRounded';
+export { default as StarOutlineIcon } from '@mui/icons-material/StarOutlineRounded';
 export { default as CheckCircleIcon } from '@mui/icons-material/CheckCircleRounded';
 export { default as CheckIcon } from '@mui/icons-material/CheckRounded';
 export { default as ChevronLeftIcon } from '@mui/icons-material/ChevronLeftRounded';

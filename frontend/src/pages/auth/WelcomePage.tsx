@@ -83,8 +83,6 @@ export default function WelcomePage() {
         ) : null}
       </div>
 
-      <p className="mt-5 text-center text-xs text-ink-500">{t('welcome.testApp')}</p>
-
       {demoRoles.length > 0 ? (
         <section aria-labelledby="demo-title" className="mt-8 rounded-xl bg-peach-50 p-4">
           <h2 id="demo-title" className="text-sm font-bold text-peach-800">

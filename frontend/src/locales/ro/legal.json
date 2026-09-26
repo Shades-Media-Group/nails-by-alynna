@@ -130,7 +130,7 @@
         "id": "provider",
         "title": "Cine oferă serviciul",
         "body": [
-          "Aplicația este un proiect de test administrat de {{operator}} ({{studio}}, {{place}}). Nu este o afacere reală. Contact: {{contact}}."
+          "Aplicația este un proiect de test administrat de {{operator}} ({{studio}}, {{place}}). Nu este o afacere reală."
         ]
       },
       {
@@ -187,8 +187,9 @@
         "id": "complaints",
         "title": "Întrebări și reclamații",
         "body": [
-          "Întrebări sau păreri despre aplicație: {{contact}}."
-        ]
+          "Întrebări, idei sau reclamații despre aplicație? Trimite-le prin formularul de feedback: ajung direct la salon."
+        ],
+        "action": "feedback"
       },
       {
         "id": "updates",
@@ -198,5 +199,6 @@
         ]
       }
     ]
-  }
+  },
+  "feedbackButton": "Trimite feedback"
 }

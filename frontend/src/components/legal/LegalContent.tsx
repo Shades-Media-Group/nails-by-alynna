@@ -1,5 +1,7 @@
-import { Alert } from '@/components/common/Alert';
 import { useTranslation } from 'react-i18next';
+import { Alert } from '@/components/common/Alert';
+import { ButtonLink } from '@/components/ui';
+import { RateReviewIcon } from '@/components/ui/icons';
 import { useStudio } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
 import { formatPhone } from '@/lib/format';
@@ -15,6 +17,8 @@ interface Section {
   body?: string[];
   items?: string[];
   after?: string[];
+  /** A button under the section: "feedback" opens the feedback form. */
+  action?: 'feedback';
 }
 
 /**
@@ -24,7 +28,7 @@ interface Section {
  */
 export function LegalContent({ doc, inSheet = false }: { doc: LegalDoc; inSheet?: boolean }) {
   const { t } = useTranslation('legal');
-  const { locale } = useLocale();
+  const { locale, lp } = useLocale();
   const { data: config } = useStudio();
   const studio = config?.studio;
 
@@ -82,11 +86,13 @@ export function LegalContent({ doc, inSheet = false }: { doc: LegalDoc; inSheet?
       <p className={inSheet ? 'text-sm text-ink-500' : 'mt-1 text-sm text-ink-500'}>
         {t('updated', { date: updated })}
       </p>
-      {/* Said first, in every document: this is a demo project, not a business. */}
-      <Alert tone="info" className="mt-4 max-w-[68ch]">
-        <p className="font-semibold">{t('testNotice.title')}</p>
-        <p className="mt-0.5">{t('testNotice.body')}</p>
-      </Alert>
+      {/* Said first in the Terms (and nowhere else): this is a demo project, not a business. */}
+      {doc === 'terms' ? (
+        <Alert tone="info" className="mt-4 max-w-[68ch]">
+          <p className="font-semibold">{t('testNotice.title')}</p>
+          <p className="mt-0.5">{t('testNotice.body')}</p>
+        </Alert>
+      ) : null}
       <p className="mt-4 max-w-[68ch] text-[0.9375rem] leading-relaxed text-ink-700">
         {t(`${doc}.intro`, values)}
       </p>
@@ -140,6 +146,11 @@ export function LegalContent({ doc, inSheet = false }: { doc: LegalDoc; inSheet?
                 {paragraph}
               </p>
             ))}
+            {section.action === 'feedback' ? (
+              <ButtonLink to={lp('/feedback')} variant="soft" size="md" icon={RateReviewIcon} className="mt-4">
+                {t('feedbackButton')}
+              </ButtonLink>
+            ) : null}
           </section>
         ))}
       </div>

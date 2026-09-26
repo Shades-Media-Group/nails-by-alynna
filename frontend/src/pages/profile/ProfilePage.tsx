@@ -156,7 +156,7 @@ export default function ProfilePage() {
             <ListRow
               icon={ShieldIcon}
               label={t('profile.terms')}
-              description={t('profile.termsText')}
+             
               to={lp('/terms')}
             />
           </ListGroup>
