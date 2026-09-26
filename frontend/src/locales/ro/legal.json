@@ -49,10 +49,8 @@
         ],
         "items": [
           "Cloudflare, Inc.: livrează aplicația și o protejează de atacuri.",
-          "HOST.MD (Republica Moldova): găzduiește serverul de programări.",
-          "MongoDB, Inc. (MongoDB Atlas): păstrează baza de date într-un centru de date din Uniunea Europeană.",
-          "Google: doar dacă alegi să intri cu Google.",
-          "Resend, Inc.: trimite emailurile pentru resetarea parolei."
+          "HOST.MD (Republica Moldova): găzduiește serverul de programări și baza lui de date.",
+          "Google: trimite emailurile salonului (coduri de înregistrare, resetarea parolei, noutăți despre programări) de pe adresa lui de Gmail și te conectează dacă alegi să intri cu Google."
         ],
         "after": [
           "Unii furnizori se află în afara Republicii Moldova. Datele ajung la ei doar cu garanțiile cerute de lege, de exemplu clauze contractuale standard."

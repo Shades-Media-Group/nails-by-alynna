@@ -49,10 +49,8 @@
         ],
         "items": [
           "Cloudflare, Inc.: delivers the app and protects it from attacks.",
-          "HOST.MD (Republic of Moldova): runs the booking server.",
-          "MongoDB, Inc. (MongoDB Atlas): stores the database in a data centre in the European Union.",
-          "Google: only if you choose to sign in with Google.",
-          "Resend, Inc.: sends password-reset emails."
+          "HOST.MD (Republic of Moldova): runs the booking server and keeps its database.",
+          "Google: sends the studio's emails (sign-up codes, password resets, booking updates) from its Gmail address, and signs you in if you choose Google."
         ],
         "after": [
           "Some providers are based outside the Republic of Moldova. Data goes to them only with the safeguards the law requires, such as standard contractual clauses."

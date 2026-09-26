@@ -4,7 +4,7 @@ import { useLocale } from '@/i18n/useLocale';
 import { formatPhone } from '@/lib/format';
 
 /** Bump when a legal text changes in substance; shown as "Last updated". */
-export const LEGAL_UPDATED = '2026-09-25';
+export const LEGAL_UPDATED = '2026-09-26';
 
 export type LegalDoc = 'privacy' | 'terms';
 
