@@ -347,6 +347,8 @@ export interface NotificationPrefs {
   reminders: ChannelPrefs & { enabled: boolean; leadMinutes: ReminderLead[] };
   /** The studio confirmed, moved or cancelled a visit. */
   bookingUpdates: ChannelPrefs;
+  /** Staff only: a client asked for, booked, moved or cancelled a visit (their own or, for the owner, any). */
+  staffBookings: ChannelPrefs;
   loyalty: ChannelPrefs;
   /** News and offers: opt-in only; `consentAt` records when it was last switched on. */
   marketing: ChannelPrefs & { consentAt?: Date | null };
@@ -394,7 +396,7 @@ export interface PushSubscriptionDoc {
  */
 export interface NotificationLogDoc {
   _id: string;
-  kind: 'reminder' | 'booking_update' | 'custom';
+  kind: 'reminder' | 'booking_update' | 'staff_booking' | 'custom';
   userId: ObjectId;
   appointmentId: ObjectId | null;
   status: 'sending' | 'sent' | 'failed' | 'skipped';

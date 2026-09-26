@@ -34,7 +34,8 @@ export const DEFAULT_SETTINGS: StudioSettings = {
   leadTimeMin: 120,
   horizonDays: 60,
   cancellationWindowHours: 12,
-  requireApproval: false,
+  // Client bookings wait for their master's confirmation (the owner can turn this off).
+  requireApproval: true,
   bufferMin: 0,
   // Smart slots: online clients are offered times that keep each master's day compact —
   // back to back, at most 10 free minutes beside a visit, no gap shorter than 1 h 30 min that
@@ -56,6 +57,23 @@ export const DEFAULT_SETTINGS: StudioSettings = {
     { visit: 8, percent: 30 },
   ],
 };
+
+const APPROVAL_SWITCH = 'requireApprovalDefault';
+
+/**
+ * Studios created before bookings waited for confirmation are switched over once, at start-up,
+ * unless the owner has already chosen in Settings. Turning it off afterwards sticks.
+ */
+export async function switchToApprovalOnce(deps: AppDeps): Promise<void> {
+  if (await deps.col.meta.findOne({ _id: APPROVAL_SWITCH })) return;
+  const now = deps.now();
+  await deps.col.settings.updateOne(
+    { _id: 'studio', customized: { $ne: 'requireApproval' } },
+    { $set: { requireApproval: true, updatedAt: now } },
+  );
+  await deps.col.meta.updateOne({ _id: APPROVAL_SWITCH }, { $set: { value: true, updatedAt: now } }, { upsert: true });
+  caches.delete(deps);
+}
 
 // Per-runtime cache (one per Node process), refreshed every 30 s.
 const caches = new WeakMap<AppDeps, { value: StudioSettings; expires: number }>();

@@ -9,11 +9,12 @@ import { REMINDER_LEADS, type ChannelPrefs, type NotificationPrefs, type Reminde
 export const DEFAULT_PREFS: NotificationPrefs = {
   reminders: { enabled: true, leadMinutes: [60], email: true, push: true },
   bookingUpdates: { email: true, push: true },
+  staffBookings: { email: true, push: true },
   loyalty: { email: false, push: true },
   marketing: { email: false, push: false, consentAt: null },
 };
 
-export type NotificationCategory = 'reminders' | 'bookingUpdates' | 'loyalty' | 'marketing';
+export type NotificationCategory = 'reminders' | 'bookingUpdates' | 'staffBookings' | 'loyalty' | 'marketing';
 
 const isLead = (value: unknown): value is ReminderLead => (REMINDER_LEADS as readonly unknown[]).includes(value);
 
@@ -37,6 +38,7 @@ export function resolvePrefs(stored: Partial<NotificationPrefs> | null | undefin
       leadMinutes: normalizeLeads(s.reminders?.leadMinutes ?? DEFAULT_PREFS.reminders.leadMinutes),
     },
     bookingUpdates: pickChannels(s.bookingUpdates, DEFAULT_PREFS.bookingUpdates),
+    staffBookings: pickChannels(s.staffBookings, DEFAULT_PREFS.staffBookings),
     loyalty: pickChannels(s.loyalty, DEFAULT_PREFS.loyalty),
     marketing: { ...pickChannels(s.marketing, DEFAULT_PREFS.marketing), consentAt: s.marketing?.consentAt ?? null },
     updatedAt: s.updatedAt,
@@ -57,6 +59,7 @@ export const prefsPatchSchema = z
       })
       .partial(),
     bookingUpdates: channelPatch,
+    staffBookings: channelPatch,
     loyalty: channelPatch,
     marketing: channelPatch,
   })
@@ -75,6 +78,7 @@ export function applyPrefsPatch(current: NotificationPrefs, patch: PrefsPatch, n
       leadMinutes: normalizeLeads(patch.reminders?.leadMinutes ?? current.reminders.leadMinutes),
     },
     bookingUpdates: { ...current.bookingUpdates, ...patch.bookingUpdates },
+    staffBookings: { ...current.staffBookings, ...patch.staffBookings },
     loyalty: { ...current.loyalty, ...patch.loyalty },
     // Consent is dated when it is given; withdrawing it clears the date.
     marketing: { ...marketing, consentAt: isOn ? (wasOn ? (current.marketing.consentAt ?? now) : now) : null },
@@ -92,6 +96,7 @@ export function publicPrefs(prefs: NotificationPrefs) {
       push: prefs.reminders.push,
     },
     bookingUpdates: { ...prefs.bookingUpdates },
+    staffBookings: { ...prefs.staffBookings },
     loyalty: { ...prefs.loyalty },
     marketing: {
       email: prefs.marketing.email,

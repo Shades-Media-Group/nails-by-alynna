@@ -81,6 +81,8 @@ describe('notification preferences', () => {
       prefs: {
         reminders: { enabled: true, leadMinutes: [60], email: true, push: true },
         bookingUpdates: { email: true, push: true },
+        // Only staff see this one in Settings; it tells them about clients' bookings.
+        staffBookings: { email: true, push: true },
         loyalty: { email: false, push: true },
         marketing: { email: false, push: false, consentAt: null },
       },

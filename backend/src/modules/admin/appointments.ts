@@ -216,6 +216,8 @@ export function adminAppointmentRoutes(deps: AppDeps) {
       targetId: doc._id,
       ...(doc.promo ? { meta: { promo: doc.promo.code } } : {}),
     });
+    // Booked at the desk or by phone: the client gets the details (as their preferences allow).
+    deps.defer(notifyBookingChange(deps, doc._id, 'booked'));
     const [appointment] = await respond([doc]);
     return c.json({ appointment }, 201);
   });

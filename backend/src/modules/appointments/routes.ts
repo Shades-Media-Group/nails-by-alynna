@@ -25,6 +25,7 @@ import {
   toClientAppointment,
 } from './service';
 import { calendarLinks } from '../calendar/service';
+import { notifyBookingChange, notifyStaffOfBooking } from '../notifications';
 import { loyaltyTags } from '../loyalty/service';
 import { findPromo, givePromoUseBack, promoError } from '../promo/service';
 
@@ -144,6 +145,10 @@ export function appointmentRoutes(deps: AppDeps) {
       targetId: doc._id,
       ...(doc.promo ? { meta: { promo: doc.promo.code } } : {}),
     });
+    // The client gets "request sent" (or "you're booked"); the master and the owner hear about it.
+    const event = doc.status === 'pending' ? 'requested' : 'booked';
+    deps.defer(notifyBookingChange(deps, doc._id, event));
+    deps.defer(notifyStaffOfBooking(deps, doc._id, event));
     const [staff, loyalty, calendar] = await Promise.all([
       staffSummaries(deps, [doc.staffId]),
       loyaltyTags(deps, [doc], settings),
@@ -183,6 +188,7 @@ export function appointmentRoutes(deps: AppDeps) {
     // A cancelled booking gives its promo code's use back.
     if (res.promo) await givePromoUseBack(deps, res.promo.promoId, id);
     await audit(deps, { actorId: user._id, action: 'appointment.cancel', targetType: 'appointment', targetId: id });
+    deps.defer(notifyStaffOfBooking(deps, id, 'cancelled'));
     const staff = await staffSummaries(deps, [res.staffId]);
     return c.json({ appointment: toClientAppointment(res, staff, settings, now) });
   });
@@ -204,6 +210,7 @@ export function appointmentRoutes(deps: AppDeps) {
       enforceSlots: true,
     });
     await audit(deps, { actorId: user._id, action: 'appointment.reschedule', targetType: 'appointment', targetId: id });
+    deps.defer(notifyStaffOfBooking(deps, id, 'rescheduled'));
     const [staff, loyalty, calendar] = await Promise.all([
       staffSummaries(deps, [updated.staffId]),
       loyaltyTags(deps, [updated], settings),

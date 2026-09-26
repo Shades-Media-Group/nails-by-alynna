@@ -3,6 +3,7 @@ import type { AppDeps } from './context';
 import { collections, createDatabase, ensureIndexes, SCHEMA_VERSION, type Database } from './db';
 import { createMailer } from './lib/mailer';
 import { createPasswordHasher } from './lib/password';
+import { switchToApprovalOnce } from './modules/settings';
 import { syncDefaults } from './seed/defaults';
 
 /** Builds the dependency graph shared by the server, the seed CLI and the tests. */
@@ -36,6 +37,7 @@ export async function migrate(deps: AppDeps): Promise<void> {
   }
   // The default price list and contact details (no-op when already at the current version).
   await syncDefaults(deps, (message) => console.info(`[defaults] ${message}`));
+  await switchToApprovalOnce(deps);
 }
 
 export { createDatabase };

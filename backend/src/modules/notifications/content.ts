@@ -1,5 +1,5 @@
 import type { AppointmentDoc, StudioSettings } from '../../db/types';
-import { describeVisitTime, visitTime, type BookingChange, type VisitInfo, type VisitTime } from '../../lib/emails';
+import { describeVisitTime, visitTime, type BookingChange, type StaffBookingEvent, type VisitInfo, type VisitTime } from '../../lib/emails';
 import type { PushPayload } from '../../lib/push';
 import { HOUR } from '../../lib/time';
 import type { Locale } from '../../lib/validation';
@@ -48,6 +48,9 @@ const PUSH_COPY: Record<
     reminderTitle: (v: VisitTime) => string;
     withMaster: (name: string) => string;
     soon: string;
+    requested: string;
+    requestedBody: (when: string, master: string | null) => string;
+    booked: string;
     confirmed: string;
     rescheduled: string;
     newTime: (when: string) => string;
@@ -62,6 +65,9 @@ const PUSH_COPY: Record<
       v.relative === 'today' ? `Vizita ta, azi la ${v.time}` : v.relative === 'tomorrow' ? `Vizita ta, mâine la ${v.time}` : `Vizita ta, ${v.date}, la ${v.time}`,
     withMaster: (name) => `cu ${name}`,
     soon: 'Ne vedem curând!',
+    requested: 'Cerere trimisă',
+    requestedBody: (when, master) => `${when}. ${master ? `${master} confirmă` : 'Salonul confirmă'} în scurt timp.`,
+    booked: 'Te-ai programat',
     confirmed: 'Programare confirmată',
     rescheduled: 'Vizita ta a fost mutată',
     newTime: (when) => `Ora nouă: ${when}`,
@@ -75,6 +81,9 @@ const PUSH_COPY: Record<
       v.relative === 'today' ? `Ваш визит сегодня в ${v.time}` : v.relative === 'tomorrow' ? `Ваш визит завтра в ${v.time}` : `Ваш визит: ${v.date}, ${v.time}`,
     withMaster: (name) => `мастер ${name}`,
     soon: 'До встречи!',
+    requested: 'Заявка отправлена',
+    requestedBody: (when, master) => `${when}. ${master ? `Мастер ${master} скоро подтвердит` : 'Салон скоро подтвердит'} запись.`,
+    booked: 'Вы записаны',
     confirmed: 'Запись подтверждена',
     rescheduled: 'Визит перенесён',
     newTime: (when) => `Новое время: ${when}`,
@@ -88,6 +97,9 @@ const PUSH_COPY: Record<
       v.relative === 'today' ? `Your visit today at ${v.time}` : v.relative === 'tomorrow' ? `Your visit tomorrow at ${v.time}` : `Your visit on ${v.date} at ${v.time}`,
     withMaster: (name) => `with ${name}`,
     soon: 'See you soon!',
+    requested: 'Request sent',
+    requestedBody: (when, master) => `${when}. ${master ?? 'The studio'} will confirm it shortly.`,
+    booked: "You're booked",
     confirmed: 'Booking confirmed',
     rescheduled: 'Your visit was moved',
     newTime: (when) => `New time: ${when}`,
@@ -129,7 +141,34 @@ export function bookingChangePush(
   if (kind === 'cancelled') return { title: t.cancelled, body: t.cancelledBody(when), url: new URL(visit.bookUrl).pathname, tag };
   const url = new URL(visit.bookingUrl ?? visit.bookUrl).pathname;
   if (kind === 'rescheduled') return { title: t.rescheduled, body: `${t.newTime(when)} · ${servicesLine(visit, locale)}`, url, tag };
-  return { title: t.confirmed, body: `${when} · ${servicesLine(visit, locale)}`, url, tag };
+  if (kind === 'requested') return { title: t.requested, body: t.requestedBody(when, visit.master), url, tag };
+  return { title: kind === 'booked' ? t.booked : t.confirmed, body: `${when} · ${servicesLine(visit, locale)}`, url, tag };
+}
+
+const STAFF_PUSH: Record<Locale, Record<StaffBookingEvent, string>> = {
+  ro: { requested: 'Cerere nouă de programare', booked: 'Programare nouă', cancelled: 'Clientul a anulat', rescheduled: 'Clientul a mutat vizita' },
+  ru: { requested: 'Новая заявка на запись', booked: 'Новая запись', cancelled: 'Клиент отменил визит', rescheduled: 'Клиент перенёс визит' },
+  en: { requested: 'New booking request', booked: 'New booking', cancelled: 'The client cancelled', rescheduled: 'The client moved their visit' },
+};
+
+/** For the master and the owner: who, when and what, opening the booking in the staff app. */
+export function staffBookingPush(
+  visit: VisitInfo,
+  client: string,
+  event: StaffBookingEvent,
+  openUrl: string,
+  locale: Locale,
+  timeZone: string,
+  now: Date,
+): PushPayload {
+  const when = describeVisitTime(visitTime(visit.start, locale, timeZone, now), locale);
+  return {
+    title: STAFF_PUSH[locale][event],
+    body: `${client} · ${when} · ${visit.services.join(', ')}`,
+    url: new URL(openUrl).pathname,
+    // One notification per booking on the device: a later change replaces the earlier one.
+    tag: `staff-visit-${visit.code}`,
+  };
 }
 
 export function testPush(appUrl: string, locale: Locale): PushPayload {

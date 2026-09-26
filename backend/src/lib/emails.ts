@@ -456,6 +456,10 @@ const VISIT_COPY: Record<
     canChange: (deadline: string) => string;
     tooLate: (phone: string | null) => string;
     reminder: { subject: (v: VisitTime) => string; heading: string; lead: (name: string) => string; why: string };
+    /** The client's own request, waiting for the master (studios that confirm bookings). */
+    requested: { subject: (v: VisitTime) => string; heading: string; lead: (master: string | null) => string };
+    /** The client booked (or the studio booked them) and the visit is already confirmed. */
+    booked: { subject: (v: VisitTime) => string; heading: string; lead: string };
     confirmed: { subject: (v: VisitTime) => string; heading: string; lead: string };
     rescheduled: { subject: (v: VisitTime) => string; heading: string; lead: string };
     cancelled: { subject: (v: VisitTime) => string; heading: string; lead: string; next: string };
@@ -487,6 +491,19 @@ const VISIT_COPY: Record<
       heading: 'Ne vedem curând',
       lead: (name) => (name ? `Bună, ${name}! Îți amintim de vizita ta la ${BRAND}.` : `Bună! Îți amintim de vizita ta la ${BRAND}.`),
       why: 'Primești mementouri pentru că sunt pornite în Profil → Notificări.',
+    },
+    requested: {
+      subject: (v) => `Cerere trimisă: ${v.relative === 'today' ? 'azi' : v.relative === 'tomorrow' ? 'mâine' : v.date}, la ${v.time}`,
+      heading: 'Cererea ta a ajuns la salon',
+      lead: (master) =>
+        master
+          ? `${master} confirmă programarea în scurt timp. Îți scriem imediat ce e confirmată.`
+          : 'Salonul confirmă programarea în scurt timp. Îți scriem imediat ce e confirmată.',
+    },
+    booked: {
+      subject: (v) => `Te-ai programat: ${v.relative === 'today' ? 'azi' : v.relative === 'tomorrow' ? 'mâine' : v.date}, la ${v.time}`,
+      heading: 'Te-ai programat',
+      lead: 'Vizita ta este în calendarul salonului. Te așteptăm!',
     },
     confirmed: {
       subject: (v) => `Programarea ta este confirmată: ${v.relative === 'today' ? 'azi' : v.relative === 'tomorrow' ? 'mâine' : v.date}, la ${v.time}`,
@@ -536,6 +553,19 @@ const VISIT_COPY: Record<
       lead: (name) => (name ? `Здравствуйте, ${name}! Напоминаем о вашем визите в ${BRAND}.` : `Здравствуйте! Напоминаем о вашем визите в ${BRAND}.`),
       why: 'Вы получаете напоминания, потому что они включены в разделе Профиль → Уведомления.',
     },
+    requested: {
+      subject: (v) => `Заявка отправлена: ${v.relative === 'today' ? 'сегодня' : v.relative === 'tomorrow' ? 'завтра' : v.date}, ${v.time}`,
+      heading: 'Заявка уже в салоне',
+      lead: (master) =>
+        master
+          ? `Мастер ${master} скоро подтвердит запись. Мы напишем, как только это произойдёт.`
+          : 'Салон скоро подтвердит запись. Мы напишем, как только это произойдёт.',
+    },
+    booked: {
+      subject: (v) => `Вы записаны: ${v.relative === 'today' ? 'сегодня' : v.relative === 'tomorrow' ? 'завтра' : v.date}, ${v.time}`,
+      heading: 'Вы записаны',
+      lead: 'Визит уже в календаре салона. Ждём вас!',
+    },
     confirmed: {
       subject: (v) => `Запись подтверждена: ${v.relative === 'today' ? 'сегодня' : v.relative === 'tomorrow' ? 'завтра' : v.date}, ${v.time}`,
       heading: 'Запись подтверждена',
@@ -578,6 +608,19 @@ const VISIT_COPY: Record<
       heading: 'See you soon',
       lead: (name) => (name ? `Hi ${name}, this is a reminder of your visit to ${BRAND}.` : `Hi, this is a reminder of your visit to ${BRAND}.`),
       why: 'You get reminders because they are on in Profile → Notifications.',
+    },
+    requested: {
+      subject: (v) => `Request sent: ${v.relative === 'today' ? 'today' : v.relative === 'tomorrow' ? 'tomorrow' : v.date} at ${v.time}`,
+      heading: 'Your request is with the studio',
+      lead: (master) =>
+        master
+          ? `${master} will confirm your booking shortly. We'll write as soon as it's confirmed.`
+          : "The studio will confirm your booking shortly. We'll write as soon as it's confirmed.",
+    },
+    booked: {
+      subject: (v) => `You're booked: ${v.relative === 'today' ? 'today' : v.relative === 'tomorrow' ? 'tomorrow' : v.date} at ${v.time}`,
+      heading: "You're booked",
+      lead: 'Your visit is in the studio calendar. See you there!',
     },
     confirmed: {
       subject: (v) => `Booking confirmed: ${v.relative === 'today' ? 'today' : v.relative === 'tomorrow' ? 'tomorrow' : v.date} at ${v.time}`,
@@ -664,7 +707,8 @@ export function appointmentReminderEmail(opts: {
   });
 }
 
-export type BookingChange = 'confirmed' | 'rescheduled' | 'cancelled';
+/** What happened to a visit, told to its client: their own request or booking, or the studio's change. */
+export type BookingChange = 'requested' | 'booked' | 'confirmed' | 'rescheduled' | 'cancelled';
 
 /** The studio confirmed, moved or cancelled a visit. */
 export function bookingUpdateEmail(opts: {
@@ -679,6 +723,7 @@ export function bookingUpdateEmail(opts: {
 }): MailMessage {
   const t = VISIT_COPY[opts.locale];
   const copy = t[opts.kind];
+  const lead = opts.kind === 'requested' ? t.requested.lead(opts.visit.master) : t[opts.kind].lead;
   const when = visitTime(opts.visit.start, opts.locale, opts.timeZone, opts.now);
   const c = COMMON[opts.locale];
   const cancelled = opts.kind === 'cancelled';
@@ -687,11 +732,11 @@ export function bookingUpdateEmail(opts: {
     to: opts.to,
     toName: opts.name,
     subject: copy.subject(when),
-    preheader: copy.lead,
+    preheader: lead,
     heading: copy.heading,
     blocks: [
       para(c.greeting(opts.name)),
-      para(copy.lead),
+      para(lead),
       cancelled
         ? details([
             [t.labels.when, t.when(when)],
@@ -711,6 +756,133 @@ export function bookingUpdateEmail(opts: {
       ? [small(t.updatesWhy), linkLine(t.settings, opts.visit.settingsUrl), small(c.signature)]
       : [small(t.guestWhy), small(c.signature)],
     replyTo: opts.replyTo,
+  });
+}
+
+// ── Staff: what clients did with their bookings ──────────────────────────────
+
+/** A client's own action on a booking, told to its master and the owner. */
+export type StaffBookingEvent = 'requested' | 'booked' | 'cancelled' | 'rescheduled';
+
+const STAFF_COPY: Record<
+  Locale,
+  {
+    subject: Record<StaffBookingEvent, (client: string, when: string) => string>;
+    heading: Record<StaffBookingEvent, string>;
+    lead: Record<StaffBookingEvent, string>;
+    open: Record<StaffBookingEvent, string>;
+    labels: { client: string; phone: string };
+    why: string;
+  }
+> = {
+  ro: {
+    subject: {
+      requested: (client, when) => `Cerere nouă: ${client}, ${when}`,
+      booked: (client, when) => `Programare nouă: ${client}, ${when}`,
+      cancelled: (client, when) => `Anulată de client: ${client}, ${when}`,
+      rescheduled: (client, when) => `Mutată de client: ${client}, ${when}`,
+    },
+    heading: {
+      requested: 'Cerere nouă de programare',
+      booked: 'Programare nouă',
+      cancelled: 'Clientul a anulat vizita',
+      rescheduled: 'Clientul a mutat vizita',
+    },
+    lead: {
+      requested: 'Confirm-o în aplicație, iar clientul primește confirmarea pe loc.',
+      booked: 'S-a programat online, iar vizita este deja în calendar.',
+      cancelled: 'Ora s-a eliberat în calendar.',
+      rescheduled: 'Vizita are o oră nouă. Detaliile sunt mai jos.',
+    },
+    open: { requested: 'Deschide cererea', booked: 'Vezi programarea', cancelled: 'Vezi programarea', rescheduled: 'Vezi programarea' },
+    labels: { client: 'Client', phone: 'Telefon' },
+    why: 'Primești aceste mesaje pentru că programările clienților sunt pornite în Profil → Notificări.',
+  },
+  ru: {
+    subject: {
+      requested: (client, when) => `Новая заявка: ${client}, ${when}`,
+      booked: (client, when) => `Новая запись: ${client}, ${when}`,
+      cancelled: (client, when) => `Клиент отменил: ${client}, ${when}`,
+      rescheduled: (client, when) => `Клиент перенёс: ${client}, ${when}`,
+    },
+    heading: {
+      requested: 'Новая заявка на запись',
+      booked: 'Новая запись',
+      cancelled: 'Клиент отменил визит',
+      rescheduled: 'Клиент перенёс визит',
+    },
+    lead: {
+      requested: 'Подтвердите её в приложении, и клиент сразу получит подтверждение.',
+      booked: 'Клиент записался онлайн, визит уже в календаре.',
+      cancelled: 'Время в календаре освободилось.',
+      rescheduled: 'У визита новое время. Детали ниже.',
+    },
+    open: { requested: 'Открыть заявку', booked: 'Открыть запись', cancelled: 'Открыть запись', rescheduled: 'Открыть запись' },
+    labels: { client: 'Клиент', phone: 'Телефон' },
+    why: 'Вы получаете эти письма, потому что записи клиентов включены в разделе Профиль → Уведомления.',
+  },
+  en: {
+    subject: {
+      requested: (client, when) => `New request: ${client}, ${when}`,
+      booked: (client, when) => `New booking: ${client}, ${when}`,
+      cancelled: (client, when) => `Cancelled by the client: ${client}, ${when}`,
+      rescheduled: (client, when) => `Moved by the client: ${client}, ${when}`,
+    },
+    heading: {
+      requested: 'New booking request',
+      booked: 'New booking',
+      cancelled: 'The client cancelled',
+      rescheduled: 'The client moved their visit',
+    },
+    lead: {
+      requested: 'Confirm it in the app and the client gets the confirmation straight away.',
+      booked: 'They booked online and the visit is already in the calendar.',
+      cancelled: 'The time is free again in the calendar.',
+      rescheduled: 'The visit has a new time. Details below.',
+    },
+    open: { requested: 'Open the request', booked: 'Open the booking', cancelled: 'Open the booking', rescheduled: 'Open the booking' },
+    labels: { client: 'Client', phone: 'Phone' },
+    why: "You get these emails because clients' bookings are on in Profile → Notifications.",
+  },
+};
+
+/** For the master and the owner: a client asked for, booked, moved or cancelled a visit. */
+export function staffBookingEmail(opts: {
+  to: string;
+  name: string;
+  locale: Locale;
+  timeZone: string;
+  now: Date;
+  event: StaffBookingEvent;
+  visit: VisitInfo;
+  client: { name: string; phone: string | null };
+  openUrl: string;
+  settingsUrl: string;
+}): MailMessage {
+  const t = STAFF_COPY[opts.locale];
+  const v = VISIT_COPY[opts.locale];
+  const when = visitTime(opts.visit.start, opts.locale, opts.timeZone, opts.now);
+  const c = COMMON[opts.locale];
+  return render({
+    locale: opts.locale,
+    to: opts.to,
+    toName: opts.name,
+    subject: t.subject[opts.event](opts.client.name, v.when(when)),
+    preheader: t.lead[opts.event],
+    heading: t.heading[opts.event],
+    blocks: [
+      para(t.lead[opts.event]),
+      details([
+        [t.labels.client, opts.client.name],
+        [t.labels.phone, opts.client.phone],
+        [v.labels.when, v.when(when)],
+        [v.labels.services, opts.visit.services.join('\n')],
+        [v.labels.master, opts.visit.master],
+        [v.labels.code, opts.visit.code],
+      ]),
+      buttons([{ label: t.open[opts.event], url: opts.openUrl, primary: true }]),
+    ],
+    footer: [small(t.why), linkLine(v.settings, opts.settingsUrl), small(c.signature)],
   });
 }
 
