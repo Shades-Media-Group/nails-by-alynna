@@ -183,6 +183,22 @@
     from { opacity: 0; transform: scale3d(0.6, 0.6, 1); }
     to { opacity: 1; transform: none; }
   }
+  /* "Clock it" (booking done): three nail-to-nail taps, a spark at each touch. */
+  @keyframes clock-it-middle {
+    0% { transform: rotate(9deg); }
+    18%, 44%, 70%, 100% { transform: rotate(0deg); }
+    31%, 57% { transform: rotate(7deg); }
+  }
+  @keyframes clock-it-thumb {
+    0% { transform: rotate(-6deg); }
+    18%, 44%, 70%, 100% { transform: rotate(0deg); }
+    31%, 57% { transform: rotate(-4deg); }
+  }
+  @keyframes clock-it-spark {
+    0%, 16%, 30%, 42%, 56%, 68% { opacity: 0; transform: scale(0.5); }
+    19%, 45%, 71% { opacity: 1; transform: scale(1.1); }
+    100% { opacity: 1; transform: scale(0.9); }
+  }
   @keyframes draw {
     from { stroke-dashoffset: var(--path-length, 60); }
     to { stroke-dashoffset: 0; }
@@ -390,6 +406,26 @@
 
 @utility safe-bottom {
   padding-bottom: var(--safe-bottom);
+}
+
+/* "Clock it": the middle finger and the thumb turn around their knuckles; the spark flashes where the nails meet. */
+.clock-it-thumb,
+.clock-it-middle,
+.clock-it-spark {
+  transform-box: view-box;
+  animation: 1.5s var(--ease-in-out) 0.2s both;
+}
+.clock-it-middle {
+  transform-origin: 52px 51px;
+  animation-name: clock-it-middle;
+}
+.clock-it-thumb {
+  transform-origin: 45px 74px;
+  animation-name: clock-it-thumb;
+}
+.clock-it-spark {
+  transform-origin: 20px 45px;
+  animation-name: clock-it-spark;
 }
 
 @utility no-scrollbar {
