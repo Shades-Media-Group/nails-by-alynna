@@ -26,6 +26,7 @@ import {
 } from './service';
 import { calendarLinks } from '../calendar/service';
 import { loyaltyTags } from '../loyalty/service';
+import { findPromo, givePromoUseBack, promoError } from '../promo/service';
 
 const staffChoice = z
   .union([z.literal('any'), objectIdSchema, z.null()])
@@ -81,6 +82,8 @@ export function appointmentRoutes(deps: AppDeps) {
     start: isoDateTimeSchema,
     notes: z.string().trim().max(500, 'too_long').default(''),
     phone: phoneSchema.optional(),
+    /** A promo code typed on the confirm step (any case); checked again here and one use held. */
+    promoCode: z.string().trim().max(40, 'too_long').optional(),
   });
 
   app.post('/', async (c) => {
@@ -120,6 +123,8 @@ export function appointmentRoutes(deps: AppDeps) {
     if (active >= settings.maxActiveBookings) {
       throw new AppError(409, 'BOOKING_LIMIT', 'Too many upcoming appointments');
     }
+    const promo = input.promoCode ? await findPromo(deps, input.promoCode) : null;
+    if (input.promoCode && !promo) throw promoError('unknown');
 
     const doc = await placeAppointment(deps, {
       client,
@@ -130,8 +135,15 @@ export function appointmentRoutes(deps: AppDeps) {
       source: 'client',
       createdBy: user._id,
       enforceSlots: true,
+      promo,
     });
-    await audit(deps, { actorId: user._id, action: 'appointment.create', targetType: 'appointment', targetId: doc._id });
+    await audit(deps, {
+      actorId: user._id,
+      action: 'appointment.create',
+      targetType: 'appointment',
+      targetId: doc._id,
+      ...(doc.promo ? { meta: { promo: doc.promo.code } } : {}),
+    });
     const [staff, loyalty, calendar] = await Promise.all([
       staffSummaries(deps, [doc.staffId]),
       loyaltyTags(deps, [doc], settings),
@@ -168,6 +180,8 @@ export function appointmentRoutes(deps: AppDeps) {
       { returnDocument: 'after' },
     );
     if (!res) throw new AppError(409, 'INVALID_STATUS', 'Appointment is not active');
+    // A cancelled booking gives its promo code's use back.
+    if (res.promo) await givePromoUseBack(deps, res.promo.promoId, id);
     await audit(deps, { actorId: user._id, action: 'appointment.cancel', targetType: 'appointment', targetId: id });
     const staff = await staffSummaries(deps, [res.staffId]);
     return c.json({ appointment: toClientAppointment(res, staff, settings, now) });

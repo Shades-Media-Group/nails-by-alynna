@@ -186,6 +186,10 @@ export interface Appointment {
   cancelledAt: string | null;
   cancelledBy: 'client' | 'staff' | null;
   loyalty: AppointmentLoyalty | null;
+  /** The promo code on this booking (missing from older API responses). */
+  promo?: AppointmentPromo | null;
+  /** A code that came off when the visit was moved or restored, and why. */
+  promoRemoved?: RemovedPromo | null;
   /** Signed "Add to calendar" (.ics) link, for visits still to come. */
   calendarUrl?: string | null;
   createdAt: string;
@@ -211,4 +215,51 @@ export interface DeviceSession {
 
 export interface ApiErrorBody {
   error: { code: string; message: string; fields?: Record<string, string>; requestId?: string };
+}
+
+export type PromoKind = 'percent' | 'amount';
+
+/** Why a code does not apply (backend PromoProblem); the app explains each one. */
+export type PromoProblem =
+  | 'unknown'
+  | 'inactive'
+  | 'expired'
+  | 'not_started'
+  | 'used_up'
+  | 'used_by_you'
+  | 'first_visit'
+  | 'master'
+  | 'services'
+  | 'min_total';
+
+/**
+ * A promo code on a booking. `applied`: its discount is the one the visit gets (promo codes and
+ * loyalty discounts never add up; the bigger one wins, locked in when the visit is completed).
+ */
+export interface AppointmentPromo {
+  code: string;
+  kind: PromoKind;
+  value: number;
+  discount: number;
+  applied: boolean;
+}
+
+export interface RemovedPromo {
+  code: string;
+  reason: PromoProblem;
+  at: string;
+}
+
+/** A code checked against a visit before booking or moving it. */
+export interface PromoQuote {
+  code: string;
+  kind: PromoKind;
+  value: number;
+  discount: number;
+  total: number;
+  coveredTotal: number;
+  /** The booked services it discounts; null = all of them. */
+  serviceIds: string[] | null;
+  /** The master it belongs to; null = the whole studio. */
+  staffId: string | null;
 }

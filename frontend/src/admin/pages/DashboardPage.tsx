@@ -5,6 +5,7 @@ import { Link } from 'react-router';
 import { useAuth } from '@/app/auth';
 import { Alert } from '@/components/common/Alert';
 import { SectionHeading } from '@/components/layout/PageHeader';
+import { PromoBadge } from '@/components/promo/PromoBits';
 import { Button, ButtonLink, EmptyState, Skeleton, Textarea, toast } from '@/components/ui';
 import { AddIcon, CalendarIcon, CallIcon, ChevronRightIcon, EventIcon, GroupIcon, QrCodeIcon, type IconComponent } from '@/components/ui/icons';
 import { useI18nText, useStudio } from '@/hooks/useStudio';
@@ -255,6 +256,7 @@ function NextUp({ stats, now, multiMaster }: { stats: DashboardStats; now: numbe
         ) : null}
         <span>{formatDuration(t, next.durationMin)}</span>
         <span className="tabular font-semibold text-white">{formatPrice(t, next.totalPrice, currency, next.priceFrom)}</span>
+        <PromoBadge appointment={next} />
         {next.status === 'pending' ? <StatusBadge status="pending" /> : null}
       </p>
       <div className="mt-4 flex flex-wrap gap-2">

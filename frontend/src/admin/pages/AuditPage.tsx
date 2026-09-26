@@ -46,7 +46,7 @@ function areaOf(action: string): Area {
   const [kind] = action.split('.');
   if (kind === 'appointment') return 'appointments';
   if (kind === 'client' || kind === 'loyalty') return 'clients';
-  if (kind === 'service' || kind === 'category') return 'catalog';
+  if (kind === 'service' || kind === 'category' || kind === 'promo') return 'catalog';
   if (kind === 'staff' || kind === 'time_off') return 'team';
   if (kind === 'settings') return 'settings';
   if (action === 'user.role_change' || action === 'user.status_change') return 'users';
@@ -83,6 +83,9 @@ function metaLines(entry: AuditEntry, t: TFunction, currency: string): string[] 
   if (typeof m.delta === 'number') lines.push(m.delta > 0 ? t('audit.meta.stampAdded') : t('audit.meta.stampRemoved'));
   if (entry.action.startsWith('loyalty.') && typeof m.visits === 'number') lines.push(t('audit.meta.stamps', { count: m.visits }));
   if (typeof m.reason === 'string' && m.reason.trim()) lines.push(t('audit.meta.reason', { reason: m.reason.trim() }));
+  // The code a booking was made with, or the code an entry is about.
+  const promo = typeof m.promo === 'string' ? m.promo : entry.action.startsWith('promo.') && typeof m.code === 'string' ? m.code : null;
+  if (promo) lines.push(t('audit.meta.promo', { code: promo }));
   if (typeof m.ip === 'string' && m.ip) lines.push(t('audit.meta.ip', { ip: m.ip }));
   if (m.passwordRemoved === true) lines.push(t('audit.meta.passwordRemoved'));
   return lines;
@@ -98,6 +101,7 @@ function targetLink(entry: AuditEntry, lp: (path: string) => string, t: TFunctio
   if (entry.targetType === 'service' || entry.targetType === 'category') return { to: lp('/admin/services'), label: t('audit.open.catalog') };
   if (entry.targetType === 'staff' || entry.targetType === 'time_off') return { to: lp('/admin/team'), label: t('audit.open.team') };
   if (entry.targetType === 'settings') return { to: lp('/admin/settings'), label: t('audit.open.settings') };
+  if (entry.targetType === 'promo') return { to: lp('/admin/promo'), label: t('audit.open.promo') };
   return null;
 }
 

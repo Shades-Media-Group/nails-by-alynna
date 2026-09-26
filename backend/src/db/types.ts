@@ -242,6 +242,10 @@ export interface AppointmentDoc {
   cancelReason: string;
   /** Loyalty stamp earned when the visit was completed, with the reward applied (if any). */
   loyalty?: AppointmentLoyalty | null;
+  /** The promo code on this booking and its discount on the visit's price (see modules/promo). */
+  promo?: AppointmentPromo | null;
+  /** A code that stopped applying when the visit was moved or restored, and why (shown on the booking). */
+  promoRemoved?: RemovedPromo | null;
   createdBy: ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -401,4 +405,83 @@ export interface NotificationLogDoc {
   updatedAt: Date;
   /** Failed sends may be retried after this moment (transient errors only). */
   retryAt: Date | null;
+}
+
+// ── Promo codes ──────────────────────────────────────────────────────────────────
+
+export type PromoKind = 'percent' | 'amount';
+
+/** Why a code does not apply to a booking; the app explains each one in words. */
+export type PromoProblem =
+  | 'unknown'
+  | 'inactive'
+  | 'expired'
+  | 'not_started'
+  | 'used_up'
+  | 'used_by_you'
+  | 'first_visit'
+  | 'master'
+  | 'services'
+  | 'min_total';
+
+/** One use of a code, held by a booking (upcoming, or a completed visit it discounted). */
+export interface PromoRedemption {
+  appointmentId: ObjectId;
+  clientId: ObjectId;
+  at: Date;
+}
+
+/**
+ * A discount code clients type when booking (modules/promo): a percentage or an amount off the
+ * visit, for the whole studio or tied to one master. Its dates are visit days, in studio time.
+ */
+export interface PromoCodeDoc {
+  _id: ObjectId;
+  /** A–Z and 0–9, 3–20 characters, stored upper-case; unique. */
+  code: string;
+  kind: PromoKind;
+  /** 1–100 for a percentage; whole units of the studio currency for an amount. */
+  value: number;
+  /** First and last visit day it discounts (YYYY-MM-DD, studio time), inclusive; null = open. */
+  startsAt: string | null;
+  endsAt: string | null;
+  /** Uses in total (null = no limit) and per client. */
+  maxUses: number | null;
+  maxUsesPerClient: number;
+  /** The visit's list total must reach this; 0 = any. */
+  minTotal: number;
+  /** Services it discounts; null = every service. */
+  serviceIds: ObjectId[] | null;
+  /** The master it belongs to: it works only on their bookings. null = the whole studio. */
+  staffId: ObjectId | null;
+  firstVisitOnly: boolean;
+  isActive: boolean;
+  /** Staff-only: who it is for, where it was shared. */
+  note: string;
+  /** The bookings holding a use; the number of uses is its length. */
+  redemptions: PromoRedemption[];
+  createdBy: ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/** A promo code on a booking, frozen when it was applied. */
+export interface AppointmentPromo {
+  promoId: ObjectId;
+  code: string;
+  kind: PromoKind;
+  value: number;
+  /** Discount in the studio currency on this visit's list price (the services the code covers). */
+  discount: number;
+  /**
+   * Set when the visit is completed: true if the visit got this discount, false if its loyalty
+   * discount was bigger (the two never add up) and the use went back to the code.
+   */
+  applied?: boolean;
+}
+
+export interface RemovedPromo {
+  code: string;
+  reason: PromoProblem;
+  at: Date;
 }

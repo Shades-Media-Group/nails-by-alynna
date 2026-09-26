@@ -685,7 +685,8 @@
       "client": "Deschide clientul",
       "catalog": "Deschide prețurile",
       "team": "Deschide echipa",
-      "settings": "Deschide setările"
+      "settings": "Deschide setările",
+      "promo": "Deschide codurile promoționale"
     },
     "meta": {
       "activated": "Acces redat",
@@ -703,7 +704,8 @@
       "stamps_one": "{{count}} vizită pe card",
       "stamps_few": "{{count}} vizite pe card",
       "stamps_other": "{{count}} de vizite pe card",
-      "reason": "Motiv: {{reason}}"
+      "reason": "Motiv: {{reason}}",
+      "promo": "Cod promoțional {{code}}"
     },
     "fields": {
       "name": "denumire",
@@ -780,6 +782,13 @@
       },
       "loyalty": {
         "stamp": "Card de fidelitate corectat"
+      },
+      "promo": {
+        "create": "Cod promoțional creat",
+        "update": "Cod promoțional editat",
+        "activate": "Cod promoțional pornit",
+        "deactivate": "Cod promoțional oprit",
+        "delete": "Cod promoțional șters"
       }
     }
   }

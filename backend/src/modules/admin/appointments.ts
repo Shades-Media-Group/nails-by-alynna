@@ -30,6 +30,7 @@ import {
 import { placeholderEmail } from '../../lib/placeholder-email';
 import { loyaltyStatus, loyaltyTags, stampOnCompletion } from '../loyalty/service';
 import { notifyBookingChange, notifyLoyaltyNext } from '../notifications';
+import { findPromo, promoError, promoOnStatusChange, type PromoStatusChange } from '../promo/service';
 
 export { placeholderEmail };
 
@@ -145,12 +146,16 @@ export function adminAppointmentRoutes(deps: AppDeps) {
       notes: z.string().trim().max(500, 'too_long').default(''),
       status: z.enum(['pending', 'confirmed']).default('confirmed'),
       force: z.boolean().default(false),
+      /** A promo code the client mentions at the desk; checked like an online booking's. */
+      promoCode: z.string().trim().max(40, 'too_long').optional(),
     })
     .refine((v) => Boolean(v.clientId) !== Boolean(v.newClient), { message: 'client_required', path: ['clientId'] });
 
   app.post('/', async (c) => {
     const actor = c.get('user');
     const input = await parseJson(c, createSchema);
+    const promo = input.promoCode ? await findPromo(deps, input.promoCode) : null;
+    if (input.promoCode && !promo) throw promoError('unknown');
     let client: UserDoc | null = null;
 
     if (input.clientId) {
@@ -202,8 +207,15 @@ export function adminAppointmentRoutes(deps: AppDeps) {
       status: input.status,
       enforceSlots: false,
       force: input.force,
+      promo,
     });
-    await audit(deps, { actorId: actor._id, action: 'appointment.create_staff', targetType: 'appointment', targetId: doc._id });
+    await audit(deps, {
+      actorId: actor._id,
+      action: 'appointment.create_staff',
+      targetType: 'appointment',
+      targetId: doc._id,
+      ...(doc.promo ? { meta: { promo: doc.promo.code } } : {}),
+    });
     const [appointment] = await respond([doc]);
     return c.json({ appointment }, 201);
   });
@@ -224,6 +236,7 @@ export function adminAppointmentRoutes(deps: AppDeps) {
     if (!doc) throw notFound('Appointment');
     const now = deps.now();
     const set: Partial<AppointmentDoc> = { updatedAt: now };
+    let promoChange: PromoStatusChange | null = null;
 
     if (input.staffNotes !== undefined) set.staffNotes = input.staffNotes;
     if (input.notes !== undefined) set.notes = input.notes;
@@ -268,6 +281,10 @@ export function adminAppointmentRoutes(deps: AppDeps) {
       // completion takes the stamp back.
       if (input.status === 'completed') set.loyalty = await stampOnCompletion(deps, doc, await getSettings(deps));
       else if (doc.status === 'completed') set.loyalty = null;
+      // The promo code follows: its use goes back on cancel or no-show, is taken again on restore
+      // (or the code comes off), and a completed visit keeps the bigger of the code and loyalty.
+      promoChange = await promoOnStatusChange(deps, doc, input.status, set.loyalty, await getSettings(deps));
+      Object.assign(set, promoChange.set);
     }
 
     const updated = await deps.col.appointments.findOneAndUpdate(
@@ -275,7 +292,11 @@ export function adminAppointmentRoutes(deps: AppDeps) {
       { $set: set },
       { returnDocument: 'after' },
     );
-    if (!updated) throw new AppError(409, 'CONFLICT', 'Appointment changed meanwhile; reload and retry');
+    if (!updated) {
+      await promoChange?.failed();
+      throw new AppError(409, 'CONFLICT', 'Appointment changed meanwhile; reload and retry');
+    }
+    await promoChange?.saved();
     if (set.status) {
       await audit(deps, {
         actorId: actor._id,

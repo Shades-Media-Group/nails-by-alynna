@@ -4,6 +4,7 @@ import {
   ACTIVE_STATUSES,
   type AppointmentDoc,
   type AppointmentStatus,
+  type PromoCodeDoc,
   type StaffDoc,
   type StudioSettings,
   type UserDoc,
@@ -14,6 +15,7 @@ import { HOUR, MINUTE, toZonedParts } from '../../lib/time';
 import { getSettings } from '../settings';
 import { canPerform, loadAvailabilityContext, loadServices, slotsForDate } from '../availability/service';
 import type { LoyaltyTag } from '../loyalty/service';
+import { claimPromo, givePromoUseBack, promoView, recheckPromoAfterMove, removedPromoView } from '../promo/service';
 
 /**
  * Minutes kept free between two visits of a master: the studio's break or the master's own
@@ -116,6 +118,8 @@ export interface PlaceInput {
   enforceSlots: boolean;
   /** Staff override: allow overlapping an existing appointment. */
   force?: boolean;
+  /** A promo code the client typed (see modules/promo): checked against the final booking. */
+  promo?: PromoCodeDoc | null;
 }
 
 export async function placeAppointment(deps: AppDeps, input: PlaceInput): Promise<AppointmentDoc> {
@@ -134,7 +138,9 @@ export async function placeAppointment(deps: AppDeps, input: PlaceInput): Promis
       to: date,
     });
     const slot = slotsForDate(ctx, date, now).find((s) => s.start === input.start.toISOString());
-    const chosen = slot?.staffIds[0];
+    // "Any master" with a code tied to one master: that master, when they are free then.
+    const tied = input.promo?.staffId?.toHexString();
+    const chosen = tied && slot?.staffIds.includes(tied) ? tied : slot?.staffIds[0];
     if (!slot || !chosen) throw new AppError(409, 'SLOT_UNAVAILABLE', 'This time is no longer available');
     services = ctx.services;
     staffId = new ObjectId(chosen);
@@ -142,7 +148,7 @@ export async function placeAppointment(deps: AppDeps, input: PlaceInput): Promis
   } else {
     services = await loadServices(deps, input.serviceIds);
     const minutes = services.reduce((sum, s) => sum + s.durationMin, 0);
-    master = await resolveStaff(deps, input.staffId, services, {
+    master = await resolveStaff(deps, input.staffId ?? input.promo?.staffId ?? null, services, {
       start: input.start,
       end: new Date(input.start.getTime() + minutes * MINUTE),
       settings,
@@ -188,22 +194,37 @@ export async function placeAppointment(deps: AppDeps, input: PlaceInput): Promis
     updatedAt: now,
   };
 
+  // The id is fixed first, so a promo code's use is held for this booking before it is written:
+  // two bookings racing for the last use can't both get it. A booking that isn't made gives it back.
+  const _id = new ObjectId();
+  if (input.promo) base.promo = await claimPromo(deps, input.promo, { ...base, _id }, settings);
+  const giveBack = async () => {
+    if (base.promo) await givePromoUseBack(deps, base.promo.promoId, _id);
+  };
+
   let doc: AppointmentDoc | null = null;
   for (let attempt = 0; attempt < 4 && !doc; attempt++) {
-    const candidate: AppointmentDoc = { ...base, _id: new ObjectId(), code: bookingCode() };
+    const candidate: AppointmentDoc = { ...base, _id, code: bookingCode() };
     try {
       await deps.col.appointments.insertOne(candidate);
       doc = candidate;
     } catch (error) {
-      if (!isDuplicateKey(error)) throw error;
+      if (!isDuplicateKey(error)) {
+        await giveBack();
+        throw error;
+      }
     }
   }
-  if (!doc) throw new AppError(500, 'INTERNAL', 'Could not allocate a booking code');
+  if (!doc) {
+    await giveBack();
+    throw new AppError(500, 'INTERNAL', 'Could not allocate a booking code');
+  }
 
   if (!input.force) {
     const conflict = await findEarlierOverlap(deps, doc, breakBetween(settings, master));
     if (conflict) {
       await deps.col.appointments.deleteOne({ _id: doc._id });
+      await giveBack();
       throw new AppError(409, 'SLOT_TAKEN', 'Someone just booked this time');
     }
   }
@@ -264,7 +285,8 @@ export async function rescheduleAppointment(
       throw new AppError(409, 'SLOT_TAKEN', 'Someone just booked this time');
     }
   }
-  return { ...appointment, ...next };
+  // A promo code stays only while it covers the new day and master (otherwise it comes off, with a note).
+  return recheckPromoAfterMove(deps, { ...appointment, ...next }, settings);
 }
 
 export function cancelDeadline(appointment: AppointmentDoc, settings: StudioSettings): Date {
@@ -313,6 +335,7 @@ export function toClientAppointment(
 ) {
   const stored = a.status === 'completed' && a.loyalty ? { ...a.loyalty, predicted: false } : null;
   const id = a._id.toHexString();
+  const loyalty = extras.loyalty?.get(id) ?? stored;
   return {
     id: a._id.toHexString(),
     code: a.code,
@@ -335,7 +358,10 @@ export function toClientAppointment(
     changeDeadline: cancelDeadline(a, settings).toISOString(),
     cancelledAt: a.cancelledAt?.toISOString() ?? null,
     cancelledBy: a.cancelledBy,
-    loyalty: extras.loyalty?.get(id) ?? stored,
+    loyalty,
+    /** The promo code and whether its discount is the one the visit gets (never both with loyalty). */
+    promo: promoView(a, loyalty),
+    promoRemoved: removedPromoView(a),
     /** Signed "Add to calendar" link, for visits still to come. */
     calendarUrl: extras.calendar?.get(id) ?? null,
     createdAt: a.createdAt.toISOString(),

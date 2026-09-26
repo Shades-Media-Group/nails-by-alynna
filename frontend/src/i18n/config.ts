@@ -11,7 +11,7 @@ export const LOCALE_SHORT: Record<Locale, string> = { ro: 'RO', ru: 'RU', en: 'E
 /** BCP 47 tags for Intl formatting (Moldovan conventions). */
 export const LOCALE_TAGS: Record<Locale, string> = { ro: 'ro-MD', ru: 'ru-MD', en: 'en-GB' };
 
-export const NAMESPACES = ['common', 'auth', 'booking', 'account', 'install', 'legal', 'admin', 'loyalty', 'onboarding'] as const;
+export const NAMESPACES = ['common', 'auth', 'booking', 'account', 'install', 'legal', 'admin', 'loyalty', 'onboarding', 'promo'] as const;
 export type Namespace = (typeof NAMESPACES)[number];
 
 export const isLocale = (value: unknown): value is Locale =>

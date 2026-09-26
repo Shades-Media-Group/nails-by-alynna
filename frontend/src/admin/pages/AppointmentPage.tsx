@@ -22,6 +22,7 @@ import { RescheduleSheet } from '../components/RescheduleSheet';
 import { StatusBadge } from '../components/StatusBadge';
 import { isPlaceholderEmail, telHref, whatsappHref } from '../components/utils';
 import { AppointmentLoyalty } from '../loyalty/AppointmentLoyalty';
+import { AppointmentPromo } from '../promo/AppointmentPromo';
 
 type SheetKind = 'cancel' | 'noShow' | 'restoreForce' | 'reschedule' | null;
 
@@ -308,6 +309,7 @@ function Services({ appointment: a }: { appointment: StaffAppointment }) {
         <span className="font-bold">{t('appointment.total')}</span>
         <span className="tabular text-lg font-extrabold">{formatPrice(t, a.totalPrice, currency, a.priceFrom)}</span>
       </div>
+      <AppointmentPromo appointment={a} />
       <AppointmentLoyalty appointment={a} />
     </section>
   );

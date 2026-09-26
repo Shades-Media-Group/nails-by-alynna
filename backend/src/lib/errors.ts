@@ -41,6 +41,7 @@ export type ErrorCode =
   | 'ALREADY_REGISTERED'
   | 'ONE_PER_CATEGORY'
   | 'CARD_NOT_FOUND'
+  | 'PROMO_INVALID'
   | 'PAYLOAD_TOO_LARGE'
   | 'DEMO_READ_ONLY'
   | 'RATE_LIMITED'

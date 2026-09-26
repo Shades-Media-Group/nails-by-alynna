@@ -252,6 +252,8 @@ export interface NewAppointmentInput {
   status: 'pending' | 'confirmed';
   /** Book even when it overlaps another appointment. */
   force?: boolean;
+  /** A promo code the client brings (checked again by the API, one use held). */
+  promoCode?: string;
 }
 
 export interface Paged {

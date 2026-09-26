@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { Alert } from '@/components/common/Alert';
 import { StampCard } from '@/components/loyalty/StampCard';
+import { PromoBadge } from '@/components/promo/PromoBits';
 import { useNextRewardText } from '@/components/loyalty/useNextRewardText';
 import { Avatar, Badge, Button, ButtonLink, Sheet, Textarea, toast } from '@/components/ui';
 import { AddIcon, CallIcon, ChevronRightIcon, PersonIcon, RemoveIcon } from '@/components/ui/icons';
@@ -102,12 +103,14 @@ export function CardPanel({ data }: { data: ClientLoyaltyCard }) {
                       </span>
                       <span className="block text-sm text-ink-600">{a.services.map((s) => pick(s.name)).join(' · ')}</span>
                       {a.loyalty ? (
-                        <span className={a.loyalty.percent > 0 ? 'mt-1 block text-sm font-semibold text-rose-700' : 'mt-1 block text-sm text-ink-600'}>
-                          {a.loyalty.percent > 0
+                        // A bigger promo code takes the loyalty discount's place; the stamp still counts.
+                        <span className={a.loyalty.percent > 0 && !a.promo?.applied ? 'mt-1 block text-sm font-semibold text-rose-700' : 'mt-1 block text-sm text-ink-600'}>
+                          {a.loyalty.percent > 0 && !a.promo?.applied
                             ? t('card.thisVisit', { percent: a.loyalty.percent, amount: money(a.loyalty.discount) })
                             : t('card.stampOnly', { visit: a.loyalty.visit, cycle: a.loyalty.cycle })}
                         </span>
                       ) : null}
+                      <PromoBadge appointment={a} className="mt-1" />
                     </span>
                     <ChevronRightIcon fontSize="inherit" className="shrink-0 text-xl text-ink-400 transition-transform group-hover:translate-x-1" />
                   </Link>

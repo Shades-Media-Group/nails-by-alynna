@@ -38,6 +38,7 @@ const adminRoutes: RouteObject = {
         { path: 'schedule', lazy: page(() => import('@/admin/pages/MySchedulePage')) },
         { path: 'settings', lazy: page(() => import('@/admin/pages/SettingsPage')) },
         { path: 'scan', lazy: page(() => import('@/admin/pages/ScanPage')) },
+        { path: 'promo', lazy: page(() => import('@/admin/pages/PromoCodesPage')) },
         {
           element: <RequireRole roles={['administrator']} />,
           children: [

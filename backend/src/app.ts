@@ -17,6 +17,7 @@ import { calendarRoutes } from './modules/calendar/routes';
 import { loyaltyRoutes } from './modules/loyalty/routes';
 import { meRoutes } from './modules/me/routes';
 import { notificationRoutes } from './modules/notifications';
+import { promoRoutes } from './modules/promo/routes';
 import { publicRoutes } from './modules/public/routes';
 
 export function createApp(deps: AppDeps) {
@@ -31,6 +32,7 @@ export function createApp(deps: AppDeps) {
   app.route('/api/availability', availabilityRoutes(deps));
   app.route('/api/appointments', appointmentRoutes(deps));
   app.route('/api/loyalty', loyaltyRoutes(deps));
+  app.route('/api/promo', promoRoutes(deps));
   app.route('/api/calendar', calendarRoutes(deps));
   app.route('/api', notificationRoutes(deps)); // /api/notifications/*, /api/internal/tick
   app.route('/api/admin', adminRoutes(deps));

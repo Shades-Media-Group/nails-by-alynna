@@ -7,6 +7,7 @@ import { Alert } from '@/components/common/Alert';
 import { ConfirmStep } from '@/components/booking/ConfirmStep';
 import { DoneStep } from '@/components/booking/DoneStep';
 import { MasterStep } from '@/components/booking/MasterStep';
+import { usePromoQuote } from '@/components/promo/usePromoQuote';
 import { SelectionBar } from '@/components/booking/SelectionBar';
 import { ServiceList } from '@/components/booking/ServiceList';
 import { StepProgress } from '@/components/booking/StepProgress';
@@ -18,6 +19,7 @@ import { useCatalog, useStudio } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
 import { errorMessage } from '@/lib/errors';
 import { formatDayLong, formatTime } from '@/lib/format';
+import { promoProblemText, promoRefusal } from '@/lib/promo';
 import { toggleService } from '@/lib/selection';
 import { normalizePhone } from '@/lib/validation';
 import { ApiError } from '@/services/api/client';
@@ -33,7 +35,7 @@ type Step = 'services' | 'master' | 'time' | 'confirm';
  * flow. With ?reschedule=<id> the same screens move an existing booking.
  */
 export default function BookingPage() {
-  const { t } = useTranslation(['booking', 'common']);
+  const { t } = useTranslation(['booking', 'common', 'promo']);
   const { lp, locale } = useLocale();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -65,6 +67,7 @@ export default function BookingPage() {
   const [phone, setPhone] = useState('');
   const [phoneTouched, setPhoneTouched] = useState(false);
   const [done, setDone] = useState<Appointment | null>(null);
+  const [promoCode, setPromoCode] = useState<string | null>(null);
 
   // Where we are: the URL step when it makes sense, otherwise the first step still missing.
   const requested = params.get('step') as Step | null;
@@ -73,6 +76,14 @@ export default function BookingPage() {
   if (step === 'confirm' && !slot) step = 'time';
   const stepIndex = steps.indexOf(step);
   const effectiveStaff = rescheduleId ? (original.data?.staff?.id ?? null) : staffId;
+  // The code typed on the confirm step (or, when moving, the booking's own) is checked live.
+  const promo = usePromoQuote({
+    code: rescheduleId ? (original.data?.promo?.code ?? null) : promoCode,
+    serviceIds,
+    staffId: effectiveStaff,
+    start: step === 'confirm' ? (slot?.start ?? null) : null,
+    exclude: rescheduleId,
+  });
 
   const go = useCallback(
     (next: Step, replace = false) => {
@@ -112,6 +123,7 @@ export default function BookingPage() {
             start: slot!.start,
             notes: notes.trim(),
             ...(needsPhone && normalizedPhone ? { phone: normalizedPhone } : {}),
+            ...(promo.quote ? { promoCode: promo.quote.code } : {}),
           }),
     onSuccess: (appointment) => {
       if (needsPhone && user && normalizedPhone) setUser({ ...user, phone: normalizedPhone });
@@ -129,8 +141,15 @@ export default function BookingPage() {
         void queryClient.invalidateQueries({ queryKey: ['availability-days'] });
         go('time', true);
       }
+      // The code stopped applying meanwhile (used up, switched off): check it again to say why.
+      if (promoRefusal(error)) void queryClient.invalidateQueries({ queryKey: ['promo-check'] });
     },
   });
+
+  const submitError = (error: unknown) => {
+    const refusal = promoRefusal(error);
+    return refusal ? promoProblemText(t, refusal, { locale, currency }) : errorMessage(t, error);
+  };
 
   const onSubmit = () => {
     setPhoneTouched(true);
@@ -141,7 +160,7 @@ export default function BookingPage() {
   if (done) {
     return (
       <main className="gutter-x mx-auto min-h-dvh max-w-xl pb-[calc(var(--safe-bottom)+2rem)] pt-[calc(var(--safe-top)+1.5rem)] animate-page">
-        <DoneStep appointment={done} rescheduled={Boolean(rescheduleId)} />
+        <DoneStep appointment={done} rescheduled={Boolean(rescheduleId)} promoRemoved={original.data?.promo && !done.promo ? done.promoRemoved : null} />
       </main>
     );
   }
@@ -240,9 +259,11 @@ export default function BookingPage() {
               notes={notes}
               onNotes={setNotes}
               submitting={submit.isPending}
-              error={submit.isError && !(submit.error instanceof ApiError && submit.error.code.startsWith('SLOT_')) ? errorMessage(t, submit.error) : null}
+              error={submit.isError && !(submit.error instanceof ApiError && submit.error.code.startsWith('SLOT_')) ? submitError(submit.error) : null}
               onEdit={(target) => go(target === 'services' ? 'services' : 'time', true)}
               onSubmit={onSubmit}
+              promo={promo}
+              onPromoCode={rescheduleId ? undefined : setPromoCode}
             />
           ) : null}
         </div>

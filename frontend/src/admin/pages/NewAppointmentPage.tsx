@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router';
 import { StepProgress } from '@/components/booking/StepProgress';
 import { Alert } from '@/components/common/Alert';
+import { PromoCodeField } from '@/components/promo/PromoCodeField';
 import { Button, ButtonLink, IconButton, SegmentedControl, Textarea, toast } from '@/components/ui';
 import { AddIcon, ArrowBackIcon, ArrowForwardIcon, QrCodeIcon } from '@/components/ui/icons';
 import { useStudio } from '@/hooks/useStudio';
@@ -11,9 +12,10 @@ import { useLocale } from '@/i18n/useLocale';
 import { cx } from '@/lib/cx';
 import { errorMessage, fieldErrors } from '@/lib/errors';
 import { formatDateTime, formatDuration, formatPrice, formatTime, fullName } from '@/lib/format';
+import { promoAmountText, promoProblemText, promoRefusal } from '@/lib/promo';
 import { scrollPageTo } from '@/lib/scroll';
 import { isApiError } from '@/services/api/client';
-import type { StaffAppointment } from '@/types/api';
+import type { PromoQuote, StaffAppointment } from '@/types/api';
 import { adminApi, adminQueries, type ClientDetail, type NewAppointmentInput } from '../api';
 import { AdminHeader } from '../components/AdminHeader';
 import { ClientPicker, type PickedClient } from '../components/ClientPicker';
@@ -25,6 +27,7 @@ import { SlotPicker, type TimeChoice } from '../components/SlotPicker';
 import { SuccessMark } from '../components/SuccessMark';
 import { isDate } from '../components/time';
 import { clientFieldIssues, eligibleMasters } from '../components/utils';
+import { useDeskPromoQuote } from '../promo/useDeskPromoQuote';
 
 type StepKey = 'client' | 'services' | 'master' | 'time' | 'details';
 
@@ -51,7 +54,8 @@ const fromDetail = (detail: ClientDetail): PickedClient => ({
  */
 export default function NewAppointmentPage() {
   const { t } = useTranslation(['admin', 'common', 'booking']);
-  const { lp } = useLocale();
+  const { lp, locale } = useLocale();
+  const { currency } = useStudio();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const refresh = useRefreshBookings();
@@ -73,8 +77,18 @@ export default function NewAppointmentPage() {
   const [checked, setChecked] = useState<Partial<Record<StepKey, boolean>>>({});
   const [created, setCreated] = useState<Created | null>(null);
   const [inviting, setInviting] = useState(false);
+  const [promoCode, setPromoCode] = useState<string | null>(null);
 
   const client = picked ? picked.value : prefill.data ? fromDetail(prefill.data) : null;
+  // "Any master" with a free time books the master who is actually free then.
+  const bookedStaffId = staffId ?? (time && !time.custom ? (time.staffIds[0] ?? null) : null);
+  const promo = useDeskPromoQuote({
+    code: promoCode,
+    serviceIds,
+    staffId: bookedStaffId,
+    start: time?.start ?? null,
+    clientId: client?.kind === 'existing' ? client.id : null,
+  });
   const masters = eligibleMasters(staff.data, serviceIds);
   const teamSize = (staff.data ?? []).filter((m) => m.isActive && m.isBookable).length;
 
@@ -151,6 +165,7 @@ export default function NewAppointmentPage() {
       notes: notes.trim(),
       status,
       force: time.force,
+      ...(promo.quote ? { promoCode: promo.quote.code } : {}),
     });
   };
   const restart = () => {
@@ -163,6 +178,7 @@ export default function NewAppointmentPage() {
     setStepKey('client');
     setChecked({});
     setCreated(null);
+    setPromoCode(null);
     create.reset();
     if (prefillId || prefillDate) navigate(lp('/admin/appointments/new'), { replace: true });
     scrollPageTo(0);
@@ -185,9 +201,14 @@ export default function NewAppointmentPage() {
     );
   };
 
+  const refusal = promoRefusal(create.error);
   const submitError = create.isError ? (
     <Alert>
-      {server['newClient.email'] ? t('booking.emailTaken') : errorMessage(t, create.error)}
+      {server['newClient.email']
+        ? t('booking.emailTaken')
+        : refusal
+          ? promoProblemText(t, refusal, { locale, currency, desk: true })
+          : errorMessage(t, create.error)}
       {isApiError(create.error, 'SLOT_TAKEN') ? <span className="mt-1 block">{t('booking.overlapHint')}</span> : null}
     </Alert>
   ) : null;
@@ -266,6 +287,12 @@ export default function NewAppointmentPage() {
                 />
                 <p className="text-sm text-ink-600">{status === 'confirmed' ? t('booking.confirmedHint') : t('booking.pendingHint')}</p>
               </div>
+              <div className="flex flex-col gap-1">
+                <PromoCodeField state={promo} onCode={setPromoCode} desk />
+                {promoCode && !promo.quote && (!time || serviceIds.length === 0) ? (
+                  <p className="text-sm text-ink-600">{t('promo:admin.desk.checkFirst')}</p>
+                ) : null}
+              </div>
               <Textarea
                 label={`${t('booking.notes')} (${t('common.optional')})`}
                 hint={t('booking.notesHint')}
@@ -275,7 +302,7 @@ export default function NewAppointmentPage() {
                 rows={3}
               />
               <div className="lg:hidden">
-                <Summary client={client} serviceIds={serviceIds} staffId={staffId} time={time} catalog={catalog} teamSize={teamSize} />
+                <Summary client={client} serviceIds={serviceIds} staffId={staffId} time={time} catalog={catalog} teamSize={teamSize} promo={promo.quote} onRemovePromo={() => setPromoCode(null)} />
               </div>
               <div className="lg:hidden">{submitError}</div>
             </>,
@@ -284,7 +311,7 @@ export default function NewAppointmentPage() {
 
         <aside className="hidden lg:block">
           <div className="sticky top-8 flex flex-col gap-3">
-            <Summary client={client} serviceIds={serviceIds} staffId={staffId} time={time} catalog={catalog} teamSize={teamSize} />
+            <Summary client={client} serviceIds={serviceIds} staffId={staffId} time={time} catalog={catalog} teamSize={teamSize} promo={promo.quote} onRemovePromo={() => setPromoCode(null)} />
             {submitError}
             <Button size="lg" fullWidth loading={create.isPending} onClick={submit}>
               {t('booking.create')}
@@ -352,6 +379,8 @@ function Summary({
   time,
   catalog,
   teamSize,
+  promo,
+  onRemovePromo,
 }: {
   client: PickedClient | null;
   serviceIds: string[];
@@ -359,8 +388,11 @@ function Summary({
   time: TimeChoice | null;
   catalog: Catalog;
   teamSize: number;
+  /** A promo code checked for this booking: its discount and what is left to pay. */
+  promo?: PromoQuote | null;
+  onRemovePromo?: () => void;
 }) {
-  const { t } = useTranslation(['admin', 'common', 'booking']);
+  const { t } = useTranslation(['admin', 'common', 'booking', 'promo']);
   const { locale } = useLocale();
   const { timeZone, currency } = useStudio();
   const staff = useQuery(adminQueries.staff());
@@ -424,6 +456,30 @@ function Summary({
           {minutes > 0 ? <span className="block text-sm text-ink-600">{formatDuration(t, minutes)}</span> : null}
         </span>
       </div>
+      {promo ? (
+        <div className="mt-3 flex flex-col gap-1 border-t border-ink-100 pt-3">
+          <p className="flex items-baseline justify-between gap-3 text-sm">
+            <span className="min-w-0 break-words font-semibold">{t('promo:line.title', { code: promo.code })}</span>
+            <span className="tabular shrink-0 font-bold text-rose-700">{promoAmountText(t, promo, currency)}</span>
+          </p>
+          <p className="flex items-baseline justify-between gap-3">
+            <span className="font-bold">{t('promo:line.toPay')}</span>
+            <span className="tabular text-lg font-extrabold">
+              {formatPrice(t, Math.max(0, price - promo.discount), currency, chosen.some((s) => s.priceFrom))}
+            </span>
+          </p>
+          {onRemovePromo ? (
+            <button
+              type="button"
+              onClick={onRemovePromo}
+              aria-label={t('promo:field.removeCode', { code: promo.code })}
+              className="-ml-2 inline-flex min-h-9 items-center self-start rounded-pill px-2 text-sm font-semibold text-rose-700 underline-offset-4 hover:underline"
+            >
+              {t('promo:field.remove')}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </section>
   );
 }

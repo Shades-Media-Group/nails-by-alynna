@@ -13,6 +13,7 @@ import {
   GroupIcon,
   HistoryIcon,
   HomeIcon,
+  LocalOfferIcon,
   LogoutIcon,
   MoreHorizIcon,
   PersonIcon,
@@ -54,7 +55,7 @@ interface Item {
  * daily four (today, calendar, new booking, clients) and the rest under "More".
  */
 export function AdminLayout() {
-  const { t } = useTranslation(['admin', 'loyalty']);
+  const { t } = useTranslation(['admin', 'loyalty', 'promo']);
   const { lp } = useLocale();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -70,6 +71,7 @@ export function AdminLayout() {
     { to: lp('/admin/clients'), label: t('nav.clients'), icon: GroupIcon, tone: 'peach' },
     { to: lp('/admin/scan'), label: t('loyalty:scan.nav'), icon: QrCodeScannerIcon, tone: 'lilac' },
     { to: lp('/admin/services'), label: t('nav.services'), icon: SpaIcon, tone: 'mint' },
+    { to: lp('/admin/promo'), label: t('promo:admin.title'), icon: LocalOfferIcon, tone: 'blush' },
     { to: lp('/admin/schedule'), label: t('nav.mySchedule'), icon: ScheduleIcon, tone: 'cyan', masterOnly: true },
     { to: lp('/admin/team'), label: t('nav.team'), icon: PersonIcon, tone: 'peach' },
     { to: lp('/admin/settings'), label: t('nav.settings'), icon: SettingsIcon, tone: 'ink' },

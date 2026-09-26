@@ -228,8 +228,9 @@ export async function loyaltyStatus(
   const rules = rulesFrom(settings);
   const [done, used] = await Promise.all([
     completedVisits(deps, [user._id]),
+    // A visit that took a bigger promo code instead did not use its loyalty discount.
     deps.col.appointments
-      .find({ clientId: user._id, status: 'completed', 'loyalty.percent': { $gt: 0 } })
+      .find({ clientId: user._id, status: 'completed', 'loyalty.percent': { $gt: 0 }, 'promo.applied': { $ne: true } })
       .sort({ start: -1 })
       .limit(10)
       .toArray(),

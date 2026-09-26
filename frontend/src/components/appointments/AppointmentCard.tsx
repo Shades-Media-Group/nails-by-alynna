@@ -8,6 +8,7 @@ import { rebookQuery } from '@/lib/appointment';
 import { dayParts, formatTime, zonedDate } from '@/lib/format';
 import type { Appointment } from '@/types/api';
 import { LoyaltyBadge } from '@/components/loyalty/LoyaltyBits';
+import { PromoBadge } from '@/components/promo/PromoBits';
 import { ServiceLines } from './ServiceLines';
 
 /**
@@ -46,6 +47,7 @@ export function AppointmentCard({ appointment, rebook = false }: { appointment: 
         </span>
         <ServiceLines appointment={appointment} max={2} className="text-sm text-ink-600" />
         {!inactive ? <LoyaltyBadge loyalty={appointment.loyalty} className="mt-1.5" /> : null}
+        <PromoBadge appointment={appointment} className="mt-1.5" />
         {appointment.status === 'pending' ? (
           <span className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-peach-800">
             <HourglassIcon fontSize="inherit" />

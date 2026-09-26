@@ -671,7 +671,8 @@
       "client": "Open client",
       "catalog": "Open price list",
       "team": "Open team",
-      "settings": "Open settings"
+      "settings": "Open settings",
+      "promo": "Open promo codes"
     },
     "meta": {
       "activated": "Access restored",
@@ -687,7 +688,8 @@
       "stampRemoved": "Stamp removed",
       "stamps_one": "{{count}} visit on the card",
       "stamps_other": "{{count}} visits on the card",
-      "reason": "Reason: {{reason}}"
+      "reason": "Reason: {{reason}}",
+      "promo": "Promo code {{code}}"
     },
     "fields": {
       "name": "name",
@@ -764,6 +766,13 @@
       },
       "loyalty": {
         "stamp": "Loyalty card corrected"
+      },
+      "promo": {
+        "create": "Promo code created",
+        "update": "Promo code edited",
+        "activate": "Promo code switched on",
+        "deactivate": "Promo code switched off",
+        "delete": "Promo code deleted"
       }
     }
   }

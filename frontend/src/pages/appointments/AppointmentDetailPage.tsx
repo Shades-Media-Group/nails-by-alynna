@@ -8,6 +8,7 @@ import { ContactSheet } from '@/components/common/ContactSheet';
 import { AddToCalendarSheet } from '@/components/appointments/AddToCalendar';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { LoyaltyLine } from '@/components/loyalty/LoyaltyBits';
+import { PromoLine, PromoRemovedNote, ToPayLine } from '@/components/promo/PromoBits';
 import { Button, ButtonLink, EmptyState, Sheet, Skeleton, Textarea, toast } from '@/components/ui';
 import { CalendarAddIcon, ChatIcon, DirectionsIcon, EventBusyIcon, HourglassIcon, ReplayIcon, ScheduleIcon } from '@/components/ui/icons';
 import { useCatalog, useI18nText, useStudio } from '@/hooks/useStudio';
@@ -16,6 +17,7 @@ import { rebookQuery } from '@/lib/appointment';
 import { cx } from '@/lib/cx';
 import { dayParts, formatDateTime, formatDuration, formatPrice, formatTime, zonedDate } from '@/lib/format';
 import { errorMessage } from '@/lib/errors';
+import { visitDiscount } from '@/lib/promo';
 import { SWATCH } from '@/lib/swatch';
 import { appointmentsApi } from '@/services/api/endpoints';
 import { queries } from '@/services/queries';
@@ -79,6 +81,8 @@ export default function AppointmentDetailPage() {
   const leaf = dayParts(date, locale);
   const active = a.status === 'pending' || a.status === 'confirmed';
   const upcoming = active && new Date(a.end).getTime() > now;
+  // With a discount, the total is the list price and "To pay" below it is the figure that counts.
+  const discounted = (active || a.status === 'completed') && visitDiscount(a).source !== null;
 
   return (
     <div className="pb-8">
@@ -161,10 +165,14 @@ export default function AppointmentDetailPage() {
           </ul>
           <div className="flex items-baseline justify-between border-t border-ink-100 px-4 py-3">
             <span className="font-bold">{t('booking.total')}</span>
-            <span className="tabular text-lg font-extrabold">{formatPrice(t, a.totalPrice, currency, a.priceFrom)}</span>
+            <span className={cx('tabular', discounted ? 'font-semibold' : 'text-lg font-extrabold')}>{formatPrice(t, a.totalPrice, currency, a.priceFrom)}</span>
           </div>
-          <LoyaltyLine loyalty={a.loyalty} currency={currency} />
+          <PromoLine appointment={a} />
+          <LoyaltyLine loyalty={a.loyalty} currency={currency} superseded={Boolean(a.promo?.applied)} />
+          <ToPayLine appointment={a} />
         </section>
+
+        {a.promoRemoved ? <PromoRemovedNote removed={a.promoRemoved} /> : null}
 
         {a.notes ? (
           <section className="rounded-2xl bg-ink-50 p-4">

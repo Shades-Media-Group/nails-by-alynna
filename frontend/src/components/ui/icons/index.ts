@@ -8,6 +8,7 @@ export { default as AdminIcon } from '@mui/icons-material/AdminPanelSettingsRoun
 export { default as ArrowBackIcon } from '@mui/icons-material/ArrowBackRounded';
 export { default as ArrowForwardIcon } from '@mui/icons-material/ArrowForwardRounded';
 export { default as AutoAwesomeIcon } from '@mui/icons-material/AutoAwesomeRounded';
+export { default as CasinoIcon } from '@mui/icons-material/CasinoRounded';
 export { default as BlockIcon } from '@mui/icons-material/BlockRounded';
 export { default as BrushIcon } from '@mui/icons-material/BrushRounded';
 export { default as CalendarAddIcon } from '@mui/icons-material/EventAvailableRounded';
@@ -46,6 +47,7 @@ export { default as KeyboardIcon } from '@mui/icons-material/KeyboardRounded';
 export { default as KeyIcon } from '@mui/icons-material/KeyRounded';
 export { default as LanguageIcon } from '@mui/icons-material/LanguageRounded';
 export { default as LaptopIcon } from '@mui/icons-material/LaptopMacRounded';
+export { default as LocalOfferIcon } from '@mui/icons-material/LocalOfferRounded';
 export { default as LocationIcon } from '@mui/icons-material/PlaceRounded';
 export { default as LockIcon } from '@mui/icons-material/LockRounded';
 export { default as LogoutIcon } from '@mui/icons-material/LogoutRounded';

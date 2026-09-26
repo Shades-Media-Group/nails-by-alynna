@@ -22,6 +22,7 @@ import { clearSessionCookies } from '../auth/cookies';
 import { OTP_RESEND_COOLDOWN_MS, OTP_TTL_MS, emailNotSent, otpCodeSchema, sendEmailCode, verifyOtp } from '../auth/otp';
 import { revokeAllSessions, toPublicUser } from '../auth/session';
 import { publicPrefs, resolvePrefs } from '../notifications/prefs';
+import { givePromoUseBack } from '../promo/service';
 import { getSettings } from '../settings';
 
 export function meRoutes(deps: AppDeps) {
@@ -198,6 +199,7 @@ export function meRoutes(deps: AppDeps) {
         end: a.end.toISOString(),
         services: a.services.map((s) => ({ name: s.name, durationMin: s.durationMin, price: s.price })),
         totalPrice: a.totalPrice,
+        promo: a.promo ? { code: a.promo.code, discount: a.promo.discount } : null,
         notes: a.notes,
         createdAt: a.createdAt.toISOString(),
         cancelledAt: a.cancelledAt?.toISOString() ?? null,
@@ -239,10 +241,15 @@ export function meRoutes(deps: AppDeps) {
     }
     const now = deps.now();
     const anonymousEmail = `deleted+${user._id.toHexString()}@invalid.local`;
+    const withCodes = await deps.col.appointments
+      .find({ clientId: user._id, status: { $in: ACTIVE_STATUSES }, start: { $gt: now }, promo: { $type: 'object' } }, { projection: { promo: 1 } })
+      .toArray();
     await deps.col.appointments.updateMany(
       { clientId: user._id, status: { $in: ACTIVE_STATUSES }, start: { $gt: now } },
       { $set: { status: 'cancelled', cancelledAt: now, cancelledBy: 'client', cancelReason: 'account_deleted', updatedAt: now } },
     );
+    // The promo codes on those cancelled bookings get their uses back.
+    await Promise.all(withCodes.map((a) => (a.promo ? givePromoUseBack(deps, a.promo.promoId, a._id) : undefined)));
     await deps.col.appointments.updateMany(
       { clientId: user._id },
       { $set: { client: { name: 'Deleted', surname: 'client', phone: null, email: anonymousEmail } } },

@@ -10,6 +10,8 @@ import { AuthProvider } from '@/app/auth';
 import admin from '@/locales/en/admin.json';
 import booking from '@/locales/en/booking.json';
 import common from '@/locales/en/common.json';
+import loyalty from '@/locales/en/loyalty.json';
+import promo from '@/locales/en/promo.json';
 import AppointmentPage from '../pages/AppointmentPage';
 import AuditPage from '../pages/AuditPage';
 import CalendarPage from '../pages/CalendarPage';
@@ -17,6 +19,7 @@ import ClientPage from '../pages/ClientPage';
 import ClientsPage from '../pages/ClientsPage';
 import DashboardPage from '../pages/DashboardPage';
 import NewAppointmentPage from '../pages/NewAppointmentPage';
+import PromoCodesPage from '../pages/PromoCodesPage';
 import SettingsPage from '../pages/SettingsPage';
 import TeamPage from '../pages/TeamPage';
 import UsersPage from '../pages/UsersPage';
@@ -76,6 +79,28 @@ const appointment = (over: Record<string, unknown> = {}) => ({
   cancelReason: '',
   clientStats: { visits: 3, noShows: 1 },
   loyalty: null,
+  ...over,
+});
+const promoCode = (over: Record<string, unknown> = {}) => ({
+  id: 'p1',
+  code: 'SUMMER20',
+  kind: 'percent',
+  value: 20,
+  startsAt: '2026-09-01',
+  endsAt: '2026-10-31',
+  maxUses: 20,
+  maxUsesPerClient: 1,
+  minTotal: 300,
+  serviceIds: null,
+  staffId: null,
+  firstVisitOnly: false,
+  isActive: true,
+  note: 'Instagram, September',
+  usedCount: 3,
+  status: 'active',
+  canDelete: false,
+  createdAt: '2026-09-01T09:00:00.000Z',
+  updatedAt: '2026-09-01T09:00:00.000Z',
   ...over,
 });
 const client = {
@@ -162,6 +187,12 @@ function respond(path: string): unknown {
     return { client: { ...client, notes: 'Prefers mornings' }, stats: { visits: 3, noShows: 1, cancelled: 0, spent: 1350 }, appointments: [appointment()] };
   }
   if (path === '/api/admin/settings') return { settings };
+  if (path === '/api/admin/promo') {
+    return {
+      promos: [promoCode(), promoCode({ id: 'p2', code: 'ALINA50', kind: 'amount', value: 50, maxUses: null, usedCount: 7, staffId: 'm1', endsAt: null, status: 'active', firstVisitOnly: true, minTotal: 0, note: '', canDelete: false }), promoCode({ id: 'p3', code: 'SPRING', status: 'expired', startsAt: '2026-03-01', endsAt: '2026-05-31', maxUses: 50, usedCount: 12, minTotal: 0, note: '' })],
+      access: { manage: 'all', masterId: 'm1' },
+    };
+  }
   if (path === '/api/admin/users') {
     return {
       users: [{ ...owner, hasAccount: true, isActive: true, lastLoginAt: '2026-09-25T08:00:00.000Z' }, { ...client, role: 'client', email: null }],
@@ -209,9 +240,9 @@ function renderScreen(element: ReactElement, path: string, url: string) {
   void i18n.use(initReactI18next).init({
     lng: 'en',
     fallbackLng: 'en',
-    ns: ['admin', 'common', 'booking'],
+    ns: ['admin', 'common', 'booking', 'loyalty', 'promo'],
     defaultNS: 'common',
-    resources: { en: { admin, common, booking } },
+    resources: { en: { admin, common, booking, loyalty, promo } },
     interpolation: { escapeValue: false },
     react: { useSuspense: false },
     initAsync: false,
@@ -235,7 +266,7 @@ function renderScreen(element: ReactElement, path: string, url: string) {
 
 /** Text nodes that are an untranslated key (i18next shows the key itself when one is missing). */
 function leakedKeys(): string[] {
-  const raw = /^(?:dashboard|calendar|appointment|booking|clients|client|team|timeOff|hours|settings|users|audit|invite|status|pagination|nav|common)\.[\w.]+$/;
+  const raw = /^(?:dashboard|calendar|appointment|booking|clients|client|team|timeOff|hours|settings|users|audit|invite|status|pagination|nav|common|admin|field|problem|problemDesk|line|move|removedReason)\.[\w.]+$/;
   const found: string[] = [];
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
@@ -273,7 +304,9 @@ beforeEach(() => {
         const created =
           path === '/api/admin/appointments'
             ? { appointment: appointment({ id: 'a9', code: 'NEW1', client: { id: 'c9', name: 'Ana', surname: 'Rusu', phone: '+37369123123', email: 'client+c9@no-email.invalid' } }) }
-            : { url: 'https://nailsbyalynna.md/signup?invite=token123', expiresAt: '2026-10-09T10:00:00.000Z' };
+            : path === '/api/admin/promo'
+              ? { promo: promoCode({ ...(body as Record<string, unknown>), id: 'p9', usedCount: 0, canDelete: true }) }
+              : { url: 'https://nailsbyalynna.md/signup?invite=token123', expiresAt: '2026-10-09T10:00:00.000Z' };
         return new Response(JSON.stringify(created), { status: 201, headers: { 'Content-Type': 'application/json' } });
       }
       return new Response(JSON.stringify(respond(path)), { status: 200, headers: { 'Content-Type': 'application/json' } });
@@ -361,6 +394,32 @@ describe('staff screens', () => {
     expect(leakedKeys()).toEqual([]);
   });
 
+  it('Promo codes: every code with where it stands, its uses and conditions', async () => {
+    renderScreen(<PromoCodesPage />, '/en/admin/promo', '/en/admin/promo');
+    expect(await screen.findByText('SUMMER20')).toBeInTheDocument();
+    expect(screen.getByText('3 / 20')).toBeInTheDocument();
+    expect(screen.getByText('7 / no limit')).toBeInTheDocument();
+    expect(screen.getByText('−50 MDL')).toBeInTheDocument();
+    expect(await screen.findByText('Only with Alina · First visit · 1 use per client')).toBeInTheDocument();
+    expect(screen.getByText('Whole studio · From 300 MDL · 1 use per client')).toBeInTheDocument();
+    expect(screen.getByText('Instagram, September')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Expired/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Copy the code SUMMER20' })).toBeInTheDocument();
+    expect(leakedKeys()).toEqual([]);
+
+    // Filtering by status, and the editor with the code's values.
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /^Expired/ }));
+    expect(screen.queryByText('SUMMER20')).not.toBeInTheDocument();
+    expect(screen.getByText('SPRING')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Edit SPRING' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Edit SPRING' });
+    expect(within(sheet).getByLabelText('Code')).toHaveValue('SPRING');
+    expect(within(sheet).getByLabelText('Code')).toBeDisabled(); // used: its text stays
+    expect(within(sheet).getByLabelText('Last visit day')).toHaveValue('2026-05-31');
+    expect(leakedKeys()).toEqual([]);
+  });
+
   it('Activity log: readable entries, raw action as a fallback', async () => {
     renderScreen(<AuditPage />, '/en/admin/audit', '/en/admin/audit');
     expect(await screen.findByText('Booking status changed')).toBeInTheDocument();
@@ -441,6 +500,50 @@ describe('new booking flow', () => {
     expect(await screen.findByText('Choose a client, or add a new one.')).toBeInTheDocument();
     expect(screen.getByText('Choose at least one service.')).toBeInTheDocument();
     expect(screen.getByText('Choose a time.')).toBeInTheDocument();
+    expect(posts).toHaveLength(0);
+  });
+});
+
+describe('promo codes', () => {
+  it('creates a made-up code with good defaults', async () => {
+    const user = userEvent.setup();
+    renderScreen(<PromoCodesPage />, '/en/admin/promo', '/en/admin/promo');
+    await user.click(await screen.findByRole('button', { name: 'New code' }));
+    const sheet = await screen.findByRole('dialog', { name: 'New promo code' });
+    await user.click(within(sheet).getByRole('button', { name: 'Make up a code' }));
+    const code = (within(sheet).getByLabelText('Code') as HTMLInputElement).value;
+    expect(code).toMatch(/^[BCDFGHKMNPRSTVZ][AEIU][BCDFGHKMNPRSTVZ][AEIU][2-9]{2}$/);
+    await user.click(within(sheet).getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(posts.some((p) => p.path === '/api/admin/promo')).toBe(true));
+    expect(posts.find((p) => p.path === '/api/admin/promo')?.body).toEqual({
+      code,
+      kind: 'percent',
+      value: 10,
+      startsAt: null,
+      endsAt: null,
+      maxUses: null,
+      maxUsesPerClient: 1,
+      minTotal: 0,
+      serviceIds: null,
+      staffId: null,
+      firstVisitOnly: false,
+      isActive: true,
+      note: '',
+    });
+  });
+
+  it('says what is wrong before saving', async () => {
+    const user = userEvent.setup();
+    renderScreen(<PromoCodesPage />, '/en/admin/promo', '/en/admin/promo');
+    await user.click(await screen.findByRole('button', { name: 'New code' }));
+    const sheet = await screen.findByRole('dialog', { name: 'New promo code' });
+    await user.type(within(sheet).getByLabelText('Code'), 'ab');
+    await user.clear(within(sheet).getByLabelText('Discount, %'));
+    await user.type(within(sheet).getByLabelText('Discount, %'), '150');
+    await user.click(within(sheet).getByRole('button', { name: 'Save' }));
+    expect(await within(sheet).findByText('Use 3–20 letters A–Z or digits.')).toBeInTheDocument();
+    expect(within(sheet).getByText('A percentage goes up to 100.')).toBeInTheDocument();
     expect(posts).toHaveLength(0);
   });
 });

@@ -32,7 +32,7 @@ export function maskPersonalData(value: unknown): unknown {
       else if (isPerson && key === 'surname') out[key] = initial(field);
       else if (key === 'email') out[key] = maskEmail(field);
       else if (key === 'phone') out[key] = maskPhone(field);
-      else if (['notes', 'staffNotes', 'cancelReason', 'userAgent', 'ip'].includes(key)) out[key] = field ? '•••' : '';
+      else if (['notes', 'staffNotes', 'cancelReason', 'userAgent', 'ip', 'note'].includes(key)) out[key] = field ? '•••' : '';
       else out[key] = field;
     } else {
       out[key] = maskPersonalData(field);

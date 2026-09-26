@@ -9,9 +9,9 @@ import { cx } from '@/lib/cx';
 import { formatPrice } from '@/lib/format';
 import { ordinal } from '@/lib/ordinal';
 import { loyaltyQueries } from '@/services/api/loyalty';
-import { queries } from '@/services/queries';
 import type { AppointmentLoyalty } from '@/types/api';
 import { StampCard } from './StampCard';
+import { useLoyaltyForecast } from './useLoyaltyForecast';
 import { useNextRewardText } from './useNextRewardText';
 
 /** Home: the card at a glance, one tap to the full card and its QR code. */
@@ -62,9 +62,20 @@ export function LoyaltyBadge({ loyalty, className }: { loyalty: AppointmentLoyal
   );
 }
 
-/** Booking details: which stamp this visit is on the card and the discount it carries. */
-export function LoyaltyLine({ loyalty, currency }: { loyalty: AppointmentLoyalty | null | undefined; currency: string }) {
-  const { t } = useTranslation(['loyalty', 'common']);
+/**
+ * Booking details: which stamp this visit is on the card and the discount it carries.
+ * `superseded`: the visit's promo code gives more, and the two never add up.
+ */
+export function LoyaltyLine({
+  loyalty,
+  currency,
+  superseded = false,
+}: {
+  loyalty: AppointmentLoyalty | null | undefined;
+  currency: string;
+  superseded?: boolean;
+}) {
+  const { t } = useTranslation(['loyalty', 'common', 'promo']);
   if (!loyalty) return null;
   const hasDiscount = loyalty.percent > 0;
   return (
@@ -77,11 +88,17 @@ export function LoyaltyLine({ loyalty, currency }: { loyalty: AppointmentLoyalty
           {t('detail.title')} · {t('detail.visit', { visit: loyalty.visit, cycle: loyalty.cycle })}
         </span>
         <span className="block text-sm text-ink-600">
-          {hasDiscount ? (loyalty.predicted ? t('detail.expected') : t('detail.applied')) : t('detail.noDiscount')}
+          {hasDiscount
+            ? superseded
+              ? t('promo:line.loyaltyNotCombined')
+              : loyalty.predicted
+                ? t('detail.expected')
+                : t('detail.applied')
+            : t('detail.noDiscount')}
         </span>
       </span>
       {hasDiscount ? (
-        <span className="tabular shrink-0 pt-0.5 font-bold text-rose-700">
+        <span className={cx('tabular shrink-0 pt-0.5 font-bold', superseded ? 'text-ink-500 line-through decoration-ink-300' : 'text-rose-700')}>
           {t('detail.discount', { percent: loyalty.percent, amount: formatPrice(t, loyalty.discount, currency) })}
         </span>
       ) : null}
@@ -92,24 +109,17 @@ export function LoyaltyLine({ loyalty, currency }: { loyalty: AppointmentLoyalty
 /**
  * Booking confirmation: when the visit being booked lands on a discount stamp, say so. Its
  * place on the card follows the completed visits and the other bookings before it.
+ * `superseded`: a bigger promo code takes its place (the price box says so).
  */
-export function LoyaltyConfirmNote({ start }: { start: string }) {
+export function LoyaltyConfirmNote({ start, superseded = false }: { start: string; superseded?: boolean }) {
   const { t } = useTranslation('loyalty');
   const { locale } = useLocale();
-  const card = useQuery(loyaltyQueries.mine());
-  const upcoming = useQuery(queries.appointments('upcoming'));
-  const status = card.data?.loyalty;
-  if (!status?.enabled || !upcoming.data) return null;
-  const before = upcoming.data.filter(
-    (a) => (a.status === 'pending' || a.status === 'confirmed') && new Date(a.start).getTime() < new Date(start).getTime(),
-  ).length;
-  const visit = ((status.visits + before) % status.cycle) + 1;
-  const percent = status.rewards.find((r) => r.visit === visit)?.percent ?? 0;
-  if (percent <= 0) return null;
+  const forecast = useLoyaltyForecast(start);
+  if (!forecast || forecast.percent <= 0 || superseded) return null;
   return (
     <p className="flex items-start gap-2.5 rounded-xl bg-blush-100 px-4 py-3 text-[0.9375rem] font-semibold text-rose-700 animate-rise">
       <LoyaltyIcon fontSize="inherit" className="mt-0.5 shrink-0 text-lg" />
-      {t('confirm', { ordinal: ordinal(visit, locale), percent })}
+      {t('confirm', { ordinal: ordinal(forecast.visit, locale), percent: forecast.percent })}
     </p>
   );
 }

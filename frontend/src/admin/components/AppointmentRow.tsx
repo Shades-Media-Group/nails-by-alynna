@@ -6,6 +6,7 @@ import { useLocale } from '@/i18n/useLocale';
 import { cx } from '@/lib/cx';
 import { dayParts, formatDuration, formatPrice, formatTime, fullName, zonedDate } from '@/lib/format';
 import { SWATCH } from '@/lib/swatch';
+import { PromoBadge } from '@/components/promo/PromoBits';
 import type { StaffAppointmentCore } from '../api';
 import { StatusBadge } from './StatusBadge';
 
@@ -84,6 +85,7 @@ export function AppointmentRow({
             ) : null}
             <span>{formatDuration(t, a.durationMin)}</span>
             <span className="tabular font-semibold text-ink-800">{formatPrice(t, a.totalPrice, currency, a.priceFrom)}</span>
+            <PromoBadge appointment={a} />
             {noShows > 0 ? <span className="font-semibold text-red-700">{t('appointment.noShowCount', { count: noShows })}</span> : null}
           </span>
         </span>

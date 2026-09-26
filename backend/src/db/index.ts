@@ -9,6 +9,7 @@ import type {
   NotificationLogDoc,
   OtpCodeDoc,
   PasswordResetDoc,
+  PromoCodeDoc,
   PushSubscriptionDoc,
   RateLimitDoc,
   ServiceDoc,
@@ -36,6 +37,7 @@ export interface Collections {
   otpCodes: Collection<OtpCodeDoc>;
   pushSubscriptions: Collection<PushSubscriptionDoc>;
   notificationLog: Collection<NotificationLogDoc>;
+  promoCodes: Collection<PromoCodeDoc>;
 }
 
 export function collections(db: Db): Collections {
@@ -56,11 +58,12 @@ export function collections(db: Db): Collections {
     otpCodes: db.collection<OtpCodeDoc>('otp_codes'),
     pushSubscriptions: db.collection<PushSubscriptionDoc>('push_subscriptions'),
     notificationLog: db.collection<NotificationLogDoc>('notification_log'),
+    promoCodes: db.collection<PromoCodeDoc>('promo_codes'),
   };
 }
 
 /** Bump when indexes change; the runtime re-applies them once per version. */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export async function ensureIndexes(db: Db): Promise<void> {
   const c = collections(db);
@@ -114,6 +117,13 @@ export async function ensureIndexes(db: Db): Promise<void> {
       { key: { clientId: 1, start: -1 }, name: 'client_start' },
       { key: { start: 1, status: 1 }, name: 'start_status' },
       { key: { code: 1 }, unique: true, name: 'code_unique' },
+      // Bookings that used a promo code (a used code can't be deleted).
+      { key: { 'promo.promoId': 1 }, name: 'promo', partialFilterExpression: { 'promo.promoId': { $exists: true } } },
+    ]),
+    c.promoCodes.createIndexes([
+      // One code per text, whatever the letter case (codes are stored upper-case).
+      { key: { code: 1 }, unique: true, name: 'code_unique' },
+      { key: { staffId: 1, createdAt: -1 }, name: 'staff_created' },
     ]),
     // Keep one year of audit history (the TTL index also serves newest-first sorting).
     c.auditLogs.createIndexes([{ key: { at: 1 }, expireAfterSeconds: 365 * 24 * 3600, name: 'ttl' }]),
