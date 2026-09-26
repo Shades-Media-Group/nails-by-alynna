@@ -95,7 +95,9 @@ export const onPhone = () => {
 /** How to allow notifications again on this kind of device (one sentence). */
 export function unblockSteps(t: TFunction): string {
   if (isAppleDevice()) return t('push:hint.unblockIos', { app: HOME_SCREEN_NAME });
-  if (currentPlatform().os === 'android') return t('push:hint.unblockAndroid');
+  const { os, standalone } = currentPlatform();
+  if (os === 'android')
+    return standalone ? t('push:hint.unblockAndroidApp') : t('push:hint.unblockAndroidBrowser');
   return t('push:hint.unblockDesktop');
 }
 
@@ -118,7 +120,8 @@ export function outcomeMessage(
     case 'off':
       return { tone: 'info', text: t('push:result.dismissed') };
     case 'denied':
-      return { tone: 'error', text: blockedHint(t) };
+      // Their choice, not a failure: how to change it later, without alarm.
+      return { tone: 'info', text: blockedHint(t) };
     case 'needs-install':
       return { tone: 'info', text: t('push:hint.install') };
     case 'not-ready':

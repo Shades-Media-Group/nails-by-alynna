@@ -107,7 +107,12 @@ beforeEach(() => {
           headers: { 'Content-Type': 'application/json' },
         });
       if (path === '/api/notifications') return json(settings());
-      if (path === '/api/config') return json({ loyalty: { enabled: true, rewards: [] } });
+      if (path === '/api/config')
+        return json({
+          studio: { timezone: 'Europe/Chisinau', currency: 'MDL' },
+          booking: { requireApproval: true },
+          loyalty: { enabled: true, rewards: [] },
+        });
       if (path === '/api/notifications/prefs') {
         const prefs = settings().prefs;
         return json({ prefs: { ...prefs, ...body } });
@@ -192,25 +197,26 @@ describe('the line under "Send by"', () => {
   it('on an iPhone in Safari: the app needs the Home Screen, with a link to how', async () => {
     renderPage('needs-install');
     await screen.findByRole('region', { name: 'Booking updates' });
-    const line = group('Booking updates').getByText(
-      'On iPhone, notifications need the app on your Home Screen.',
-      { exact: false },
-    );
+    const line = group('Booking updates').getByText('Only in the app added to the Home Screen.', {
+      exact: false,
+    });
     expect(within(line).getByRole('link', { name: 'How to add it' })).toHaveAttribute(
       'href',
       '/en/app',
     );
   });
 
-  it('blocked: how to allow them again, naming the app as it is on the Home Screen', async () => {
+  it('blocked: says so under each kind; the card on top has the steps, with the app as it is named on the Home Screen', async () => {
     vi.mocked(isAppleDevice).mockReturnValue(true);
     renderPage('denied');
     await screen.findByRole('region', { name: 'Booking updates' });
     expect(
-      group('Booking updates').getByText(
-        'Notifications are blocked. Turn them on in Settings → Notifications → Nails by Alynna.',
-      ),
+      group('Booking updates').getByText("Blocked in this device's settings."),
     ).toBeInTheDocument();
+    const card = screen.getByRole('region', { name: 'Notifications are blocked' });
+    expect(card).toHaveTextContent(
+      'Open Settings → Notifications → Nails by Alynna and turn on Allow Notifications.',
+    );
   });
 
   it('is gone once this device gets them', async () => {

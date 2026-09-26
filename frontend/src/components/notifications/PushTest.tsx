@@ -88,9 +88,11 @@ export function PushTest() {
               aria-hidden="true"
             />
             <span>
-              <span className="tabular font-semibold">
+              {/* The seconds tick on screen only; a screen reader hears the sentence once. */}
+              <span className="tabular font-semibold" aria-hidden="true">
                 {t('test.countdown', { count: phase.left })}
               </span>
+              <span className="sr-only">{t('test.countdown', { count: TEST_DELAY_SEC })}</span>
               {'. '}
               {t('test.countdownHint')}
             </span>

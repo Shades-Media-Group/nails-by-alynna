@@ -9,11 +9,14 @@
     "action": "Turn on notifications"
   },
   "hint": {
-    "install": "On iPhone, notifications need the app on your Home Screen.",
+    "install": "On iPhone and iPad, notifications only work in the app added to the Home Screen.",
     "installLink": "How to add it",
+    "installHere": "Only in the app added to the Home Screen.",
     "blocked": "Notifications are blocked.",
+    "blockedHere": "Blocked in this device's settings.",
     "unblockIos": "Turn them on in Settings → Notifications → {{app}}.",
-    "unblockAndroid": "Allow them in the phone's Settings → Apps → Chrome (or Nails by Alynna) → Notifications.",
+    "unblockAndroidApp": "Tap and hold the app icon → App info → Notifications, and allow them.",
+    "unblockAndroidBrowser": "Tap the icon next to the address → Notifications → Allow.",
     "unblockDesktop": "Allow them with the icon next to the address bar.",
     "notHerePhone": "This phone isn't getting app notifications yet.",
     "notHereDevice": "This device isn't getting app notifications yet.",
@@ -27,16 +30,17 @@
     "clientTextDevice": "We'll tell you on this device, and by email:",
     "clientPoints": {
       "confirm": "when the master confirms or moves your visit",
+      "changes": "when the studio moves or cancels your visit",
       "remind": "before each visit, so you don't miss it",
       "loyalty": "when your loyalty card earns a discount"
     },
-    "staffTitle": "Turn on notifications",
+    "staffTitle": "Don't miss a booking request",
     "staffText": "New booking requests arrive here and need a quick answer. With notifications on, you see them even when the app is closed.",
     "staffPoints": {
       "requests": "new booking requests, the moment they arrive",
       "changes": "visits clients move or cancel"
     },
-    "installTitle": "Notifications on your iPhone",
+    "installTitle": "Add the app to get notifications",
     "installText": "Add the app to your Home Screen first: notifications arrive there, even when it's closed.",
     "installAction": "Show me how",
     "enable": "Turn on notifications",
@@ -51,18 +55,19 @@
     "subscribeFailed": "Couldn't turn on notifications on this device right now. Check your connection and try again."
   },
   "banner": {
-    "staffBlocked": "Notifications are blocked on this device: new booking requests won't reach you.",
+    "blockedTitle": "Notifications are blocked on this device",
+    "blockedText": "new booking requests won't reach you.",
     "fix": "How to fix it"
   },
   "test": {
     "action": "Send a test notification",
     "countdown": "Sending in {{count}} s",
-    "countdownHint": "Lock the phone or close the app now to see it arrive.",
+    "countdownHint": "Lock the screen or close the app now to see it arrive.",
     "sending": "Sending…",
     "sent_one": "Sent to {{count}} device.",
     "sent_other": "Sent to {{count}} devices.",
-    "none": "No device got it. Turn notifications off and on again on this phone.",
-    "lost": "If the notification arrived, everything works. If not, check that notifications are allowed for this app in the phone's settings.",
+    "none": "No device got it. Turn notifications off and on again here.",
+    "lost": "If the notification arrived, everything works. If not, check that notifications are allowed for this app in the device settings.",
     "device": {
       "iphone": "iPhone",
       "ipad": "iPad",

@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router';
 import { STAFF_ROLES, useAuth } from '@/app/auth';
 import { Button, Sheet } from '@/components/ui';
 import { CheckIcon } from '@/components/ui/icons';
+import { useStudio } from '@/hooks/useStudio';
 import { splitLocale } from '@/i18n/routing';
 import { useLocale } from '@/i18n/useLocale';
 import { introSeen } from '@/lib/intro';
@@ -68,6 +69,7 @@ function PromptHost({ user, audience }: { user: User; audience: PromptAudience }
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { device, busy, turnOn, settings } = useTurnOnPush();
+  const studio = useStudio().data;
   const staff = audience === 'staff';
   const data = settings.data;
   /** What would be asked now, whatever the moment (the rules alone). */
@@ -174,9 +176,12 @@ function PromptHost({ user, audience }: { user: User; audience: PromptAudience }
     : staff
       ? [t('prompt.staffPoints.requests'), t('prompt.staffPoints.changes')]
       : [
-          t('prompt.clientPoints.confirm'),
+          studio?.booking.requireApproval === false
+            ? t('prompt.clientPoints.changes')
+            : t('prompt.clientPoints.confirm'),
           t('prompt.clientPoints.remind'),
-          t('prompt.clientPoints.loyalty'),
+          // Loyalty messages only while the studio runs the stamp card.
+          ...(studio?.loyalty.enabled === false ? [] : [t('prompt.clientPoints.loyalty')]),
         ];
 
   return (

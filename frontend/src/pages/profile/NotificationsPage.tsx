@@ -12,7 +12,6 @@ import { PushTest } from '@/components/notifications/PushTest';
 import {
   HOME_SCREEN_NAME,
   NOTIFICATIONS_KEY,
-  blockedHint,
   notificationsQuery,
   onPhone,
 } from '@/components/notifications/pushDevice';
@@ -283,10 +282,11 @@ function DeviceCard({
               <p className="mt-0.5 text-sm text-ink-600">{message}</p>
             </>
           )}
-          {on ? <PushTest /> : null}
           {action ? <div className="mt-3">{action}</div> : null}
         </div>
       </div>
+      {/* Full width: the button's label is long in Romanian and Russian. */}
+      {on ? <PushTest /> : null}
     </section>
   );
 }
@@ -367,14 +367,15 @@ function DeviceLine({
   } else if (device === 'needs-install') {
     line = (
       <>
-        {t('hint.install')}{' '}
+        {t('hint.installHere')}{' '}
         <Link to={lp('/app')} className={link}>
           {t('hint.installLink')}
         </Link>
       </>
     );
   } else if (device === 'denied') {
-    line = blockedHint(t);
+    // The steps to allow them again are in the card at the top of the page.
+    line = t('hint.blockedHere');
   } else if (device === 'unsupported') {
     line = t('hint.unsupported');
   } else if (device === 'no-service-worker') {

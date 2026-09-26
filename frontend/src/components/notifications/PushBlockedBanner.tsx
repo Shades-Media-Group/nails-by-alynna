@@ -26,7 +26,7 @@ export function PushBlockedBanner({ className }: { className?: string }) {
     <div
       role="status"
       className={cx(
-        'flex items-start gap-2.5 rounded-xl bg-peach-50 px-4 py-3 text-sm text-peach-800',
+        'flex items-start gap-2.5 rounded-lg bg-peach-50 px-4 py-3 text-sm text-peach-800',
         className,
       )}
     >
@@ -36,7 +36,8 @@ export function PushBlockedBanner({ className }: { className?: string }) {
         aria-hidden="true"
       />
       <p className="min-w-0">
-        <span className="font-semibold">{t('banner.staffBlocked')}</span> {unblockSteps(t)}{' '}
+        <span className="font-semibold">{t('banner.blockedTitle')}</span>: {t('banner.blockedText')}{' '}
+        {unblockSteps(t)}{' '}
         <Link
           to={lp('/profile/notifications')}
           className="whitespace-nowrap font-semibold underline underline-offset-2"

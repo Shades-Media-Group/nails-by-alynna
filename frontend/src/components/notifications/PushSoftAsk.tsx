@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { useAuth, STAFF_ROLES } from '@/app/auth';
 import { Button } from '@/components/ui';
+import { useStudio } from '@/hooks/useStudio';
 import { InstallIcon, NotificationsIcon } from '@/components/ui/icons';
 import { useLocale } from '@/i18n/useLocale';
 import { cx } from '@/lib/cx';
@@ -32,6 +33,7 @@ export function PushSoftAsk({
   const { lp } = useLocale();
   const { user } = useAuth();
   const { device, busy, turnOn, settings } = useTurnOnPush();
+  const studio = useStudio();
   const titleId = useId();
   const ask = user && !user.isDemo ? softAskFor(device) : null;
   if (!ask) return null;
@@ -55,11 +57,15 @@ export function PushSoftAsk({
   }
 
   const staff = STAFF_ROLES.includes(user!.role);
+  // "When the master confirms" only where the master confirms: a request waiting after booking,
+  // or a studio that approves bookings; else the promise is the reminder.
+  const confirms =
+    placement === 'booking' ? !booked : studio.data?.booking.requireApproval === true;
   const title = staff
     ? t('softAsk.staffTitle')
-    : booked
-      ? t('softAsk.titleBooked')
-      : t('softAsk.title');
+    : confirms
+      ? t('softAsk.title')
+      : t('softAsk.titleBooked');
   const text = staff
     ? t('softAsk.staffText')
     : onPhone()
