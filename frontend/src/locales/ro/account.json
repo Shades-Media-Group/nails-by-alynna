@@ -105,7 +105,9 @@
     "exportSave": "Salvează fișierul",
     "exportSaved": "Fișier salvat",
     "loyalty": "Card de fidelitate",
-    "loyaltyText": "Ștampilele tale și codul QR pentru recepție"
+    "loyaltyText": "Ștampilele tale și codul QR pentru recepție",
+    "feedback": "Trimite feedback",
+    "feedbackText": "Idei, aprecieri sau ceva ce nu a mers bine"
   },
   "notifications": {
     "title": "Notificări",

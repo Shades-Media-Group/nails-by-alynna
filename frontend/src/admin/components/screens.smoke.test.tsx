@@ -10,6 +10,7 @@ import { AuthProvider } from '@/app/auth';
 import admin from '@/locales/en/admin.json';
 import booking from '@/locales/en/booking.json';
 import common from '@/locales/en/common.json';
+import feedback from '@/locales/en/feedback.json';
 import loyalty from '@/locales/en/loyalty.json';
 import promo from '@/locales/en/promo.json';
 import AppointmentPage from '../pages/AppointmentPage';
@@ -18,6 +19,7 @@ import CalendarPage from '../pages/CalendarPage';
 import ClientPage from '../pages/ClientPage';
 import ClientsPage from '../pages/ClientsPage';
 import DashboardPage from '../pages/DashboardPage';
+import FeedbackPage from '../pages/FeedbackPage';
 import NewAppointmentPage from '../pages/NewAppointmentPage';
 import PromoCodesPage from '../pages/PromoCodesPage';
 import SettingsPage from '../pages/SettingsPage';
@@ -224,6 +226,50 @@ function respond(path: string): unknown {
       ],
     };
   }
+  if (path === '/api/admin/feedback') {
+    return {
+      feedback: [
+        {
+          id: 'f1',
+          kind: 'visit',
+          rating: 5,
+          comment: 'Perfect French, the shape is exactly what I wanted.',
+          createdAt: '2026-09-25T15:00:00.000Z',
+          updatedAt: '2026-09-25T15:00:00.000Z',
+          client: { id: 'c1', name: 'Maria', surname: 'Popescu' },
+          visit: { id: 'a1', code: 'A7K2Q9', start: '2026-09-25T11:00:00.000Z', services: [text('Gel polish')] },
+          master: { id: 'm1', name: 'Alina' },
+        },
+        {
+          id: 'f2',
+          kind: 'general',
+          rating: null,
+          comment: 'Could the app remind me a day before?',
+          createdAt: '2026-09-24T09:00:00.000Z',
+          updatedAt: '2026-09-24T09:00:00.000Z',
+          client: { id: 'c2', name: 'Elena', surname: 'Rusu' },
+          visit: null,
+          master: null,
+        },
+        {
+          id: 'f3',
+          kind: 'visit',
+          rating: 4,
+          comment: '',
+          createdAt: '2026-09-20T09:00:00.000Z',
+          updatedAt: '2026-09-21T10:00:00.000Z',
+          client: { id: 'c1', name: 'Maria', surname: 'Popescu' },
+          visit: { id: 'a2', code: 'B2', start: '2026-09-19T08:00:00.000Z', services: [text('Gel polish')] },
+          master: { id: 'm1', name: 'Alina' },
+        },
+      ],
+      summary: { average: 4.5, count: 2, byRating: { 1: 0, 2: 0, 3: 0, 4: 1, 5: 1 }, total: 3 },
+      total: 3,
+      page: 1,
+      pages: 1,
+      scope: 'all',
+    };
+  }
   if (path === '/api/admin/audit') {
     return {
       logs: [
@@ -241,9 +287,9 @@ function renderScreen(element: ReactElement, path: string, url: string) {
   void i18n.use(initReactI18next).init({
     lng: 'en',
     fallbackLng: 'en',
-    ns: ['admin', 'common', 'booking', 'loyalty', 'promo'],
+    ns: ['admin', 'common', 'booking', 'loyalty', 'promo', 'feedback'],
     defaultNS: 'common',
-    resources: { en: { admin, common, booking, loyalty, promo } },
+    resources: { en: { admin, common, booking, loyalty, promo, feedback } },
     interpolation: { escapeValue: false },
     react: { useSuspense: false },
     initAsync: false,
@@ -422,6 +468,36 @@ describe('staff screens', () => {
     expect(within(sheet).getByLabelText('Code')).toBeDisabled(); // used: its text stays
     expect(within(sheet).getByLabelText('Last visit day')).toHaveValue('2026-05-31');
     expect(leakedKeys()).toEqual([]);
+  });
+
+  it('Feedback: the average, one chip per rating, and what clients wrote about which visit', async () => {
+    renderScreen(<FeedbackPage />, '/en/admin/feedback', '/en/admin/feedback');
+    expect(await screen.findByText('Perfect French, the shape is exactly what I wanted.')).toBeInTheDocument();
+    const summary = screen.getByRole('region', { name: 'Average rating' });
+    expect(within(summary).getByText('4.5')).toBeInTheDocument();
+    expect(within(summary).getByText('out of 5 · 2 ratings')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^All/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '5 stars: 1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '1 star: 0' })).toBeInTheDocument();
+    expect(screen.getAllByRole('img', { name: '5 stars' })).toHaveLength(1);
+    // The owner sees whose visit it was; general messages carry a tag instead of a visit.
+    expect(screen.getByText(/Visit on Fri 25 Sept · Gel polish · with Alina/)).toBeInTheDocument();
+    expect(screen.getByText('General')).toBeInTheDocument();
+    expect(screen.getByText('Could the app remind me a day before?')).toBeInTheDocument();
+    expect(screen.getByText('Sun 20 Sept · edited')).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Open booking' }).map((link) => link.getAttribute('href'))).toEqual([
+      '/en/admin/appointments/a1',
+      '/en/admin/appointments/a2',
+    ]);
+    expect(leakedKeys()).toEqual([]);
+
+    // A chip asks the API for that rating only.
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: '4 stars: 1' }));
+    await waitFor(() =>
+      expect(vi.mocked(fetch).mock.calls.some(([input]) => String(input) === '/api/admin/feedback?page=1&rating=4')).toBe(true),
+    );
+    expect(screen.getByRole('button', { name: '4 stars: 1' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('Activity log: readable entries, raw action as a fallback', async () => {

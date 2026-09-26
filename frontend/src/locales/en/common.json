@@ -114,7 +114,8 @@
       "EMAIL_NOT_VERIFIED": "Confirm your email first: we sent you a code.",
       "EMAIL_NOT_SENT": "We couldn't send the email right now. Try again in a few minutes.",
       "CODE_INVALID": "The code is wrong or has expired. Check it or send a new one.",
-      "PUSH_UNAVAILABLE": "Notifications on the phone aren't available yet."
+      "PUSH_UNAVAILABLE": "Notifications on the phone aren't available yet.",
+      "FEEDBACK_CLOSED": "Visits can be rated for two weeks after them. You can still write to the studio."
     }
   },
   "validation": {

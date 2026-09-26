@@ -45,7 +45,7 @@ const AREA_STYLE: Record<Area, { icon: IconComponent; tone: string }> = {
 function areaOf(action: string): Area {
   const [kind] = action.split('.');
   if (kind === 'appointment') return 'appointments';
-  if (kind === 'client' || kind === 'loyalty') return 'clients';
+  if (kind === 'client' || kind === 'loyalty' || kind === 'feedback') return 'clients';
   if (kind === 'service' || kind === 'category' || kind === 'promo') return 'catalog';
   if (kind === 'staff' || kind === 'time_off') return 'team';
   if (kind === 'settings') return 'settings';
@@ -102,6 +102,9 @@ function targetLink(entry: AuditEntry, lp: (path: string) => string, t: TFunctio
   if (entry.targetType === 'staff' || entry.targetType === 'time_off') return { to: lp('/admin/team'), label: t('audit.open.team') };
   if (entry.targetType === 'settings') return { to: lp('/admin/settings'), label: t('audit.open.settings') };
   if (entry.targetType === 'promo') return { to: lp('/admin/promo'), label: t('audit.open.promo') };
+  if (entry.targetType === 'feedback') {
+    return { to: lp('/admin/feedback'), label: t('audit.open.feedback') };
+  }
   return null;
 }
 

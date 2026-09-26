@@ -4,8 +4,9 @@ import type { AppEnv } from '../context';
 /**
  * Demo staff accounts are shared with people outside the studio, so the dashboard they see
  * must not expose real clients. For demo users every admin JSON response is rewritten:
- * people's names, surnames, phones, emails, notes, IPs and devices are masked; business
- * data (services, times, prices, statuses) stays intact so the demo remains meaningful.
+ * people's names, surnames, phones, emails, notes, feedback comments, IPs and devices are
+ * masked; business data (services, times, prices, statuses, ratings) stays intact so the demo
+ * remains meaningful.
  */
 
 function maskEmail(email: string): string {
@@ -32,7 +33,7 @@ export function maskPersonalData(value: unknown): unknown {
       else if (isPerson && key === 'surname') out[key] = initial(field);
       else if (key === 'email') out[key] = maskEmail(field);
       else if (key === 'phone') out[key] = maskPhone(field);
-      else if (['notes', 'staffNotes', 'cancelReason', 'userAgent', 'ip', 'note'].includes(key)) out[key] = field ? '•••' : '';
+      else if (['notes', 'staffNotes', 'cancelReason', 'userAgent', 'ip', 'note', 'comment'].includes(key)) out[key] = field ? '•••' : '';
       else out[key] = field;
     } else {
       out[key] = maskPersonalData(field);
