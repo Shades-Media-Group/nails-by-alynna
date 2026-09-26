@@ -8,6 +8,9 @@ const MIN_THUMB = 36;
  * darker rounded thumb, always visible while the page is taller than the window (the browser's
  * own bar is hidden in index.css). Drag the thumb, or tap the rail to jump there; the wheel,
  * keys and touch scrolling work as usual. Hidden while a sheet or dialog holds the page still.
+ * While the page is taller than the window it marks <html data-page-scrolls>, which widens the
+ * right page padding (gutter-x) so content stays clear of the rail; a sheet keeps that as is,
+ * so the page behind it never shifts.
  */
 export function PageScrollbar() {
   const rail = useRef<HTMLDivElement>(null);
@@ -23,7 +26,9 @@ export function PageScrollbar() {
       frame = 0;
       const viewport = window.innerHeight;
       const content = root.scrollHeight;
-      const scrollable = content - viewport > 1 && !root.hasAttribute('data-scroll-locked');
+      const overflowing = content - viewport > 1;
+      root.toggleAttribute('data-page-scrolls', overflowing);
+      const scrollable = overflowing && !root.hasAttribute('data-scroll-locked');
       setShown(scrollable);
       if (!scrollable || !rail.current || !thumb.current) return;
       const railHeight = rail.current.clientHeight;
@@ -49,6 +54,7 @@ export function PageScrollbar() {
       window.removeEventListener('resize', schedule);
       resized.disconnect();
       locked.disconnect();
+      root.removeAttribute('data-page-scrolls');
     };
   }, []);
 

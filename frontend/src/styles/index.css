@@ -244,6 +244,10 @@
     overflow: hidden;
     overscroll-behavior: none;
   }
+  /* The page is taller than the window, so PageScrollbar's rail shows: see gutter-x. */
+  html[data-page-scrolls] {
+    --page-gutter: 0.625rem;
+  }
   /* The browser just animated a swipe-back itself: pages appear without a second transition. */
   html[data-ua-transition] .animate-page {
     animation: none;
@@ -370,8 +374,14 @@
   font-weight: 700;
 }
 
+/*
+ * Page side padding. While the page scrolls, the right side also clears PageScrollbar's rail
+ * (--page-gutter, like a desktop scrollbar's gutter), so cards that bleed past the padding stop
+ * short of it; full-width bands, which don't use this padding, still reach the edge.
+ */
 @utility gutter-x {
-  padding-inline: max(var(--gutter), env(safe-area-inset-left, 0px));
+  padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+  padding-right: calc(max(var(--gutter), env(safe-area-inset-right, 0px)) + var(--page-gutter, 0px));
 }
 
 @utility safe-top {
