@@ -325,7 +325,7 @@ describe('the "New requests" sheet', () => {
     await waitFor(() => expect(within(sheet).getAllByRole('listitem')).toHaveLength(1), {
       timeout: 3000,
     });
-    expect(server.patches).toEqual([{ id: 'a1', body: { status: 'confirmed' } }]);
+    expect(server.patches).toEqual([{ id: 'a1', body: { status: 'confirmed', from: 'pending' } }]);
     expect(m.toast.success).toHaveBeenCalledWith('Booking confirmed');
     expect(screen.getByRole('dialog', { name: 'New requests (1)' })).toBe(sheet);
 
@@ -341,7 +341,7 @@ describe('the "New requests" sheet', () => {
     await waitFor(() => expect(requestsSheet()).toBeNull(), { timeout: 3000 });
     expect(server.patches[1]).toEqual({
       id: 'a2',
-      body: { status: 'cancelled', cancelReason: 'Fully booked that day' },
+      body: { status: 'cancelled', cancelReason: 'Fully booked that day', from: 'pending' },
     });
     expect(m.toast.success).toHaveBeenCalledWith('Request declined');
     expect(m.toast.success).toHaveBeenCalledWith('All requests are answered', expect.anything());

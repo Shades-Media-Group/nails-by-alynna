@@ -166,7 +166,7 @@ describe('<PendingRequestsCard>', () => {
       { timeout: 3000 },
     );
     expect(patches).toEqual([
-      { path: '/api/admin/appointments/a1', body: { status: 'confirmed' } },
+      { path: '/api/admin/appointments/a1', body: { status: 'confirmed', from: 'pending' } },
     ]);
     expect(m.toast.success).toHaveBeenCalledWith('Booking confirmed');
   });

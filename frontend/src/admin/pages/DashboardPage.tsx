@@ -135,7 +135,7 @@ export default function DashboardPage() {
                 showNow
                 withMaster={multiMaster}
                 completing={setStatus.isPending && setStatus.variables?.status === 'completed' ? setStatus.variables.id : null}
-                onComplete={(a) => setStatus.mutate({ id: a.id, status: 'completed' }, { onError: quickError })}
+                onComplete={(a) => setStatus.mutate({ id: a.id, status: 'completed', from: a.status }, { onError: quickError })}
               />
             )}
           </section>

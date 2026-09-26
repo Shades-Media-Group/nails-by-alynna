@@ -97,7 +97,7 @@ export function RequestList({
                 ? setStatus.error
                 : null
             }
-            onConfirm={() => setStatus.mutate({ id: a.id, status: 'confirmed' })}
+            onConfirm={() => setStatus.mutate({ id: a.id, status: 'confirmed', from: a.status })}
             onDecline={() => {
               setReason('');
               setStatus.reset();
@@ -117,6 +117,7 @@ export function RequestList({
             status: 'cancelled',
             cancelReason: reason.trim(),
             toast: 'declined',
+            from: declining.status,
           })
         }
         title={t('appointment.declineTitle')}
