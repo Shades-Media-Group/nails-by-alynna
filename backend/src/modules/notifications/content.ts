@@ -177,6 +177,25 @@ export function staffBookingPush(
   };
 }
 
+const FEEDBACK_PUSH: Record<Locale, { title: string; body: string }> = {
+  ro: { title: 'Cum a fost vizita ta?', body: 'Dă o notă dintr-o atingere.' },
+  ru: { title: 'Как прошёл ваш визит?', body: 'Оцените в одно касание.' },
+  en: { title: 'How was your visit?', body: 'Rate it in one tap.' },
+};
+
+/** After a visit: "How was your visit?", opening the feedback page for it. */
+export function feedbackPush(visit: VisitInfo, appointmentId: string, feedbackUrl: string, locale: Locale): PushPayload {
+  const t = FEEDBACK_PUSH[locale];
+  const link = new URL(feedbackUrl);
+  return {
+    title: t.title,
+    body: `${servicesLine(visit, locale)}. ${t.body}`,
+    // Path and query: the page needs to know which visit.
+    url: `${link.pathname}${link.search}`,
+    tag: `feedback-${appointmentId}`,
+  };
+}
+
 export function testPush(appUrl: string, locale: Locale): PushPayload {
   const t = PUSH_COPY[locale];
   return { title: t.testTitle, body: t.testBody, url: new URL(appLink(appUrl, locale, '/profile/notifications')).pathname, tag: 'test' };

@@ -1318,3 +1318,147 @@ export function loyaltyNextEmail(opts: { to: string; name: string; locale: Local
     footer: [small(c.signature)],
   });
 }
+
+// ── After a visit: how was it? ────────────────────────────────────────────────
+
+const FEEDBACK_COPY: Record<
+  Locale,
+  {
+    subject: string;
+    heading: string;
+    lead: (master: string | null) => string;
+    chip: string;
+    rate: string;
+    /** The spoken name of one number in the row ("4 out of 5"). */
+    point: (value: number) => string;
+    button: string;
+    private: string;
+  }
+> = {
+  ro: {
+    subject: `Cum a fost vizita ta la ${BRAND}?`,
+    heading: 'Cum a fost vizita ta?',
+    lead: (master) =>
+      master ? `Mulțumim că ai venit! ${master} ar vrea să afle cum ți s-a părut.` : 'Mulțumim că ai venit! Ne-ar plăcea să aflăm cum ți s-a părut.',
+    chip: 'Finalizată',
+    rate: 'Dă o notă de la 1 (slab) la 5 (excelent)',
+    point: (value) => `${value} din 5`,
+    button: 'Lasă feedback',
+    private: 'Părerea ta o citește doar salonul: nu se publică nicăieri.',
+  },
+  ru: {
+    subject: `Как прошёл ваш визит в ${BRAND}?`,
+    heading: 'Как прошёл ваш визит?',
+    lead: (master) =>
+      master ? `Спасибо, что пришли! Мастеру ${master} важно знать, как всё прошло.` : 'Спасибо, что пришли! Нам важно знать, как всё прошло.',
+    chip: 'Завершена',
+    rate: 'Оцените от 1 (плохо) до 5 (отлично)',
+    point: (value) => `${value} из 5`,
+    button: 'Оставить отзыв',
+    private: 'Отзыв увидит только салон, он нигде не публикуется.',
+  },
+  en: {
+    subject: `How was your visit to ${BRAND}?`,
+    heading: 'How was your visit?',
+    lead: (master) =>
+      master ? `Thank you for coming in. ${master} would love to know how it went.` : 'Thank you for coming in. We would love to know how it went.',
+    chip: 'Completed',
+    rate: 'Rate it from 1 (poor) to 5 (excellent)',
+    point: (value) => `${value} out of 5`,
+    button: 'Leave feedback',
+    private: 'Only the studio reads it: nothing is published.',
+  },
+};
+
+/**
+ * The numbers 1 to 5 as pills on the stub, each opening the feedback page with that rating
+ * chosen (the client still sends it there, so a mail scanner opening the links rates nothing).
+ * Inline blocks, so the row wraps on a narrow phone; digits only, no star glyphs.
+ */
+function ratingRow(tone: ToneName, t: (typeof FEEDBACK_COPY)[Locale], feedbackUrl: string): Block {
+  const base = safeUrl(feedbackUrl);
+  if (!base) return NONE;
+  const deep = onPass(tone, true);
+  const links = [1, 2, 3, 4, 5].map((value) => {
+    const url = new URL(base);
+    url.searchParams.set('rating', String(value));
+    return { value, url: url.toString() };
+  });
+  const pills = links
+    .map(
+      ({ value, url }) =>
+        `<a class="nba-chip-${tone}" href="${escapeHtml(url)}" title="${escapeHtml(t.point(value))}" aria-label="${escapeHtml(t.point(value))}" ` +
+        `style="display:inline-block;margin:0 8px 8px 0;width:44px;height:44px;line-height:44px;border-radius:999px;background:${TONES[tone].chip};color:${TONES[tone].deep};` +
+        `font-family:${FONT};font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;text-align:center;text-decoration:none">${value}</a>`,
+    )
+    .join('');
+  return {
+    html:
+      `<p class="${deep.cls}" style="margin:16px 0 10px;font-size:14px;line-height:1.45;color:${deep.color}">${escapeHtml(t.rate)}</p>` +
+      `<div style="margin:0 0 -8px;font-size:0;line-height:0">${pills}</div>`,
+    text: [`${t.rate}:`, ...links.map(({ value, url }) => `${value}: ${url}`)].join('\n'),
+  };
+}
+
+/**
+ * After a completed visit: "How was your visit?". The visit on a blush pass (time, day, length
+ * and master, the services on the stub) with 1–5 to tap, and a button to the feedback page.
+ */
+export function feedbackRequestEmail(opts: {
+  to: string;
+  name: string;
+  locale: Locale;
+  timeZone: string;
+  now: Date;
+  visit: VisitInfo;
+  /** The feedback page for this visit (`…/feedback?visit=<id>`); each number adds `&rating=N`. */
+  feedbackUrl: string;
+  replyTo?: string;
+}): MailMessage {
+  const t = FEEDBACK_COPY[opts.locale];
+  const v = VISIT_COPY[opts.locale];
+  const c = COMMON[opts.locale];
+  const visit = opts.visit;
+  const when = visitTime(visit.start, opts.locale, opts.timeZone, opts.now);
+  const main = onPass('blush');
+  const deep = onPass('blush', true);
+  const day = capitalize(when.date);
+  const aside = [...(visit.durationMin ? [c.duration(visit.durationMin)] : []), ...(visit.master ? [c.withMaster(visit.master)] : [])];
+  // The same lead as every visit pass (the time large, the day under it, length and master on the
+  // right), so the client knows at a glance which visit it is.
+  const lead =
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>` +
+    `<td valign="bottom"><p class="${main.cls}" style="margin:0;font-size:44px;line-height:1;font-weight:800;letter-spacing:-0.02em;color:${main.color}">${escapeHtml(when.time)}</p>` +
+    `<p class="${main.cls}" style="margin:8px 0 0;font-size:16px;line-height:1.35;font-weight:600;color:${main.color}">${escapeHtml(day)}</p></td>` +
+    (aside.length
+      ? `<td valign="bottom" align="right" style="padding-left:12px"><p class="${deep.cls}" style="margin:0;font-size:14px;line-height:1.5;color:${deep.color};white-space:nowrap">${aside.map(escapeHtml).join('<br>')}</p></td>`
+      : '') +
+    `</tr></table>`;
+  const services = passText('blush', visit.services.join('\n'), false, 15);
+  const rate = ratingRow('blush', t, opts.feedbackUrl);
+  return render({
+    locale: opts.locale,
+    to: opts.to,
+    toName: opts.name,
+    appUrl: opts.feedbackUrl,
+    subject: t.subject,
+    preheader: t.lead(visit.master),
+    heading: t.heading,
+    lead: t.lead(visit.master),
+    blocks: [
+      pass({
+        tone: 'blush',
+        chip: t.chip,
+        reference: visit.code,
+        main: { html: lead, text: [`${when.time} · ${day}`, ...aside].join(' · ') },
+        stub: { html: services.html + rate.html, text: [services.text, rate.text].filter(Boolean).join('\n') },
+      }),
+      buttons([{ label: t.button, url: opts.feedbackUrl, primary: true }]),
+      small(t.private),
+    ],
+    footer: visit.settingsUrl
+      ? [small(v.updatesWhy), linkLine(v.settings, visit.settingsUrl), small(c.signature)]
+      : [small(v.guestWhy), small(c.signature)],
+    replyTo: opts.replyTo,
+  });
+}
