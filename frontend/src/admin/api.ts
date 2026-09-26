@@ -3,7 +3,18 @@ import type { Locale } from '@/i18n/config';
 import type { SwatchColor } from '@/lib/swatch';
 import { api } from '@/services/api/client';
 import { LIVE } from '@/services/queries';
-import type { AppointmentStatus, Category, I18nText, NailShape, Role, Service, ServiceArt, StaffAppointment } from '@/types/api';
+import type {
+  AppointmentStatus,
+  Category,
+  FeedbackKind,
+  FeedbackRating,
+  I18nText,
+  NailShape,
+  Role,
+  Service,
+  ServiceArt,
+  StaffAppointment,
+} from '@/types/api';
 
 /*
  * Staff API. This module is only imported from src/admin, which loads on demand for staff,
@@ -37,6 +48,7 @@ export interface ServiceInput {
   categoryId: string;
   name: I18nText;
   description: I18nText;
+  details: I18nText;
   durationMin: number;
   price: number;
   priceFrom: boolean;
@@ -274,6 +286,38 @@ export interface Paged {
   pages: number;
 }
 
+/** One client's feedback as staff read it (backend/src/modules/feedback). */
+export interface AdminFeedback {
+  id: string;
+  kind: FeedbackKind;
+  rating: FeedbackRating | null;
+  comment: string;
+  createdAt: string;
+  updatedAt: string;
+  /** null when the account is gone. */
+  client: { id: string; name: string; surname: string } | null;
+  /** The visit it is about; null for general feedback. */
+  visit: { id: string; code: string; start: string; services: I18nText[] } | null;
+  master: { id: string; name: string } | null;
+}
+
+/** Who reads what: the owner everything, a master their own visits, other staff nothing. */
+export type FeedbackScope = 'all' | 'own' | 'none';
+
+export interface FeedbackList extends Paged {
+  feedback: AdminFeedback[];
+  summary: {
+    /** One decimal; null before the first rating. */
+    average: number | null;
+    /** Ratings the average is made of. */
+    count: number;
+    byRating: Record<FeedbackRating, number>;
+    /** Everything in scope, general feedback without stars included (whatever the filter). */
+    total: number;
+  };
+  scope: FeedbackScope;
+}
+
 // ── Endpoints ─────────────────────────────────────────────────────────────────
 export const adminApi = {
   stats: (date?: string) => api.get<DashboardStats>(`/admin/stats${query({ date })}`),
@@ -338,6 +382,10 @@ export const adminApi = {
     api.patch<{ user: AdminUser }>(`/admin/users/${id}`, input).then((r) => r.user),
   /** Newest first; at most 200. */
   audit: (limit = 100) => api.get<{ logs: AuditEntry[] }>(`/admin/audit${query({ limit })}`).then((r) => r.logs),
+
+  /** Newest first, 20 a page; `rating` keeps one rating (the summary stays the whole list's). */
+  feedback: (params: { page?: number; rating?: FeedbackRating | null }) =>
+    api.get<FeedbackList>(`/admin/feedback${query(params)}`),
 };
 
 export const adminQueries = {
@@ -371,4 +419,11 @@ export const adminQueries = {
       placeholderData: keepPreviousData,
     }),
   audit: (limit = 200) => queryOptions({ queryKey: ['admin', 'audit', limit], queryFn: () => adminApi.audit(limit), staleTime: 30_000 }),
+  feedback: (params: { page?: number; rating?: FeedbackRating | null }) =>
+    queryOptions({
+      queryKey: ['admin', 'feedback', params],
+      queryFn: () => adminApi.feedback(params),
+      staleTime: 30_000,
+      placeholderData: keepPreviousData,
+    }),
 };

@@ -27,13 +27,20 @@
     "categories": "Категории",
     "add": "Добавить: {{name}}",
     "remove": "Убрать: {{name}}",
+    "about": "Подробнее: {{name}}",
     "empty": "Услуги пока не опубликованы.",
     "summary_one": "{{count}} услуга",
     "summary_few": "{{count}} услуги",
     "summary_many": "{{count}} услуг",
     "summary_other": "{{count}} услуги",
     "continue": "Продолжить",
-    "clear": "Очистить"
+    "clear": "Очистить",
+    "details": {
+      "add": "Добавить в запись",
+      "remove": "Убрать из записи",
+      "added": "Добавлено в запись: {{name}}",
+      "removed": "Убрано из записи: {{name}}"
+    }
   },
   "shape": {
     "title": "Форма ногтей",

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { useAuth } from '@/app/auth';
 import { NextVisitCard } from '@/components/appointments/NextVisitCard';
+import { FeedbackPrompt } from '@/components/feedback/FeedbackPrompt';
 import { LoyaltyTile } from '@/components/loyalty/LoyaltyBits';
 import { Logo } from '@/components/brand/Logo';
 import { NailArt } from '@/components/brand/NailArt';
@@ -99,6 +100,9 @@ export default function HomePage() {
               </Link>
             )}
           </div>
+
+          {/* After a completed visit: how was it? (until it is rated or closed) */}
+          <FeedbackPrompt className="stagger" style={order(2)} />
 
           {lastVisit ? (
             <Link

@@ -53,6 +53,8 @@
     "editCategory": "Editează categoria",
     "name": "Denumire",
     "description": "Descriere",
+    "details": "Despre procedură",
+    "detailsHint": "Clienții văd acest text când apasă <icon/> lângă serviciu. Un rând gol începe un paragraf nou.",
     "price": "Preț",
     "priceFrom": "Preț „de la” (prețul final la salon)",
     "duration": "Durata (minute)",
@@ -686,7 +688,8 @@
       "catalog": "Deschide prețurile",
       "team": "Deschide echipa",
       "settings": "Deschide setările",
-      "promo": "Deschide codurile promoționale"
+      "promo": "Deschide codurile promoționale",
+      "feedback": "Deschide feedbackul"
     },
     "meta": {
       "activated": "Acces redat",
@@ -710,6 +713,7 @@
     "fields": {
       "name": "denumire",
       "description": "descriere",
+      "details": "despre procedură",
       "price": "preț",
       "durationMin": "durată",
       "categoryId": "categorie",
@@ -789,6 +793,10 @@
         "activate": "Cod promoțional pornit",
         "deactivate": "Cod promoțional oprit",
         "delete": "Cod promoțional șters"
+      },
+      "feedback": {
+        "create": "Feedback trimis",
+        "update": "Feedback modificat"
       }
     }
   },

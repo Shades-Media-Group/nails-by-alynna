@@ -20,6 +20,7 @@ import {
   MoreHorizIcon,
   PersonIcon,
   QrCodeScannerIcon,
+  RateReviewIcon,
   ScheduleIcon,
   SettingsIcon,
   SpaIcon,
@@ -54,6 +55,8 @@ interface Item {
   end?: boolean;
   ownerOnly?: boolean;
   masterOnly?: boolean;
+  /** For the owner and masters: reception staff have nothing to read there. */
+  readersOnly?: boolean;
   /** Requests waiting for an answer (on "Today"). */
   pending?: number;
 }
@@ -64,7 +67,7 @@ interface Item {
  */
 export function AdminLayout() {
   // 'booking' too: the requests sheet can come up over any staff screen.
-  const { t } = useTranslation(['admin', 'loyalty', 'promo', 'booking']);
+  const { t } = useTranslation(['admin', 'loyalty', 'promo', 'feedback', 'booking']);
   const { lp } = useLocale();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -102,6 +105,13 @@ export function AdminLayout() {
         tone: 'blush',
       },
       {
+        to: lp('/admin/feedback'),
+        label: t('feedback:admin.title'),
+        icon: RateReviewIcon,
+        tone: 'lilac',
+        readersOnly: true,
+      },
+      {
         to: lp('/admin/schedule'),
         label: t('nav.mySchedule'),
         icon: ScheduleIcon,
@@ -125,7 +135,12 @@ export function AdminLayout() {
         ownerOnly: true,
       },
     ] satisfies Item[]
-  ).filter((item) => (!item.ownerOnly || isOwner) && (!item.masterOnly || isMaster));
+  ).filter(
+    (item) =>
+      (!item.ownerOnly || isOwner) &&
+      (!item.masterOnly || isMaster) &&
+      (!item.readersOnly || isOwner || isMaster),
+  );
 
   const signOut = async () => {
     await logout().catch(() => undefined);

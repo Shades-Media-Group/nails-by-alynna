@@ -53,6 +53,8 @@
     "editCategory": "Edit category",
     "name": "Name",
     "description": "Description",
+    "details": "About the procedure",
+    "detailsHint": "Clients see this when they tap <icon/> next to the service. A blank line starts a new paragraph.",
     "price": "Price",
     "priceFrom": "Price is \"from\" (final price at the studio)",
     "duration": "Duration (minutes)",
@@ -672,7 +674,8 @@
       "catalog": "Open price list",
       "team": "Open team",
       "settings": "Open settings",
-      "promo": "Open promo codes"
+      "promo": "Open promo codes",
+      "feedback": "Open feedback"
     },
     "meta": {
       "activated": "Access restored",
@@ -694,6 +697,7 @@
     "fields": {
       "name": "name",
       "description": "description",
+      "details": "about the procedure",
       "price": "price",
       "durationMin": "duration",
       "categoryId": "category",
@@ -773,6 +777,10 @@
         "activate": "Promo code switched on",
         "deactivate": "Promo code switched off",
         "delete": "Promo code deleted"
+      },
+      "feedback": {
+        "create": "Feedback sent",
+        "update": "Feedback changed"
       }
     }
   },

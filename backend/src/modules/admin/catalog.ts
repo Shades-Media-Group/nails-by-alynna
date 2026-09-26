@@ -44,6 +44,7 @@ function toService(s: ServiceDoc) {
     slug: s.slug,
     name: s.name,
     description: s.description,
+    details: s.details ?? { ro: '', ru: '', en: '' },
     durationMin: s.durationMin,
     price: s.price,
     priceFrom: s.priceFrom,

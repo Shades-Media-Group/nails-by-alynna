@@ -114,7 +114,8 @@
       "EMAIL_NOT_VERIFIED": "Confirmă mai întâi emailul: ți-am trimis un cod.",
       "EMAIL_NOT_SENT": "Nu am putut trimite emailul acum. Încearcă din nou peste câteva minute.",
       "CODE_INVALID": "Codul este greșit sau a expirat. Verifică-l sau cere unul nou.",
-      "PUSH_UNAVAILABLE": "Notificările pe telefon nu sunt disponibile încă."
+      "PUSH_UNAVAILABLE": "Notificările pe telefon nu sunt disponibile încă.",
+      "FEEDBACK_CLOSED": "O vizită poate primi o notă timp de două săptămâni după ea. Poți oricând să-i scrii salonului."
     }
   },
   "validation": {
@@ -132,6 +133,7 @@
     "password_rules": "Cel puțin 8 caractere",
     "passwords_mismatch": "Parolele nu coincid",
     "invalid": "Valoare nevalidă",
+    "plain_text": "Doar text simplu, fără etichete HTML",
     "invalid_code": "Introdu codul din 6 cifre",
     "same_email": "Acesta este deja emailul tău"
   },

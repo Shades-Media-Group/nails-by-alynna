@@ -129,6 +129,11 @@ export interface Service {
   slug: string;
   name: I18nText;
   description: I18nText;
+  /**
+   * "About the procedure", shown behind ⓘ: plain text, a blank line starts a paragraph. Missing
+   * from a catalog the installed app cached before the API sent it.
+   */
+  details?: I18nText;
   durationMin: number;
   price: number;
   priceFrom: boolean;
@@ -266,4 +271,35 @@ export interface PromoQuote {
   serviceIds: string[] | null;
   /** The master it belongs to; null = the whole studio. */
   staffId: string | null;
+}
+
+export type FeedbackRating = 1 | 2 | 3 | 4 | 5;
+export type FeedbackKind = 'visit' | 'general';
+
+/** The completed visit the card on Home asks about (backend/src/modules/feedback). */
+export interface PendingFeedbackVisit {
+  id: string;
+  start: string;
+  end: string;
+  /** Service names. */
+  services: I18nText[];
+  /** The master's name; null when the visit's master is gone. */
+  master: string | null;
+}
+
+/** What the client sent: about a visit (stars required) or in general (a comment required). */
+export interface FeedbackInput {
+  appointmentId?: string;
+  rating?: FeedbackRating | null;
+  comment?: string;
+}
+
+export interface Feedback {
+  id: string;
+  kind: FeedbackKind;
+  appointmentId: string | null;
+  rating: FeedbackRating | null;
+  comment: string;
+  createdAt: string;
+  updatedAt: string;
 }

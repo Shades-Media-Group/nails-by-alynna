@@ -3,6 +3,7 @@ import type { AppDeps, AppEnv } from '../../context';
 import { STAFF_ROLES, requireAuth, requireRole } from '../../middleware/auth';
 import { demoMask } from '../../middleware/demo-mask';
 import { adminAppointmentRoutes } from './appointments';
+import { adminFeedbackRoutes } from '../feedback/routes';
 import { adminLoyaltyRoutes } from '../loyalty/routes';
 import { adminPromoRoutes } from '../promo/routes';
 import { adminCatalogRoutes } from './catalog';
@@ -28,6 +29,8 @@ export function adminRoutes(deps: AppDeps) {
   app.route('/settings', adminSettingsRoutes(deps));
   app.route('/loyalty', adminLoyaltyRoutes(deps));
   app.route('/promo', adminPromoRoutes(deps));
+  // Masters read what clients said about their own visits; the owner reads everything.
+  app.route('/feedback', adminFeedbackRoutes(deps));
 
   const ownerOnly = requireRole('administrator');
   for (const path of ['/users', '/users/*', '/audit', '/audit/*']) app.use(path, ownerOnly);

@@ -105,7 +105,9 @@
     "exportSave": "Save the file",
     "exportSaved": "File saved",
     "loyalty": "Loyalty card",
-    "loyaltyText": "Your stamps and the QR code for the desk"
+    "loyaltyText": "Your stamps and the QR code for the desk",
+    "feedback": "Send feedback",
+    "feedbackText": "Ideas, praise, or something that didn't work"
   },
   "notifications": {
     "title": "Notifications",
