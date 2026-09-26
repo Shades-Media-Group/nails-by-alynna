@@ -10,6 +10,7 @@ import { errorMessage } from '@/lib/errors';
 import { isApiError } from '@/services/api/client';
 import type { PromoKind } from '@/types/api';
 import { adminQueries } from '../api';
+import { sameValue } from '../components/utils';
 import { adminPromoApi, type AdminPromo, type PromoAccess, type PromoInput } from './api';
 import { PROMO_CODE, cleanPromoCode, generatePromoCode } from './code';
 
@@ -129,7 +130,7 @@ export function PromoEditor({ promo, access, onClose }: { promo: AdminPromo | nu
       // Send only what changed; a master never moves a code to someone else.
       const before = toInput(initialForm(promo, access));
       const changed = Object.fromEntries(
-        Object.entries(input).filter(([key, value]) => JSON.stringify(value) !== JSON.stringify(before[key as keyof PromoInput])),
+        Object.entries(input).filter(([key, value]) => !sameValue(value, before[key as keyof PromoInput])),
       ) as Partial<PromoInput>;
       if (access.manage === 'own') delete changed.staffId;
       return Object.keys(changed).length ? adminPromoApi.update(promo.id, changed) : Promise.resolve(promo);

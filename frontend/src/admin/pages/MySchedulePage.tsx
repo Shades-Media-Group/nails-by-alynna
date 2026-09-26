@@ -17,7 +17,7 @@ import { HoursEditor } from '../components/HoursEditor';
 import { useStudioToday } from '../components/hooks';
 import { TimeOffEditor } from '../components/TimeOffEditor';
 import { TimeOffRow } from '../components/TimeOffRow';
-import { dayIssue } from '../components/utils';
+import { dayIssue, sameValue } from '../components/utils';
 
 const BUFFERS = ['0', '5', '10', '15', '20', '30'] as const;
 type Buffer = (typeof BUFFERS)[number];
@@ -65,7 +65,7 @@ function WeekForm({ staff }: { staff: AdminStaff }) {
   const [buffer, setBuffer] = useState<Buffer>(asBuffer(staff.bufferMin));
   const [outside, setOutside] = useState<OutsideHoursBooking[] | null>(null);
 
-  const dirty = JSON.stringify(weekly) !== JSON.stringify(staff.weekly) || Number(buffer) !== (staff.bufferMin ?? 0);
+  const dirty = !sameValue(weekly, staff.weekly) || Number(buffer) !== (staff.bufferMin ?? 0);
   const invalid = weekly.some((day) => dayIssue(day) !== null);
 
   const save = useMutation({

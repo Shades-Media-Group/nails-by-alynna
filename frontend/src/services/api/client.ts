@@ -56,6 +56,8 @@ export interface RequestOptions {
   signal?: AbortSignal;
   /** Skip the automatic refresh-and-retry on 401. */
   noRefresh?: boolean;
+  /** The browser's HTTP cache: 'reload' skips a cached copy and stores the fresh answer. */
+  cache?: RequestCache;
 }
 
 async function readErrorBody(response: Response): Promise<Partial<ApiErrorBody> | null> {
@@ -77,6 +79,7 @@ export async function apiRequest<T>(method: string, path: string, body?: unknown
     method,
     credentials: 'same-origin',
     signal: options.signal,
+    cache: options.cache,
     headers: body === undefined ? { Accept: 'application/json' } : { Accept: 'application/json', 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
   };

@@ -17,25 +17,29 @@ afterEach(() => {
 });
 
 describe('<ClockItArt>', () => {
-  it('draws the hand with five long nails, the tapping index and thumb nails and the spark, and buzzes along with the taps', () => {
+  it('draws the hand in the three frames of the tap, five long nails and the spark, and buzzes along with the taps', () => {
     motion(false);
     const vibrate = vi.fn();
     Object.defineProperty(navigator, 'vibrate', { value: vibrate, configurable: true });
     const { container } = render(<ClockItArt />);
 
-    // The hand picture, over the nails so each fingertip covers its nail's base.
-    const hand = container.querySelector('.clock-it-hand image');
-    expect(hand?.getAttribute('href')).toMatch(/hand\.webp/);
+    // The thumb resting, halfway and down: the resting one on top, over the nails, so each
+    // fingertip covers its nail's base.
+    const frames = [...container.querySelectorAll('.clock-it-frame')];
+    expect(frames.map((frame) => frame.getAttribute('href'))).toEqual([
+      expect.stringMatching(/hand-open\.webp/),
+      expect.stringMatching(/hand-mid\.webp/),
+      expect.stringMatching(/hand\.webp/),
+    ]);
     const layers = [...container.querySelector('.clock-it-hand')!.children];
-    expect(layers.indexOf(hand!)).toBeGreaterThan(
+    expect(layers.indexOf(frames[0]!)).toBeGreaterThan(
       layers.indexOf(container.querySelector('.clock-it-thumb')!),
     );
 
-    // Each nail: polish, the finger's shadow, a gloss and an edge.
-    expect(container.querySelectorAll('.clock-it-index path')).toHaveLength(4);
+    // Each nail: polish, the finger's shadow, a gloss and an edge. The thumb's turns with it.
     expect(container.querySelectorAll('.clock-it-thumb path')).toHaveLength(4);
     expect(container.querySelectorAll('.clock-it-hand > path:not(.clock-it-spark)')).toHaveLength(
-      12,
+      16,
     );
     expect(container.querySelector('.clock-it-spark')).not.toBeNull();
     expect(vibrate).toHaveBeenCalledWith([0, 470, 12, 378, 12, 378, 12]);

@@ -1,7 +1,7 @@
 # The "clock it" hand
 
-`hand.webp` is the "OK hand" emoji, medium-light skin tone (U+1F44C U+1F3FC), from Google's
-Noto Emoji 3D set:
+`hand.webp`, `hand-mid.webp` and `hand-open.webp` are made from the "OK hand" emoji,
+medium-light skin tone (U+1F44C U+1F3FC), from Google's Noto Emoji 3D set:
 
 - Source: https://github.com/googlefonts/noto-emoji/blob/main/3D/png/512/emoji_u1f44c_1f3fc.png
 - Copyright 2013 Google LLC.
@@ -9,5 +9,8 @@ Noto Emoji 3D set:
   under the Apache license, version 2.0"; the full text is in `LICENSE-Apache-2.0.txt`.
   The emoji fonts in that repository are under the SIL Open Font License 1.1.
 
-Changes: converted from PNG to WebP (quality 88, lossless alpha). The long nails, the tapping and
-the sparks are drawn over it in `src/components/brand/nails/ClockItArt.tsx`.
+Changes: the thumb is bent down around its base, smoothly from the palm to the tip, by 10°
+(`hand.webp`, the thumb and index nails touching), 13° (`hand-mid.webp`) and 16°
+(`hand-open.webp`), the three frames of the tap. Converted from PNG to WebP (quality 88, lossless
+alpha). The long nails and the sparks are drawn over it in
+`src/components/brand/nails/ClockItArt.tsx`.
