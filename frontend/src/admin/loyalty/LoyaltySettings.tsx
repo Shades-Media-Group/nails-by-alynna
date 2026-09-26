@@ -9,6 +9,7 @@ import { errorMessage } from '@/lib/errors';
 import { ordinal } from '@/lib/ordinal';
 import { api } from '@/services/api/client';
 import type { LoyaltyReward } from '@/types/api';
+import { sameValue } from '../components/utils';
 
 interface LoyaltyFields {
   loyaltyEnabled: boolean;
@@ -35,7 +36,7 @@ export function LoyaltySettings({ settings, canEdit }: { settings: Record<string
   const [form, setForm] = useState<LoyaltyFields>(current);
   const rewardVisits = form.loyaltyRewards.map((r) => r.visit);
   const invalid = rewardVisits.some((v) => v > form.loyaltyCycle) || new Set(rewardVisits).size !== rewardVisits.length;
-  const dirty = JSON.stringify(form) !== JSON.stringify(current);
+  const dirty = !sameValue(form, current);
 
   const save = useMutation({
     mutationFn: () => api.patch<{ settings: Record<string, unknown> }>('/admin/settings', form).then((r) => r.settings),

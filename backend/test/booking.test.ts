@@ -93,6 +93,34 @@ describe('booking', () => {
     expect(await ctx.deps.col.appointments.countDocuments({ status: 'confirmed' })).toBe(1);
   });
 
+  it('lets exactly one of six simultaneous bookings win the same slot, however their requests interleave', async () => {
+    const clients = await Promise.all(Array.from({ length: 6 }, () => registerClient(ctx)));
+    const [slot] = await slots(clients[0]!.client, '2026-06-05');
+    const results = await Promise.all(
+      clients.map(({ client }) => client.post('/api/appointments', { serviceIds: [gelId], start: slot!.start })),
+    );
+    expect(results.map((r) => r.status).sort()).toEqual([201, 409, 409, 409, 409, 409]);
+    const booked = await ctx.deps.col.appointments.countDocuments({ start: new Date(slot!.start), status: { $in: ['pending', 'confirmed'] } });
+    expect(booked).toBe(1);
+  });
+
+  it('lets only one of two visits moved at the same moment take the same new time', async () => {
+    const a = await registerClient(ctx);
+    const b = await registerClient(ctx);
+    const day = await slots(a.client, '2026-06-08');
+    const first = await a.client.post('/api/appointments', { serviceIds: [gelId], start: day[0]!.start });
+    const second = await b.client.post('/api/appointments', { serviceIds: [gelId], start: day.at(-1)!.start });
+    expect([first.status, second.status]).toEqual([201, 201]);
+    const target = (await slots(a.client, '2026-06-09'))[0]!.start;
+    const moves = await Promise.all([
+      a.client.post(`/api/appointments/${first.body.appointment.id}/reschedule`, { start: target }),
+      b.client.post(`/api/appointments/${second.body.appointment.id}/reschedule`, { start: target }),
+    ]);
+    expect(moves.map((r) => r.status).sort()).toEqual([200, 409]);
+    const there = await ctx.deps.col.appointments.countDocuments({ start: new Date(target), status: { $in: ['pending', 'confirmed'] } });
+    expect(there).toBe(1);
+  });
+
   it('creates pending requests when the studio approves bookings', async () => {
     await ctx.deps.col.settings.updateOne({ _id: 'studio' }, { $set: { requireApproval: true } });
     const { invalidateSettingsCache } = await import('../src/modules/settings');
