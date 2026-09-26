@@ -54,12 +54,13 @@ export function Sheet({ open, onClose, title, description, children, footer, hid
     }
     closing.current = false;
     if (!dialog.open) {
-      releaseScroll.current = lockScroll();
       dialog.dataset.state = 'closed';
       dialog.showModal();
       // Focus the sheet itself, without scrolling: iOS otherwise jumps to the first button.
       panel.current?.focus({ preventScroll: true });
     }
+    // Held while open, also when React's development double-mount released it once.
+    releaseScroll.current ??= lockScroll();
     if (dialog.dataset.state === 'open') return;
     // The panel is painted once at its start position (below the screen), then slides up: a
     // transition needs a frame drawn at the start value, or iOS jumps straight to the end.
@@ -95,7 +96,13 @@ export function Sheet({ open, onClose, title, description, children, footer, hid
     };
   }, [open, onClose, requestClose]);
 
-  useEffect(() => () => releaseScroll.current?.(), []);
+  useEffect(
+    () => () => {
+      releaseScroll.current?.();
+      releaseScroll.current = null;
+    },
+    [],
+  );
 
   return (
     <dialog
