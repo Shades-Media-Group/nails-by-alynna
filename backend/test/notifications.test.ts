@@ -73,7 +73,7 @@ async function client(prefs?: Record<string, unknown>) {
 }
 
 describe('notification preferences', () => {
-  it('start with reminders, booking updates and the loyalty card on (email and app), and news off', async () => {
+  it('start with reminders, booking updates, the loyalty card and reminders to come back on (email and app), and news off', async () => {
     const { client: c, user } = await registerClient(ctx);
     const res = await c.get('/api/notifications');
     expect(res.status).toBe(200);
@@ -84,6 +84,7 @@ describe('notification preferences', () => {
         // Only staff see this one in Settings; it tells them about clients' bookings.
         staffBookings: { email: true, push: true },
         loyalty: { email: true, push: true },
+        rebook: { email: true, push: true },
         marketing: { email: false, push: false, consentAt: null },
       },
       email: { address: user.email, available: true },

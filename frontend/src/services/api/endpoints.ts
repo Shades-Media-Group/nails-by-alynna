@@ -100,6 +100,8 @@ export interface NotificationPrefs {
   /** Staff: a client asked for, booked, moved or cancelled a visit. */
   staffBookings: ChannelPrefs;
   loyalty: ChannelPrefs;
+  /** Reminders to book again weeks after a visit (the studio sets when). */
+  rebook: ChannelPrefs;
   marketing: ChannelPrefs & { consentAt: string | null };
 }
 export type NotificationPrefsPatch = {

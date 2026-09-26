@@ -7,9 +7,13 @@ import { getSettings } from '../settings';
 import { appLink, feedbackPush, reminderPush, visitInfo } from './content';
 import { MAX_ATTEMPTS, canNotify, deliver } from './deliver';
 import { resolvePrefs } from './prefs';
+import { sendRebookReminders } from './rebook';
 
 export interface TickSummary {
-  /** Visits looked at: upcoming ones (reminders) and ones that just ended (feedback requests). */
+  /**
+   * Visits looked at: upcoming ones (reminders), ones that just ended (feedback requests) and last
+   * visits a few weeks back (come-back reminders).
+   */
   checked: number;
   sent: number;
   failed: number;
@@ -33,14 +37,16 @@ interface Plan {
 }
 
 /**
- * Sends everything that is due: the reminders before visits, then the "How was your visit?"
- * messages after them. Safe to run from several places at once (in-process timer, cron).
+ * Sends everything that is due: the reminders before visits, the "How was your visit?" messages
+ * after them, and the reminders to come back weeks later (rebook.ts). Safe to run from several
+ * places at once (in-process timer, cron).
  */
 export async function runDueNotifications(deps: AppDeps, now: Date = deps.now()): Promise<TickSummary> {
   const started = Date.now();
   const summary: TickSummary = { checked: 0, sent: 0, failed: 0, skipped: 0, duplicates: 0, durationMs: 0 };
   await sendReminders(deps, now, summary);
   await sendFeedbackRequests(deps, now, summary);
+  await sendRebookReminders(deps, now, summary);
   return finish(summary, started);
 }
 
@@ -288,13 +294,13 @@ export function runNotificationsExclusive(deps: AppDeps): Promise<TickSummary> {
   return run;
 }
 
-/** Checks for due reminders and feedback requests every NOTIFICATIONS_INTERVAL_SEC (0 = off). Returns a stop function. */
+/** Checks for everything due (reminders, feedback requests, come-back reminders) every NOTIFICATIONS_INTERVAL_SEC (0 = off). Returns a stop function. */
 export function startNotificationScheduler(deps: AppDeps, intervalSec = deps.config.notificationsIntervalSec): () => void {
   if (intervalSec <= 0) return () => undefined;
   const tick = () => {
     runNotificationsExclusive(deps)
       .then((s) => {
-        if (s.sent + s.failed > 0) console.info(`[notify] reminders and feedback requests: ${s.sent} sent, ${s.failed} failed, ${s.skipped} skipped`);
+        if (s.sent + s.failed > 0) console.info(`[notify] reminders, feedback requests and come-back reminders: ${s.sent} sent, ${s.failed} failed, ${s.skipped} skipped`);
       })
       .catch((error: unknown) => console.error('[notify] reminder run failed', error));
   };

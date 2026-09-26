@@ -1493,3 +1493,94 @@ export function feedbackRequestEmail(opts: {
     replyTo: opts.replyTo,
   });
 }
+
+// ── Come back: a reminder to book again ─────────────────────────────────────────
+
+const REBOOK_COPY: Record<Locale, { last: string; master: string; book: string; why: string }> = {
+  ro: {
+    last: 'Ultima ta vizită',
+    master: 'Maestru',
+    book: 'Programează-te',
+    why: 'Primești acest mesaj pentru că amintirile pentru următoarea vizită sunt pornite în Profil → Notificări. Le poți opri oricând.',
+  },
+  ru: {
+    last: 'Ваш прошлый визит',
+    master: 'Мастер',
+    book: 'Записаться',
+    why: 'Вы получили это письмо, потому что напоминания о следующем визите включены в разделе Профиль → Уведомления. Их можно отключить в любой момент.',
+  },
+  en: {
+    last: 'Your last visit',
+    master: 'Master',
+    book: 'Book a visit',
+    why: 'You get this email because reminders to come back are on in Profile → Notifications. You can turn them off any time.',
+  },
+};
+
+/** "4 weeks ago" / "acum 4 săptămâni" / "4 недели назад": weeks up to two months, then months. */
+function sinceVisit(end: Date, now: Date, locale: Locale): string {
+  const days = Math.max(0, Math.round((now.getTime() - end.getTime()) / 86_400_000));
+  const format = new Intl.RelativeTimeFormat(LOCALE_TAGS[locale], { numeric: 'auto' });
+  const value =
+    days < 14 ? format.format(-days, 'day') : days < 63 ? format.format(-Math.round(days / 7), 'week') : format.format(-Math.round(days / 30.44), 'month');
+  return capitalize(value);
+}
+
+/**
+ * A reminder to come back: the studio's words (title and text, placeholders already filled), the
+ * last visit on a blush pass (how long ago and the day, the master, the loyalty card's next
+ * discount when the reminder carries it; the services on the stub), one button to book the same
+ * again, and how to switch these reminders off.
+ */
+export function rebookEmail(opts: {
+  to: string;
+  name: string;
+  locale: Locale;
+  timeZone: string;
+  now: Date;
+  title: string;
+  body: string;
+  visit: { end: Date; services: string[]; master: string | null };
+  /** The loyalty card's next discount ("2 more visits to 15% off"), on the reminders in between. */
+  loyalty?: { label: string; text: string } | null;
+  /** The booking page with the same services, shape and master. */
+  bookUrl: string;
+  settingsUrl: string;
+  replyTo?: string;
+}): MailMessage {
+  const t = REBOOK_COPY[opts.locale];
+  const c = COMMON[opts.locale];
+  const main = onPass('blush');
+  const ago = sinceVisit(opts.visit.end, opts.now, opts.locale);
+  const day = capitalize(
+    new Intl.DateTimeFormat(LOCALE_TAGS[opts.locale], { timeZone: opts.timeZone, weekday: 'long', day: 'numeric', month: 'long' }).format(opts.visit.end),
+  );
+  const head =
+    passLabel('blush', t.last) +
+    `<p class="${main.cls}" style="margin:0;font-size:32px;line-height:1.1;font-weight:800;letter-spacing:-0.02em;color:${main.color}">${escapeHtml(ago)}</p>` +
+    `<p class="${main.cls}" style="margin:8px 0 0;font-size:19px;line-height:1.3;font-weight:700;letter-spacing:-0.01em;color:${main.color}">${escapeHtml(day)}</p>`;
+  return render({
+    locale: opts.locale,
+    to: opts.to,
+    toName: opts.name,
+    appUrl: opts.bookUrl,
+    subject: opts.title,
+    preheader: opts.body,
+    heading: opts.title,
+    lead: opts.body,
+    blocks: [
+      pass({
+        tone: 'blush',
+        main: { html: head, text: `${t.last}: ${ago} · ${day}` },
+        fields: fields('blush', [
+          { label: t.master, value: opts.visit.master },
+          ...(opts.loyalty ? [{ label: opts.loyalty.label, value: capitalize(opts.loyalty.text), wide: true }] : []),
+        ]),
+        stub: passText('blush', opts.visit.services.join('\n'), false, 15),
+      }),
+      buttons([{ label: t.book, url: opts.bookUrl, primary: true }]),
+    ],
+    footer: [small(t.why), linkLine(VISIT_COPY[opts.locale].settings, opts.settingsUrl), small(c.signature)],
+    replyTo: opts.replyTo,
+  });
+}

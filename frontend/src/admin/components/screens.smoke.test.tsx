@@ -194,6 +194,19 @@ function respond(path: string): unknown {
     return { client: { ...client, notes: 'Prefers mornings' }, stats: { visits: 3, noShows: 1, cancelled: 0, spent: 1350 }, appointments: [appointment()] };
   }
   if (path === '/api/admin/settings') return { settings };
+  if (path === '/api/admin/settings/rebook') {
+    const message = (title: string, body: string) => ({ title: text(title), body: text(body) });
+    return {
+      defaults: {
+        first: message('Time for a refill?', 'Hi {name}! Your last visit: {services} with {master}.'),
+        nudge: message('Thinking about your next visit?', "Hi {name}! It's been a while since your last visit."),
+        last: message("We'd love to see you again", 'Hi {name}! No rush at all.'),
+      },
+      placeholders: ['name', 'services', 'master'],
+      available: { email: true, push: true },
+      sample: Object.fromEntries(['ro', 'ru', 'en'].map((l) => [l, { name: 'Ana', services: 'Gel polish', master: 'Alina', loyalty: null }])),
+    };
+  }
   if (path === '/api/admin/promo') {
     return {
       promos: [promoCode(), promoCode({ id: 'p2', code: 'ALINA50', kind: 'amount', value: 50, maxUses: null, usedCount: 7, staffId: 'm1', endsAt: null, status: 'active', firstVisitOnly: true, minTotal: 0, note: '', canDelete: false }), promoCode({ id: 'p3', code: 'SPRING', status: 'expired', startsAt: '2026-03-01', endsAt: '2026-05-31', maxUses: 50, usedCount: 12, minTotal: 0, note: '' })],
@@ -317,7 +330,7 @@ function renderScreen(element: ReactElement, path: string, url: string) {
 
 /** Text nodes that are an untranslated key (i18next shows the key itself when one is missing). */
 function leakedKeys(): string[] {
-  const raw = /^(?:dashboard|calendar|appointment|booking|clients|client|team|timeOff|hours|settings|users|audit|invite|status|pagination|nav|common|admin|field|problem|problemDesk|line|move|removedReason)\.[\w.]+$/;
+  const raw = /^(?:dashboard|calendar|appointment|booking|clients|client|team|timeOff|hours|settings|rebook|users|audit|invite|status|pagination|nav|common|admin|field|problem|problemDesk|line|move|removedReason)\.[\w.]+$/;
   const found: string[] = [];
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
@@ -440,6 +453,8 @@ describe('staff screens', () => {
     renderScreen(<SettingsPage />, '/en/admin/settings', '/en/admin/settings');
     expect(await screen.findByDisplayValue('Nails by Alynna')).toBeInTheDocument();
     expect(screen.getByText('Booking rules')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Come-back reminders' })).toBeInTheDocument();
+    expect(await screen.findByText('Hi Ana! Your last visit: Gel polish with Alina.')).toBeInTheDocument();
     expect(leakedKeys()).toEqual([]);
   });
 

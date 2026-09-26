@@ -36,7 +36,7 @@ const HOME_SCREEN_NAME = 'Nails Alynna';
 /** The shared Switch is 28 px tall: widen its tap area to 44 px without changing how it looks. */
 const SWITCH_TAP_AREA = '[&_[role=switch]]:before:absolute [&_[role=switch]]:before:-inset-2';
 type DeviceState = PushState | 'loading' | 'unavailable';
-type Category = 'reminders' | 'bookingUpdates' | 'staffBookings' | 'loyalty' | 'marketing';
+type Category = 'reminders' | 'bookingUpdates' | 'staffBookings' | 'loyalty' | 'rebook' | 'marketing';
 
 function mergePrefs(prefs: NotificationPrefs, patch: NotificationPrefsPatch): NotificationPrefs {
   return {
@@ -44,6 +44,7 @@ function mergePrefs(prefs: NotificationPrefs, patch: NotificationPrefsPatch): No
     bookingUpdates: { ...prefs.bookingUpdates, ...patch.bookingUpdates },
     staffBookings: { ...prefs.staffBookings, ...patch.staffBookings },
     loyalty: { ...prefs.loyalty, ...patch.loyalty },
+    rebook: { ...prefs.rebook, ...patch.rebook },
     marketing: { ...prefs.marketing, ...patch.marketing },
   };
 }
@@ -112,6 +113,8 @@ export default function NotificationsPage() {
   // Loyalty messages only mean something while the studio runs the stamp card.
   const loyalty = (config.data as { loyalty?: { enabled?: boolean } } | undefined)?.loyalty;
   const loyaltyOn = Boolean(config.data) && loyalty?.enabled !== false;
+  // Reminders to come back: only while the studio sends them.
+  const rebookOn = Boolean(config.data) && config.data?.rebook?.enabled !== false;
 
   return (
     <div className="pb-10">
@@ -149,6 +152,7 @@ export default function NotificationsPage() {
               settings={settings.data}
               device={device}
               loyaltyOn={loyaltyOn}
+              rebookOn={rebookOn}
               staff={user?.role === 'admin' || user?.role === 'administrator'}
               readOnly={demo}
               onChange={(patch) => update.mutate(patch)}
@@ -360,6 +364,7 @@ function Preferences({
   settings,
   device,
   loyaltyOn,
+  rebookOn,
   staff,
   readOnly,
   onChange,
@@ -367,6 +372,8 @@ function Preferences({
   settings: NotificationSettings;
   device: DeviceState;
   loyaltyOn: boolean;
+  /** Clients hear about coming back while the studio sends these (not staff). */
+  rebookOn: boolean;
   /** Masters and the owner also hear about clients' bookings. */
   staff: boolean;
   readOnly: boolean;
@@ -507,6 +514,12 @@ function Preferences({
       {loyaltyOn ? (
         <Group title={t('notifications.loyalty.title')} text={t('notifications.loyalty.text')}>
           {channels('loyalty')}
+        </Group>
+      ) : null}
+
+      {rebookOn && !staff ? (
+        <Group title={t('notifications.rebook.title')} text={t('notifications.rebook.text')}>
+          {channels('rebook')}
         </Group>
       ) : null}
 

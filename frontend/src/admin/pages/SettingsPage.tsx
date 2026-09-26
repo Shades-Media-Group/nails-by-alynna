@@ -12,8 +12,9 @@ import type { I18nText } from '@/types/api';
 import { adminApi, adminQueries, type StudioSettings } from '../api';
 import { AdminHeader } from '../components/AdminHeader';
 import { I18nFields } from '../components/I18nFields';
+import { RebookSettings } from '../components/RebookSettings';
 import { SchedulingSettings } from '../components/SchedulingSettings';
-import { fillFromRo } from '../components/utils';
+import { fillFromRo, sameValue } from '../components/utils';
 import { LoyaltySettings } from '../loyalty/LoyaltySettings';
 
 type TextKey = 'name' | 'legalName' | 'legalId' | 'address' | 'city' | 'mapsUrl' | 'phone' | 'whatsapp' | 'viber' | 'telegram' | 'instagram' | 'email';
@@ -139,6 +140,7 @@ export default function SettingsPage() {
               </Fragment>
             ))}
             <LoyaltySettings settings={settings.data as unknown as Record<string, unknown>} canEdit={isOwner} />
+            <RebookSettings settings={settings.data as unknown as Record<string, unknown>} canEdit={isOwner} email={user?.email} />
           </>
         )}
       </div>
@@ -155,10 +157,11 @@ function Section({ section, settings, canEdit }: { section: SectionDef; settings
   const [touched, setTouched] = useState(false);
   const set = (key: keyof StudioSettings, value: unknown) => setForm((f) => ({ ...f, [key]: value }));
 
+  // Texts come back from the API with their keys sorted ({ en, ro, ru }): compare values, not order.
   const changed = Object.fromEntries(
     section.fields
       .map((f) => [f.key, prepared(f, form[f.key])] as const)
-      .filter(([key, value]) => JSON.stringify(value) !== JSON.stringify(settings[key])),
+      .filter(([key, value]) => !sameValue(value, settings[key])),
   ) as Partial<StudioSettings>;
   const dirty = Object.keys(changed).length > 0;
   const issues = Object.fromEntries(
