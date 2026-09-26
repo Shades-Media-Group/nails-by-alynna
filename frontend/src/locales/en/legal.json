@@ -130,7 +130,7 @@
         "id": "provider",
         "title": "Who provides the service",
         "body": [
-          "This app is a test project run by {{operator}} ({{studio}}, {{place}}). It is not a real business."
+          "The app is operated by {{operator}} ({{studio}}, {{place}}). Demo app, no business, test only."
         ]
       },
       {
@@ -186,9 +186,6 @@
       {
         "id": "complaints",
         "title": "Questions and complaints",
-        "body": [
-          "Questions, ideas or complaints about the app? Send them through the feedback form: they reach the studio directly."
-        ],
         "action": "feedback"
       },
       {
