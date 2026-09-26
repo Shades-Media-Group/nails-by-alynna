@@ -58,8 +58,12 @@ export function tipZone(g: NailGeometry): number {
   }
 }
 
-/** Half widths of the nail: at the cuticle, and where the free-edge taper starts. */
-const halfWidths = (g: NailGeometry) => ({ a0: (g.nw / 2) * 0.92, a: g.nw / 2 });
+/**
+ * Half widths of the nail: at the cuticle, and where the free-edge taper starts. A sculpted
+ * extension is widest at its base and never widens after it (parallel sides over the bed, then
+ * the taper); a natural nail spreads a touch from the cuticle.
+ */
+const halfWidths = (g: NailGeometry) => ({ a0: g.shape === 'sculpted' ? g.nw / 2 : (g.nw / 2) * 0.92, a: g.nw / 2 });
 
 /** The nail plate: a U-shaped cuticle, sides that widen a touch, then the shaped free edge. */
 export function nailPath(g: NailGeometry): string {
@@ -84,7 +88,7 @@ export function nailPath(g: NailGeometry): string {
       // Short extensions end round; long ones curve in sooner and end in a soft almond point.
       const q = Math.min(1, Math.max(0, (-g.yt / g.nw - 0.3) / 0.9));
       const k1 = 0.55 - 0.25 * q;
-      const k2 = 0.5 - 0.3 * q;
+      const k2 = 0.5 - 0.24 * q;
       tip = d`C${-a} ${ys - T * k1} ${-a * k2} ${t} 0 ${t}C${a * k2} ${t} ${a} ${ys - T * k1} ${a} ${ys}`;
       break;
     }
