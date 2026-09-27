@@ -101,6 +101,6 @@ describe('<NewStampSheet>', () => {
     client.setQueryData(['loyalty'], card(3));
     mount(client);
     await settle();
-    expect(screen.getByRole('dialog', { name: '2 new stamps!' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: /^2\snew stamps!$/ })).toBeInTheDocument();
   });
 });

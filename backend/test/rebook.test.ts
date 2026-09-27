@@ -212,7 +212,7 @@ describe('come-back reminders', () => {
     // The one in between carries the loyalty card: one stamp so far, the 4th visit is 15% off.
     const nudge = mailsTo(c)[1]!;
     expect(nudge.html).toContain('Loyalty card');
-    expect(nudge.html).toContain('3 more visits to 15% off');
+    expect(nudge.html.replaceAll('\u00a0', ' ')).toContain('3 more visits to 15% off');
     expect(pushesTo(c)[1]!.payload.body).toBe(
       "Hi Ana! It's been a while since your last visit. When you feel like fresh nails, pick a time that suits you in the app. Loyalty card: 3 more visits to 15% off.",
     );
@@ -540,7 +540,7 @@ describe('the come-back email', () => {
     expect(mail.html).toContain('Alina &quot;the best&quot;');
     expect(mail.html).not.toContain('javascript:');
     expect(mail.html).toContain('4 недели назад');
-    expect(mail.html).toContain('Ещё 2 визита до скидки −15%');
+    expect(mail.html.replaceAll('\u00a0', ' ')).toContain('Ещё 2 визита до скидки −15%');
     expect(mail.text).toContain('Гель-лак\nФренч');
     expect(mail.text).toContain('https://app.example/ru/profile/notifications');
   });

@@ -248,7 +248,7 @@ describe('Settings → Come-back reminders', () => {
     unmount();
     renderSection({}, true, 'ru');
     expect(screen.getByText('Отправляются через 28, 42 и 56 дней после последнего визита, если клиент не запишется раньше.')).toBeInTheDocument();
-    expect(screen.getByLabelText('Первое напоминание через')).toHaveDisplayValue('28 дней');
+    expect(screen.getByLabelText('Первое напоминание через')).toHaveDisplayValue(/^28\sдней$/);
   });
 
   it('has every string in Romanian, Russian and English', () => {
