@@ -3,6 +3,7 @@ import type { AppDeps } from './context';
 import { collections, createDatabase, ensureIndexes, SCHEMA_VERSION, type Database } from './db';
 import { createMailer } from './lib/mailer';
 import { createPasswordHasher } from './lib/password';
+import { loyaltyEmailOnce } from './modules/notifications';
 import { switchToApprovalOnce } from './modules/settings';
 import { syncDefaults } from './seed/defaults';
 
@@ -38,6 +39,7 @@ export async function migrate(deps: AppDeps): Promise<void> {
   // The default price list and contact details (no-op when already at the current version).
   await syncDefaults(deps, (message) => console.info(`[defaults] ${message}`));
   await switchToApprovalOnce(deps);
+  await loyaltyEmailOnce(deps);
 }
 
 export { createDatabase };

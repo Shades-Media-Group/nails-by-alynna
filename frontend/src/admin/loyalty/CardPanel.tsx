@@ -13,6 +13,7 @@ import { useLocale } from '@/i18n/useLocale';
 import { errorMessage } from '@/lib/errors';
 import { formatDayShort, formatPhone, formatPrice, formatTime } from '@/lib/format';
 import { groupMemberCode } from '@/lib/member-code';
+import { noOrphan } from '@/lib/typography';
 import { adminLoyaltyApi, type ClientLoyaltyCard } from './api';
 
 /**
@@ -101,7 +102,7 @@ export function CardPanel({ data }: { data: ClientLoyaltyCard }) {
                       <span className="block font-semibold first-letter:uppercase">
                         {formatDayShort(a.start, locale, timeZone)}, {formatTime(a.start, locale, timeZone)}
                       </span>
-                      <span className="block text-sm text-ink-600">{a.services.map((s) => pick(s.name)).join(' · ')}</span>
+                      <span className="block text-sm text-ink-600">{a.services.map((s) => noOrphan(pick(s.name))).join(' · ')}</span>
                       {a.loyalty ? (
                         // A bigger promo code takes the loyalty discount's place; the stamp still counts.
                         <span className={a.loyalty.percent > 0 && !a.promo?.applied ? 'mt-1 block text-sm font-semibold text-rose-700' : 'mt-1 block text-sm text-ink-600'}>

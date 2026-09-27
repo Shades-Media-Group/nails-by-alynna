@@ -36,7 +36,7 @@ describe('<VerifyEmailStep>', () => {
     api.resendVerification.mockResolvedValue({ ok: true, resendAfterSec: 60 });
     renderWithProviders(step({ sent: false, onResent }));
 
-    expect(screen.getByRole('heading', { name: "The email didn't go out" })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^The email didn't go\sout$/ })).toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveTextContent('ana@gmail.com');
     expect(screen.queryByText(/Check Spam or Promotions/)).not.toBeInTheDocument();
 
@@ -51,6 +51,6 @@ describe('<VerifyEmailStep>', () => {
     renderWithProviders(step({ sent: false }));
     await userEvent.click(screen.getByRole('button', { name: 'Send a new code' }));
     expect(await screen.findByText("We couldn't send the email right now. Try again in a few minutes.")).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: "The email didn't go out" })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^The email didn't go\sout$/ })).toBeInTheDocument();
   });
 });

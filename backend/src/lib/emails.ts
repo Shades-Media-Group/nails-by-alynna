@@ -1,4 +1,5 @@
 import type { MailMessage } from './mailer';
+import { NBSP, noOrphan } from './text';
 import { addDays, toZonedParts } from './time';
 import type { Locale } from './validation';
 
@@ -69,7 +70,7 @@ interface Block {
 const NONE: Block = { html: '', text: '' };
 
 const para = (value: string, style = `font-size:16px;line-height:1.55;color:${INK}`, cls = 'nba-text'): Block => ({
-  html: `<p class="${cls}" style="margin:0 0 16px;${style}">${escapeHtml(value)}</p>`,
+  html: `<p class="${cls}" style="margin:0 0 16px;${style}">${escapeHtml(noOrphan(value))}</p>`,
   text: value,
 });
 
@@ -135,8 +136,8 @@ function fields(tone: ToneName, items: Field[]): Block {
     const extraHref = safeUrl(f.extra?.href);
     const valueStyle = `font-size:15px;line-height:1.4;font-weight:700;color:${main.color};${f.tabular ? 'font-variant-numeric:tabular-nums;letter-spacing:0.02em;' : ''}`;
     const value = safe
-      ? `<a class="${main.cls}" href="${escapeHtml(safe)}" style="${valueStyle}text-decoration:underline;text-underline-offset:3px">${escapeHtml(f.value)}</a>`
-      : `<span class="${main.cls}" style="${valueStyle}">${escapeHtml(f.value)}</span>`;
+      ? `<a class="${main.cls}" href="${escapeHtml(safe)}" style="${valueStyle}text-decoration:underline;text-underline-offset:3px">${escapeHtml(noOrphan(f.value))}</a>`
+      : `<span class="${main.cls}" style="${valueStyle}">${escapeHtml(noOrphan(f.value))}</span>`;
     const extra = f.extra && extraHref
       ? `<span class="${deep.cls}" style="color:${deep.color}"> · </span><a class="${main.cls}" href="${escapeHtml(extraHref)}" style="font-size:15px;font-weight:700;color:${main.color};text-decoration:underline;text-underline-offset:3px">${escapeHtml(f.extra.label)}</a>`
       : '';
@@ -183,7 +184,7 @@ function lines(tone: ToneName, rows: Array<[string, string]>, total?: [string, s
   const main = onPass(tone);
   const deep = onPass(tone, true);
   const row = ([name, amount]: [string, string], strong = false, rule = false) =>
-    `<tr><td class="${strong ? main.cls : main.cls}" style="padding:${rule ? '10px' : '3px'} 12px 3px 0;font-size:15px;line-height:1.45;color:${main.color};${strong ? 'font-weight:700;' : ''}${rule ? `border-top:1px dashed ${TONES[tone].perf};` : ''}">${escapeHtml(name)}</td>` +
+    `<tr><td class="${strong ? main.cls : main.cls}" style="padding:${rule ? '10px' : '3px'} 12px 3px 0;font-size:15px;line-height:1.45;color:${main.color};${strong ? 'font-weight:700;' : ''}${rule ? `border-top:1px dashed ${TONES[tone].perf};` : ''}">${escapeHtml(noOrphan(name))}</td>` +
     `<td align="right" class="${strong ? main.cls : deep.cls}" style="padding:${rule ? '10px' : '3px'} 0 3px;font-size:15px;line-height:1.45;white-space:nowrap;font-variant-numeric:tabular-nums;color:${strong ? main.color : deep.color};${strong ? 'font-weight:700;' : 'font-weight:600;'}${rule ? `border-top:1px dashed ${TONES[tone].perf};` : ''}">${escapeHtml(amount)}</td></tr>`;
   const html =
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">` +
@@ -198,7 +199,7 @@ function lines(tone: ToneName, rows: Array<[string, string]>, total?: [string, s
 function passText(tone: ToneName, value: string, deep = true, size = 14): Block {
   const c = onPass(tone, deep);
   return {
-    html: `<p class="${c.cls}" style="margin:0;font-size:${size}px;line-height:1.5;color:${c.color}">${escapeHtml(value).replace(/\n/g, '<br>')}</p>`,
+    html: `<p class="${c.cls}" style="margin:0;font-size:${size}px;line-height:1.5;color:${c.color}">${value.split('\n').map((line) => escapeHtml(noOrphan(line))).join('<br>')}</p>`,
     text: value,
   };
 }
@@ -341,7 +342,7 @@ a[x-apple-data-detectors]{color:inherit !important;text-decoration:none !importa
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;font-family:${FONT}">
 <tr><td style="padding:0 4px 28px"><a href="${escapeHtml(home)}" style="text-decoration:none"><img src="${escapeHtml(`${app}/email/logo.png`)}" width="88" alt="${BRAND}" style="display:block;border:0;width:88px;height:auto;font-family:${FONT};font-size:18px;font-weight:800;color:#FD2578"></a></td></tr>
 <tr><td style="padding:0 4px;font-family:${FONT};color:${INK}">
-<h1 class="nba-text" style="margin:0 0 10px;font-size:28px;line-height:1.15;font-weight:800;letter-spacing:-0.02em;color:${INK}">${escapeHtml(opts.heading)}</h1>
+<h1 class="nba-text" style="margin:0 0 10px;font-size:28px;line-height:1.15;font-weight:800;letter-spacing:-0.02em;color:${INK};text-wrap:balance">${escapeHtml(noOrphan(opts.heading))}</h1>
 ${body}
 </td></tr>
 <tr><td class="nba-rule" style="padding:18px 4px 0;border-top:1px solid ${LINE};font-family:${FONT}">
@@ -369,6 +370,14 @@ ${footer}
 
 // ── Shared copy ──────────────────────────────────────────────────────────────────
 
+/** "2 h 30 min", in one piece: the number, its unit and the minutes never split. */
+function length(minutes: number, h: string, min: string): string {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (hours === 0) return `${rest}${NBSP}${min}`;
+  return rest ? `${hours}${NBSP}${h}${NBSP}${rest}${NBSP}${min}` : `${hours}${NBSP}${h}`;
+}
+
 const COMMON: Record<
   Locale,
   {
@@ -388,10 +397,10 @@ const COMMON: Record<
     signature: `${BRAND} · Chișinău`,
     neverShare: 'Nu da nimănui acest cod. Salonul nu ți-l va cere niciodată.',
     codeChip: 'Codul tău',
-    codeValid: 'Valabil 10 minute',
-    from: (value) => `de la ${value}`,
+    codeValid: 'Valabil 10\u00a0minute',
+    from: (value) => `de${NBSP}la${NBSP}${value}`,
     total: 'Total estimat',
-    duration: (m) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}` : `${m} min`),
+    duration: (m) => length(m, 'h', 'min'),
     withMaster: (name) => `cu ${name}`,
   },
   ru: {
@@ -399,10 +408,10 @@ const COMMON: Record<
     signature: `${BRAND} · Кишинёв`,
     neverShare: 'Никому не сообщайте этот код. Салон никогда его не спросит.',
     codeChip: 'Ваш код',
-    codeValid: 'Действует 10 минут',
-    from: (value) => `от ${value}`,
+    codeValid: 'Действует 10\u00a0минут',
+    from: (value) => `от${NBSP}${value}`,
     total: 'Итого, ориентировочно',
-    duration: (m) => (m >= 60 ? `${Math.floor(m / 60)} ч${m % 60 ? ` ${m % 60} мин` : ''}` : `${m} мин`),
+    duration: (m) => length(m, 'ч', 'мин'),
     withMaster: (name) => `мастер ${name}`,
   },
   en: {
@@ -410,16 +419,18 @@ const COMMON: Record<
     signature: `${BRAND} · Chișinău`,
     neverShare: 'Never share this code. The studio will never ask you for it.',
     codeChip: 'Your code',
-    codeValid: 'Valid for 10 minutes',
-    from: (value) => `from ${value}`,
+    codeValid: 'Valid for 10\u00a0minutes',
+    from: (value) => `from${NBSP}${value}`,
     total: 'Estimated total',
-    duration: (m) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}` : `${m} min`),
+    duration: (m) => length(m, 'h', 'min'),
     withMaster: (name) => `with ${name}`,
   },
 };
 
 function money(amount: number, currency: string, locale: Locale, from = false): string {
-  const value = `${new Intl.NumberFormat(LOCALE_TAGS[locale], { maximumFractionDigits: 0 }).format(amount)} ${currency}`;
+  // "550 MDL" and "1 200 MDL" in one piece (the narrow no-break space is not in every font).
+  const number = new Intl.NumberFormat(LOCALE_TAGS[locale], { maximumFractionDigits: 0 }).format(amount).replace(/[\u202f ]/g, NBSP);
+  const value = `${number}${NBSP}${currency}`;
   return from ? COMMON[locale].from(value) : value;
 }
 
@@ -454,19 +465,19 @@ const CODE_COPY: Record<
     ro: {
       subject: (code) => `Confirmă emailul: codul ${code}`,
       heading: 'Confirmă adresa de email',
-      body: (email) => `Introdu acest cod în aplicație ca să confirmi adresa ${email}. Codul este valabil 10 minute.`,
+      body: (email) => `Introdu acest cod în aplicație ca să confirmi adresa ${email}. Codul este valabil 10\u00a0minute.`,
       ignore: 'Nu ți-ai creat cont la noi? Ignoră acest mesaj: fără cod nu se schimbă nimic.',
     },
     ru: {
       subject: (code) => `Подтверждение email: код ${code}`,
       heading: 'Подтвердите email',
-      body: (email) => `Введите этот код в приложении, чтобы подтвердить адрес ${email}. Код действует 10 минут.`,
+      body: (email) => `Введите этот код в приложении, чтобы подтвердить адрес ${email}. Код действует 10\u00a0минут.`,
       ignore: 'Не создавали аккаунт? Просто проигнорируйте письмо: без кода ничего не изменится.',
     },
     en: {
       subject: (code) => `Confirm your email: code ${code}`,
       heading: 'Confirm your email',
-      body: (email) => `Enter this code in the app to confirm ${email}. It's valid for 10 minutes.`,
+      body: (email) => `Enter this code in the app to confirm ${email}. It's valid for 10\u00a0minutes.`,
       ignore: "Didn't create an account? Ignore this email: nothing changes without the code.",
     },
   },
@@ -474,19 +485,19 @@ const CODE_COPY: Record<
     ro: {
       subject: (code) => `Confirmă noul email: codul ${code}`,
       heading: 'Confirmă noul email',
-      body: (email) => `Introdu acest cod în aplicație ca să folosești ${email} pentru contul ${BRAND}. Codul este valabil 10 minute.`,
+      body: (email) => `Introdu acest cod în aplicație ca să folosești ${email} pentru contul ${BRAND}. Codul este valabil 10\u00a0minute.`,
       ignore: 'Nu ai cerut această schimbare? Ignoră mesajul: contul rămâne neschimbat.',
     },
     ru: {
       subject: (code) => `Подтверждение нового email: код ${code}`,
       heading: 'Подтвердите новый email',
-      body: (email) => `Введите этот код в приложении, чтобы использовать ${email} для аккаунта ${BRAND}. Код действует 10 минут.`,
+      body: (email) => `Введите этот код в приложении, чтобы использовать ${email} для аккаунта ${BRAND}. Код действует 10\u00a0минут.`,
       ignore: 'Не запрашивали изменение? Проигнорируйте письмо: аккаунт останется прежним.',
     },
     en: {
       subject: (code) => `Confirm your new email: code ${code}`,
       heading: 'Confirm your new email',
-      body: (email) => `Enter this code in the app to use ${email} for your ${BRAND} account. It's valid for 10 minutes.`,
+      body: (email) => `Enter this code in the app to use ${email} for your ${BRAND} account. It's valid for 10\u00a0minutes.`,
       ignore: "Didn't ask for this? Ignore this email: your account stays as it is.",
     },
   },
@@ -527,24 +538,24 @@ const RESET_COPY: Record<
   ro: {
     subject: (code) => `Resetarea parolei: codul ${code}`,
     heading: 'Resetează parola',
-    body: 'Am primit o cerere de resetare a parolei. Introdu acest cod în aplicație ca să setezi o parolă nouă. Codul este valabil 10 minute.',
-    orLink: 'Sau folosește butonul de mai jos (linkul este valabil 30 de minute).',
+    body: 'Am primit o cerere de resetare a parolei. Introdu acest cod în aplicație ca să setezi o parolă nouă. Codul este valabil 10\u00a0minute.',
+    orLink: 'Sau folosește butonul de mai jos (linkul este valabil 30\u00a0de\u00a0minute).',
     cta: 'Setează o parolă nouă',
     ignore: 'Dacă nu ai cerut tu resetarea, ignoră acest mesaj. Parola rămâne neschimbată.',
   },
   ru: {
     subject: (code) => `Сброс пароля: код ${code}`,
     heading: 'Сброс пароля',
-    body: 'Мы получили запрос на сброс пароля. Введите этот код в приложении, чтобы задать новый пароль. Код действует 10 минут.',
-    orLink: 'Или нажмите кнопку ниже (ссылка действует 30 минут).',
+    body: 'Мы получили запрос на сброс пароля. Введите этот код в приложении, чтобы задать новый пароль. Код действует 10\u00a0минут.',
+    orLink: 'Или нажмите кнопку ниже (ссылка действует 30\u00a0минут).',
     cta: 'Задать новый пароль',
     ignore: 'Если вы не запрашивали сброс, просто проигнорируйте это письмо. Пароль не изменится.',
   },
   en: {
     subject: (code) => `Reset your password: code ${code}`,
     heading: 'Reset your password',
-    body: 'We received a request to reset your password. Enter this code in the app to set a new one. It is valid for 10 minutes.',
-    orLink: 'Or use the button below (the link is valid for 30 minutes).',
+    body: 'We received a request to reset your password. Enter this code in the app to set a new one. It is valid for 10\u00a0minutes.',
+    orLink: 'Or use the button below (the link is valid for 30\u00a0minutes).',
     cta: 'Set a new password',
     ignore: "If you didn't ask for this, ignore this email. Your password stays the same.",
   },
@@ -681,7 +692,7 @@ export interface VisitTime {
 export function visitTime(start: Date, locale: Locale, timeZone: string, now: Date): VisitTime {
   const tag = LOCALE_TAGS[locale];
   const time = new Intl.DateTimeFormat(tag, { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(start);
-  const date = new Intl.DateTimeFormat(tag, { timeZone, weekday: 'long', day: 'numeric', month: 'long' }).format(start);
+  const date = keepDateTogether(new Intl.DateTimeFormat(tag, { timeZone, weekday: 'long', day: 'numeric', month: 'long' }).format(start));
   const day = toZonedParts(start, timeZone).date;
   const today = toZonedParts(now, timeZone).date;
   const relative = day === today ? 'today' : day === addDays(today, 1) ? 'tomorrow' : null;
@@ -690,14 +701,27 @@ export function visitTime(start: Date, locale: Locale, timeZone: string, now: Da
 
 /** "3 octombrie la 03:00" / "3 октября в 03:00" / "3 October at 03:00" (no weekday: Russian would need its genitive). */
 function formatDeadline(deadline: Date, locale: Locale, timeZone: string): string {
-  return new Intl.DateTimeFormat(LOCALE_TAGS[locale], {
-    timeZone,
-    day: 'numeric',
-    month: 'long',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  }).format(deadline);
+  return keepDateTogether(
+    new Intl.DateTimeFormat(LOCALE_TAGS[locale], {
+      timeZone,
+      day: 'numeric',
+      month: 'long',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).format(deadline),
+  );
+}
+
+/**
+ * The parts of a date that read as one ("3 octombrie", "la 03:00", "в 03:00", "at 03:00"), as in
+ * the app's lib/format.ts: a line can still break after the weekday and before "la", "в", "at".
+ */
+function keepDateTogether(text: string): string {
+  return text
+    .replace(/(^|\s)(\d{1,2}) (?=\p{L})/gu, `$1$2${NBSP}`)
+    .replace(/(\d{4}) (?=г\.)/gu, `$1${NBSP}`)
+    .replace(/(^|\s)(\p{L}{1,2}) (?=\d{1,2}:\d{2})/gu, `$1$2${NBSP}`);
 }
 
 const VISIT_COPY: Record<
@@ -1229,7 +1253,7 @@ const WELCOME_COPY: Record<
     heading: 'Contul tău e gata',
     body: 'Te programezi într-un minut: alegi serviciile, maestrul și ora potrivită. Programările, memento-urile și cardul de fidelitate sunt toate în aplicație.',
     loyalty: (rewards) => `Fiecare vizită e o ștampilă pe cardul de fidelitate: ${rewards}.`,
-    reward: (visit, percent) => `${visit === 1 ? 'prima' : `a ${visit}-a`} vizită are −${percent}%`,
+    reward: (visit, percent) => `${visit === 1 ? 'prima' : `a${NBSP}${visit}-a`} vizită are${NBSP}−${percent}%`,
     book: 'Programează-te',
     install: 'Pune aplicația pe ecran',
     installNote: 'Pe telefon, adaugă aplicația pe ecranul principal: se deschide pe tot ecranul și primești memento-uri.',
@@ -1240,7 +1264,7 @@ const WELCOME_COPY: Record<
     heading: 'Ваш аккаунт готов',
     body: 'Запись занимает минуту: выберите услуги, мастера и удобное время. Записи, напоминания и карта лояльности — всё в приложении.',
     loyalty: (rewards) => `Каждый визит — отметка на карте лояльности: ${rewards}.`,
-    reward: (visit, percent) => `${visit}-й визит −${percent}%`,
+    reward: (visit, percent) => `${visit}-й визит${NBSP}−${percent}%`,
     book: 'Записаться',
     install: 'Добавить на экран',
     installNote: 'На телефоне добавьте приложение на экран «Домой»: оно откроется на весь экран, и вы будете получать напоминания.',
@@ -1253,7 +1277,7 @@ const WELCOME_COPY: Record<
     loyalty: (rewards) => `Every visit is a stamp on your loyalty card: ${rewards}.`,
     reward: (visit, percent) => {
       const suffix = visit % 10 === 1 && visit !== 11 ? 'st' : visit % 10 === 2 && visit !== 12 ? 'nd' : visit % 10 === 3 && visit !== 13 ? 'rd' : 'th';
-      return `your ${visit}${suffix} visit is ${percent}% off`;
+      return `your ${visit}${suffix} visit is ${percent}%${NBSP}off`;
     },
     book: 'Book a visit',
     install: 'Add the app',
@@ -1370,5 +1394,217 @@ export function loyaltyNextEmail(opts: {
       buttons([{ label: t.book, url: `${base}/book`, primary: true }]),
     ],
     footer: [small(c.signature)],
+  });
+}
+
+// ── After a visit: how was it? ────────────────────────────────────────────────
+
+const FEEDBACK_COPY: Record<
+  Locale,
+  {
+    subject: string;
+    heading: string;
+    lead: (master: string | null) => string;
+    rate: string;
+    /** The spoken name of one number in the row ("4 out of 5"). */
+    point: (value: number) => string;
+    button: string;
+    private: string;
+  }
+> = {
+  ro: {
+    subject: `Cum a fost vizita ta la ${BRAND}?`,
+    heading: 'Cum a fost vizita ta?',
+    lead: (master) =>
+      master ? `Mulțumim că ai venit! ${master} ar vrea să afle cum ți s-a părut.` : 'Mulțumim că ai venit! Ne-ar plăcea să aflăm cum ți s-a părut.',
+    rate: 'Dă o notă de la 1 (slab) la 5 (excelent)',
+    point: (value) => `${value} din 5`,
+    button: 'Lasă feedback',
+    private: 'Părerea ta o citește doar salonul: nu se publică nicăieri.',
+  },
+  ru: {
+    subject: `Как прошёл ваш визит в ${BRAND}?`,
+    heading: 'Как прошёл ваш визит?',
+    lead: (master) =>
+      master ? `Спасибо, что пришли! Мастеру ${master} важно знать, как всё прошло.` : 'Спасибо, что пришли! Нам важно знать, как всё прошло.',
+    rate: 'Оцените от 1 (плохо) до 5 (отлично)',
+    point: (value) => `${value} из 5`,
+    button: 'Оставить отзыв',
+    private: 'Отзыв увидит только салон, он нигде не публикуется.',
+  },
+  en: {
+    subject: `How was your visit to ${BRAND}?`,
+    heading: 'How was your visit?',
+    lead: (master) =>
+      master ? `Thank you for coming in. ${master} would love to know how it went.` : 'Thank you for coming in. We would love to know how it went.',
+    rate: 'Rate it from 1 (poor) to 5 (excellent)',
+    point: (value) => `${value} out of 5`,
+    button: 'Leave feedback',
+    private: 'Only the studio reads it: nothing is published.',
+  },
+};
+
+/**
+ * The numbers 1 to 5 as pills under the pass, each opening the feedback page with that rating
+ * chosen (the client still sends it there, so a mail scanner opening the links rates nothing).
+ * Inline blocks, so the row wraps on a narrow phone; digits only, no star glyphs.
+ */
+function ratingRow(t: (typeof FEEDBACK_COPY)[Locale], feedbackUrl: string): Block {
+  const base = safeUrl(feedbackUrl);
+  if (!base) return NONE;
+  const tone = TONES.blush;
+  const links = [1, 2, 3, 4, 5].map((value) => {
+    const url = new URL(base);
+    url.searchParams.set('rating', String(value));
+    return { value, url: url.toString() };
+  });
+  const pills = links
+    .map(
+      ({ value, url }) =>
+        `<a href="${escapeHtml(url)}" title="${escapeHtml(t.point(value))}" aria-label="${escapeHtml(t.point(value))}" ` +
+        `style="display:inline-block;margin:0 8px 8px 0;width:44px;height:44px;line-height:44px;border-radius:999px;background:${tone.field};color:${tone.deep};` +
+        `font-family:${FONT};font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;text-align:center;text-decoration:none">${value}</a>`,
+    )
+    .join('');
+  return {
+    html:
+      `<p class="nba-muted" style="margin:0 0 10px;font-size:14px;line-height:1.45;color:${MUTED}">${escapeHtml(noOrphan(t.rate))}</p>` +
+      `<div style="margin:0 0 16px;font-size:0;line-height:0">${pills}</div>`,
+    text: [`${t.rate}:`, ...links.map(({ value, url }) => `${value}: ${url}`)].join('\n'),
+  };
+}
+
+/**
+ * After a completed visit: "How was your visit?". The visit on a blush pass, like every visit
+ * email (time, day, length, master, code; the services on the stub), then 1–5 to tap and a
+ * button to the feedback page.
+ */
+export function feedbackRequestEmail(opts: {
+  to: string;
+  name: string;
+  locale: Locale;
+  timeZone: string;
+  now: Date;
+  visit: VisitInfo;
+  /** The feedback page for this visit (`…/feedback?visit=<id>`); each number adds `&rating=N`. */
+  feedbackUrl: string;
+  replyTo?: string;
+}): MailMessage {
+  const t = FEEDBACK_COPY[opts.locale];
+  const v = VISIT_COPY[opts.locale];
+  const c = COMMON[opts.locale];
+  const visit = opts.visit;
+  // The same pass as every visit email, so the client knows at a glance which visit it is.
+  const when = visitTime(visit.start, opts.locale, opts.timeZone, opts.now);
+  return render({
+    locale: opts.locale,
+    to: opts.to,
+    toName: opts.name,
+    appUrl: opts.feedbackUrl,
+    subject: t.subject,
+    preheader: t.lead(visit.master),
+    heading: t.heading,
+    lead: t.lead(visit.master),
+    blocks: [
+      visitPass(opts.locale, 'blush', visit, when, { prices: false }),
+      ratingRow(t, opts.feedbackUrl),
+      buttons([{ label: t.button, url: opts.feedbackUrl, primary: true }]),
+      small(t.private),
+    ],
+    footer: visit.settingsUrl
+      ? [small(v.updatesWhy), linkLine(v.settings, visit.settingsUrl), small(c.signature)]
+      : [small(v.guestWhy), small(c.signature)],
+    replyTo: opts.replyTo,
+  });
+}
+
+// ── Come back: a reminder to book again ─────────────────────────────────────────
+
+const REBOOK_COPY: Record<Locale, { last: string; master: string; book: string; why: string }> = {
+  ro: {
+    last: 'Ultima ta vizită',
+    master: 'Maestru',
+    book: 'Programează-te',
+    why: 'Primești acest mesaj pentru că amintirile pentru următoarea vizită sunt pornite în Profil → Notificări. Le poți opri oricând.',
+  },
+  ru: {
+    last: 'Ваш прошлый визит',
+    master: 'Мастер',
+    book: 'Записаться',
+    why: 'Вы получили это письмо, потому что напоминания о следующем визите включены в разделе Профиль → Уведомления. Их можно отключить в любой момент.',
+  },
+  en: {
+    last: 'Your last visit',
+    master: 'Master',
+    book: 'Book a visit',
+    why: 'You get this email because reminders to come back are on in Profile → Notifications. You can turn them off any time.',
+  },
+};
+
+/** "4 weeks ago" / "acum 4 săptămâni" / "4 недели назад": weeks up to two months, then months. */
+function sinceVisit(end: Date, now: Date, locale: Locale): string {
+  const days = Math.max(0, Math.round((now.getTime() - end.getTime()) / 86_400_000));
+  const format = new Intl.RelativeTimeFormat(LOCALE_TAGS[locale], { numeric: 'auto' });
+  const value =
+    days < 14 ? format.format(-days, 'day') : days < 63 ? format.format(-Math.round(days / 7), 'week') : format.format(-Math.round(days / 30.44), 'month');
+  return capitalize(value);
+}
+
+/**
+ * A reminder to come back: the studio's words (title and text, placeholders already filled), the
+ * last visit on a blush pass (how long ago and the day, the master, the loyalty card's next
+ * discount when the reminder carries it; the services on the stub), one button to book the same
+ * again, and how to switch these reminders off.
+ */
+export function rebookEmail(opts: {
+  to: string;
+  name: string;
+  locale: Locale;
+  timeZone: string;
+  now: Date;
+  title: string;
+  body: string;
+  visit: { end: Date; services: string[]; master: string | null };
+  /** The loyalty card's next discount ("2 more visits to 15% off"), on the reminders in between. */
+  loyalty?: { label: string; text: string } | null;
+  /** The booking page with the same services, shape and master. */
+  bookUrl: string;
+  settingsUrl: string;
+  replyTo?: string;
+}): MailMessage {
+  const t = REBOOK_COPY[opts.locale];
+  const c = COMMON[opts.locale];
+  const main = onPass('blush');
+  const ago = sinceVisit(opts.visit.end, opts.now, opts.locale);
+  const day = capitalize(
+    new Intl.DateTimeFormat(LOCALE_TAGS[opts.locale], { timeZone: opts.timeZone, weekday: 'long', day: 'numeric', month: 'long' }).format(opts.visit.end),
+  );
+  const head =
+    passLabel('blush', t.last) +
+    `<p class="${main.cls}" style="margin:0;font-size:32px;line-height:1.1;font-weight:800;letter-spacing:-0.02em;color:${main.color}">${escapeHtml(ago)}</p>` +
+    `<p class="${main.cls}" style="margin:8px 0 0;font-size:19px;line-height:1.3;font-weight:700;letter-spacing:-0.01em;color:${main.color}">${escapeHtml(day)}</p>`;
+  return render({
+    locale: opts.locale,
+    to: opts.to,
+    toName: opts.name,
+    appUrl: opts.bookUrl,
+    subject: opts.title,
+    preheader: opts.body,
+    heading: opts.title,
+    lead: opts.body,
+    blocks: [
+      pass({
+        tone: 'blush',
+        main: { html: head, text: `${t.last}: ${ago} · ${day}` },
+        fields: fields('blush', [
+          { label: t.master, value: opts.visit.master },
+          ...(opts.loyalty ? [{ label: opts.loyalty.label, value: capitalize(opts.loyalty.text), wide: true }] : []),
+        ]),
+        stub: passText('blush', opts.visit.services.join('\n'), false, 15),
+      }),
+      buttons([{ label: t.book, url: opts.bookUrl, primary: true }]),
+    ],
+    footer: [small(t.why), linkLine(VISIT_COPY[opts.locale].settings, opts.settingsUrl), small(c.signature)],
+    replyTo: opts.replyTo,
   });
 }

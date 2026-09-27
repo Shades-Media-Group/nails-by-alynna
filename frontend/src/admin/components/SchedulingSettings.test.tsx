@@ -58,7 +58,7 @@ describe('Settings → Smart scheduling', () => {
     expect(screen.getByText(/with no gap longer than 10 min that nobody can book/)).toBeInTheDocument();
     expect(screen.getByLabelText('Allowed gap between visits')).toHaveValue('10');
     expect(screen.getByLabelText('Shortest gap worth keeping open')).toHaveValue('90');
-    expect(screen.getByRole('option', { name: '1 h 30 min' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /^1\sh\s30\smin$/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
     // A worked example in the owner's terms, following the chosen values.
     expect(screen.getByText(/next visit can start at 11:30–11:40, or at 13:00 or later/)).toBeInTheDocument();

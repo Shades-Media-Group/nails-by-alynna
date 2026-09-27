@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { i18nOptionalTextSchema, i18nTextSchema, objectIdSchema, timeSchema } from '../../lib/validation';
+import { i18nOptionalTextSchema, i18nPlainTextSchema, i18nTextSchema, objectIdSchema, timeSchema } from '../../lib/validation';
 import { LENGTH_LEVELS } from '../../db/types';
 import { timeToMinutes } from '../../lib/time';
 
@@ -68,10 +68,14 @@ export const categoryInputSchema = z.object({
 });
 export const categoryPatchSchema = z.object(categoryFields).partial();
 
+/** Characters per language of a service's "about the procedure" text (the admin form shows the same limit). */
+export const SERVICE_DETAILS_MAX = 1500;
+
 const serviceFields = {
   categoryId: objectIdSchema,
   name: i18nTextSchema(80),
   description: i18nOptionalTextSchema(400),
+  details: i18nPlainTextSchema(SERVICE_DETAILS_MAX),
   durationMin: z.number().int().min(5, 'too_short').max(480, 'too_long'),
   price: z.number().int().min(0, 'invalid').max(100_000, 'invalid'),
   priceFrom: z.boolean(),
@@ -81,6 +85,7 @@ const serviceFields = {
 };
 export const serviceInputSchema = z.object({
   ...serviceFields,
+  details: serviceFields.details.default(() => ({ ro: '', ru: '', en: '' })),
   priceFrom: serviceFields.priceFrom.default(false),
   art: serviceFields.art.default('gel'),
   isPopular: serviceFields.isPopular.default(false),

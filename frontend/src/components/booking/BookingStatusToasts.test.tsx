@@ -36,7 +36,7 @@ function mount(client: QueryClient) {
 beforeEach(() => shown.mockReset());
 
 describe('<BookingStatusToasts>', () => {
-  it('says nothing on opening, then shows the confirmation and the new time as they happen', async () => {
+  it('says nothing on opening, then shows a new time as it happens (a confirmation has its own sheet)', async () => {
     const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, refetchInterval: false } } });
     client.setQueryData(['appointments', 'upcoming'], [visit('pending')]);
     mount(client);
@@ -45,11 +45,11 @@ describe('<BookingStatusToasts>', () => {
 
     client.setQueryData(['appointments', 'upcoming'], [visit('confirmed')]);
     await settle();
-    expect(shown).toHaveBeenCalledWith('Your visit is confirmed', expect.objectContaining({ description: expect.stringContaining('with Alina') }));
+    expect(shown).not.toHaveBeenCalled();
 
     client.setQueryData(['appointments', 'upcoming'], [visit('confirmed', '2026-09-29T09:00:00.000Z')]);
     await settle();
-    expect(shown).toHaveBeenLastCalledWith('Your visit has a new time', expect.anything());
-    expect(shown).toHaveBeenCalledTimes(2);
+    expect(shown).toHaveBeenCalledWith('Your visit has a new time', expect.objectContaining({ description: expect.stringContaining('with Alina') }));
+    expect(shown).toHaveBeenCalledTimes(1);
   });
 });

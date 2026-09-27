@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Link, NavLink } from 'react-router';
+import { Link, NavLink, useLocation } from 'react-router';
 import { useAuth } from '@/app/auth';
 import { Logo } from '@/components/brand/Logo';
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
@@ -7,6 +7,7 @@ import { Avatar, ButtonLink } from '@/components/ui';
 import { AddIcon, DashboardIcon } from '@/components/ui/icons';
 import { useLocale } from '@/i18n/useLocale';
 import { cx } from '@/lib/cx';
+import { setNavDirection } from '@/lib/navDirection';
 import { useClientNav } from './nav';
 
 /** Desktop navigation (lg+). Phones use the floating TabBar instead. */
@@ -15,18 +16,22 @@ export function TopNav() {
   const { lp } = useLocale();
   const { user, isStaff } = useAuth();
   const items = useClientNav();
+  const { pathname } = useLocation();
+  const activeIndex = items.findIndex((item) => pathname === item.to || pathname.startsWith(`${item.to}/`));
 
   return (
-    <header className="sticky top-0 z-40 hidden border-b border-ink-100 bg-white/90 backdrop-blur-md lg:block">
+    <header className="sticky top-0 z-40 hidden border-b border-ink-100 bg-white/90 backdrop-blur-md [view-transition-name:topnav] lg:block">
       <div className="mx-auto flex h-18 max-w-6xl items-center gap-8 px-8">
         <Link to={lp('/home')} className="shrink-0" aria-label={t('nav.home')}>
           <Logo variant="mark" className="w-24" />
         </Link>
         <nav aria-label={t('nav.main')} className="flex items-center gap-1">
-          {items.map((item) => (
+          {items.map((item, index) => (
             <NavLink
               key={item.to}
               to={item.to}
+              viewTransition
+              onClick={() => setNavDirection(activeIndex, index)}
               className={({ isActive }) =>
                 cx(
                   'flex h-10 items-center gap-2 rounded-pill px-4 text-sm font-semibold transition-colors',

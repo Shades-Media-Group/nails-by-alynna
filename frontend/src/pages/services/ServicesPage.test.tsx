@@ -1,0 +1,158 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import i18next from 'i18next';
+import { I18nextProvider, initReactI18next } from 'react-i18next';
+import { MemoryRouter, useLocation } from 'react-router';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import booking from '@/locales/en/booking.json';
+import common from '@/locales/en/common.json';
+import ServicesPage from './ServicesPage';
+
+/*
+ * The price list: picked services go on to booking only with a nail shape, asked in a sheet
+ * when Continue is pressed.
+ */
+
+const text = (en: string) => ({ ro: en, ru: en, en });
+
+function respond(url: URL): Response {
+  const json = (body: unknown) =>
+    new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  switch (url.pathname) {
+    case '/api/config':
+      return json({
+        auth: { google: false, demo: [] },
+        studio: {
+          name: 'Nails by Alynna',
+          timezone: 'Europe/Chisinau',
+          currency: 'MDL',
+          tagline: text(''),
+          about: text(''),
+        },
+        booking: {
+          requireApproval: true,
+          cancellationWindowHours: 12,
+          leadTimeMin: 120,
+          horizonDays: 60,
+          maxActiveBookings: 3,
+          policy: text(''),
+          mastersCount: 1,
+        },
+        loyalty: { enabled: false, cycle: 8, rewards: [] },
+      });
+    case '/api/catalog':
+      return json({
+        categories: [
+          {
+            id: 'k1',
+            slug: 'other',
+            name: text('Other services'),
+            description: null,
+            singleChoice: false,
+            color: 'peach',
+          },
+        ],
+        services: [
+          {
+            id: 's1',
+            categoryId: 'k1',
+            slug: 'gel-polish',
+            name: text('Gel polish'),
+            description: text('Gel polish on natural nails.'),
+            durationMin: 90,
+            price: 300,
+            priceFrom: false,
+            art: 'gel',
+            isPopular: true,
+          },
+        ],
+      });
+  }
+  throw new Error(`Unmocked request: ${url.pathname}`);
+}
+
+function LocationProbe() {
+  const location = useLocation();
+  return <output data-testid="location">{location.pathname + location.search}</output>;
+}
+
+function renderServices() {
+  const i18n = i18next.createInstance();
+  void i18n.use(initReactI18next).init({
+    lng: 'en',
+    fallbackLng: 'en',
+    ns: ['booking', 'common'],
+    defaultNS: 'common',
+    resources: { en: { booking, common } },
+    interpolation: { escapeValue: false },
+    react: { useSuspense: false },
+    initAsync: false,
+  });
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <I18nextProvider i18n={i18n}>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/en/services']}>
+          <ServicesPage />
+          <LocationProbe />
+        </MemoryRouter>
+      </QueryClientProvider>
+    </I18nextProvider>,
+  );
+}
+
+beforeEach(() => {
+  // The category chips follow the scroll; jsdom lays nothing out.
+  vi.stubGlobal(
+    'IntersectionObserver',
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL) => respond(new URL(String(input), 'http://localhost'))),
+  );
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn(() => ({
+      matches: false,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    })),
+  );
+});
+afterEach(() => vi.unstubAllGlobals());
+
+describe('services → booking', () => {
+  it('asks for the nail shape on Continue and goes on only with one', async () => {
+    const user = userEvent.setup();
+    renderServices();
+
+    await user.click(await screen.findByRole('button', { name: 'Add Gel polish' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    const sheet = await screen.findByRole('dialog');
+    const shapes = within(sheet).getByRole('radiogroup', { name: 'Nail shape' });
+    expect(within(shapes).getAllByRole('radio')).toHaveLength(4);
+
+    // Without a shape: a warning, focus on the shapes, and no booking yet.
+    await user.click(within(sheet).getByRole('button', { name: 'Continue' }));
+    expect(within(sheet).getByText('Please pick a nail shape to continue.')).toBeInTheDocument();
+    expect(within(shapes).getByRole('radio', { name: 'Square' })).toHaveFocus();
+    expect(screen.getByTestId('location')).toHaveTextContent('/en/services');
+
+    await user.click(within(shapes).getByRole('radio', { name: 'Stiletto' }));
+    expect(
+      within(sheet).queryByText('Please pick a nail shape to continue.'),
+    ).not.toBeInTheDocument();
+    await user.click(within(sheet).getByRole('button', { name: 'Continue' }));
+    expect(screen.getByTestId('location')).toHaveTextContent('/en/book?services=s1&shape=stiletto');
+  });
+});

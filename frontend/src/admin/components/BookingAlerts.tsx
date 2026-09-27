@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
@@ -16,13 +16,15 @@ import { useStudioToday } from './hooks';
  * While the staff app is open: a chime and a banner when a client books or asks for a visit.
  * The list refreshes every 30 s, and at once when a push arrives; bookings already there when
  * the app opened are not announced. The chime stays quiet on a device with notifications on,
- * since the phone plays its own sound for the push.
+ * since the phone plays its own sound for the push. A new request also refreshes the pending
+ * list at once, so the badges and the card on "Today" count it with the chime.
  */
 export function BookingAlerts() {
   const { t } = useTranslation('admin');
   const { user } = useAuth();
   const { lp, locale } = useLocale();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const pick = useI18nText();
   const { today, timeZone } = useStudioToday();
   const list = useQuery(adminQueries.appointments({ from: today, to: addDays(today, 60) }));
@@ -48,6 +50,9 @@ export function BookingAlerts() {
     const arrivals = booked.filter((a) => !known.has(a.id));
     if (arrivals.length === 0) return;
     arrivals.forEach((a) => known.add(a.id));
+    if (arrivals.some((a) => a.status === 'pending')) {
+      void queryClient.invalidateQueries({ queryKey: adminQueries.pendingRequests().queryKey });
+    }
     if (!pushOn) playChime();
     for (const a of arrivals) {
       toast(t(a.status === 'pending' ? 'alerts.request' : 'alerts.booking'), {
@@ -60,7 +65,7 @@ export function BookingAlerts() {
         },
       });
     }
-  }, [list.data, pushOn, t, locale, timeZone, pick, navigate, lp]);
+  }, [list.data, pushOn, t, locale, timeZone, pick, navigate, lp, queryClient]);
 
   return null;
 }

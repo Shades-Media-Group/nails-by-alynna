@@ -1,15 +1,19 @@
 import type { ObjectId } from 'bson';
 import type { AppDeps } from '../../context';
-import { ACTIVE_STATUSES, REMINDER_LEADS, type AppointmentDoc, type ReminderLead, type UserDoc } from '../../db/types';
-import { appointmentReminderEmail } from '../../lib/emails';
-import { MINUTE } from '../../lib/time';
+import { ACTIVE_STATUSES, REMINDER_LEADS, type AppointmentDoc, type NotificationLogDoc, type ReminderLead, type UserDoc } from '../../db/types';
+import { appointmentReminderEmail, feedbackRequestEmail } from '../../lib/emails';
+import { HOUR, MINUTE } from '../../lib/time';
 import { getSettings } from '../settings';
-import { reminderPush, visitInfo } from './content';
+import { appLink, feedbackPush, reminderPush, visitInfo } from './content';
 import { MAX_ATTEMPTS, canNotify, deliver } from './deliver';
 import { resolvePrefs } from './prefs';
+import { sendRebookReminders } from './rebook';
 
 export interface TickSummary {
-  /** Upcoming visits looked at. */
+  /**
+   * Visits looked at: upcoming ones (reminders), ones that just ended (feedback requests) and last
+   * visits a few weeks back (come-back reminders).
+   */
   checked: number;
   sent: number;
   failed: number;
@@ -33,21 +37,33 @@ interface Plan {
 }
 
 /**
- * Sends every reminder that is due: for each upcoming visit and each lead time the client
- * chose (1 hour, 2 hours, 1 day before), once the moment has passed. A reminder whose moment
- * came before the visit was booked (or moved) is not sent; when several are due at once only
- * the closest one goes out. Safe to run from several places at once (in-process timer, cron).
+ * Sends everything that is due: the reminders before visits, the "How was your visit?" messages
+ * after them, and the reminders to come back weeks later (rebook.ts). Safe to run from several
+ * places at once (in-process timer, cron).
  */
 export async function runDueNotifications(deps: AppDeps, now: Date = deps.now()): Promise<TickSummary> {
   const started = Date.now();
   const summary: TickSummary = { checked: 0, sent: 0, failed: 0, skipped: 0, duplicates: 0, durationMs: 0 };
+  await sendReminders(deps, now, summary);
+  await sendFeedbackRequests(deps, now, summary);
+  await sendRebookReminders(deps, now, summary);
+  return finish(summary, started);
+}
+
+/**
+ * Every reminder that is due: for each upcoming visit and each lead time the client chose
+ * (1 hour, 2 hours, 1 day before), once the moment has passed. A reminder whose moment came
+ * before the visit was booked (or moved) is not sent; when several are due at once only the
+ * closest one goes out.
+ */
+async function sendReminders(deps: AppDeps, now: Date, summary: TickSummary): Promise<void> {
   const appointments = await deps.col.appointments
     .find({ status: { $in: ACTIVE_STATUSES }, start: { $gt: now, $lte: new Date(now.getTime() + MAX_LEAD_MS) } })
     .sort({ start: 1 })
     .limit(2000)
     .toArray();
-  summary.checked = appointments.length;
-  if (appointments.length === 0) return finish(summary, started);
+  summary.checked += appointments.length;
+  if (appointments.length === 0) return;
 
   const clientIds = uniqueIds(appointments.map((a) => a.clientId));
   const users = new Map((await deps.col.users.find({ _id: { $in: clientIds } }).toArray()).map((u) => [u._id.toHexString(), u]));
@@ -67,7 +83,7 @@ export async function runDueNotifications(deps: AppDeps, now: Date = deps.now())
     const lead = Math.min(...due) as ReminderLead;
     plans.push({ appointment, user, lead, covered: due.filter((l) => l !== lead) });
   }
-  if (plans.length === 0) return finish(summary, started);
+  if (plans.length === 0) return;
 
   const keys = plans.flatMap((p) => [p.lead, ...p.covered].map((lead) => reminderKey(p.appointment, lead)));
   const existing = new Map(
@@ -138,7 +154,104 @@ export async function runDueNotifications(deps: AppDeps, now: Date = deps.now())
     if (outcome === 'duplicate') summary.duplicates++;
     else summary[outcome]++;
   }
-  return finish(summary, started);
+}
+
+/** A visit ended at least this long ago before its client is asked how it went (time to get home)… */
+const FEEDBACK_ASK_AFTER_MS = HOUR;
+/** …and at most this long ago: later, the question would come out of nowhere. */
+const FEEDBACK_ASK_UNTIL_MS = 36 * HOUR;
+
+export const feedbackRequestKey = (appointmentId: ObjectId) => `feedback:${appointmentId.toHexString()}`;
+
+/**
+ * "How was your visit?" once per completed visit, between one and 36 hours after it ended, by
+ * email and push as the client's booking-update preferences allow. Not for visits the client
+ * already rated (in the app, from the card on Home), and not for walk-in clients without an
+ * account: the page asks them to sign in.
+ */
+async function sendFeedbackRequests(deps: AppDeps, now: Date, summary: TickSummary): Promise<void> {
+  const visits = await deps.col.appointments
+    .find({
+      status: 'completed',
+      end: { $gte: new Date(now.getTime() - FEEDBACK_ASK_UNTIL_MS), $lte: new Date(now.getTime() - FEEDBACK_ASK_AFTER_MS) },
+    })
+    .sort({ end: 1 })
+    .limit(500)
+    .toArray();
+  summary.checked += visits.length;
+  if (visits.length === 0) return;
+
+  const ids = visits.map((a) => a._id);
+  const [rated, logged, users] = await Promise.all([
+    deps.col.feedback.find({ appointmentId: { $in: ids } }, { projection: { appointmentId: 1 } }).toArray(),
+    deps.col.notificationLog
+      .find({ _id: { $in: ids.map(feedbackRequestKey) } }, { projection: { status: 1, retryAt: 1, attempts: 1 } })
+      .toArray(),
+    deps.col.users.find({ _id: { $in: uniqueIds(visits.map((a) => a.clientId)) } }).toArray(),
+  ]);
+  const ratedIds = new Set(rated.map((f) => String(f.appointmentId)));
+  const existing = new Map<string, Pick<NotificationLogDoc, 'status' | 'retryAt' | 'attempts'>>(logged.map((d) => [d._id, d]));
+  const byId = new Map(users.map((u) => [u._id.toHexString(), u]));
+
+  const due = visits.filter((appointment) => {
+    if (ratedIds.has(appointment._id.toHexString())) return false;
+    const user = byId.get(appointment.clientId.toHexString());
+    return Boolean(user && canNotify(user) && (user.passwordHash || user.googleId));
+  });
+  if (due.length === 0) return;
+
+  const [settings, staff] = await Promise.all([
+    getSettings(deps),
+    deps.col.staff.find({ _id: { $in: uniqueIds(due.map((a) => a.staffId)) } }, { projection: { name: 1 } }).toArray(),
+  ]);
+  const masters = new Map(staff.map((s) => [s._id.toHexString(), s.name]));
+
+  for (const appointment of due) {
+    const key = feedbackRequestKey(appointment._id);
+    const previous = existing.get(key);
+    const retryable =
+      previous?.status === 'failed' && previous.retryAt !== null && previous.retryAt <= now && previous.attempts < MAX_ATTEMPTS;
+    if (previous && !retryable) {
+      summary.duplicates++;
+      continue;
+    }
+
+    const user = byId.get(appointment.clientId.toHexString())!;
+    const locale = user.locale;
+    const id = appointment._id.toHexString();
+    const visit = visitInfo(appointment, {
+      appUrl: deps.config.appUrl,
+      locale,
+      settings,
+      master: masters.get(appointment.staffId.toHexString()) ?? null,
+      hasAccount: true,
+    });
+    const feedbackUrl = appLink(deps.config.appUrl, locale, `/feedback?visit=${id}`);
+    const outcome = await deliver(deps, {
+      key,
+      kind: 'feedback_request',
+      category: 'bookingUpdates',
+      user,
+      appointmentId: appointment._id,
+      email: () =>
+        feedbackRequestEmail({
+          to: user.email,
+          name: user.name,
+          locale,
+          timeZone: settings.timezone,
+          now,
+          visit,
+          feedbackUrl,
+          replyTo: settings.email || undefined,
+        }),
+      push: {
+        payload: feedbackPush(visit, id, feedbackUrl, locale),
+        options: { ttlSec: 86_400, urgency: 'normal', topic: `f${id}` },
+      },
+    });
+    if (outcome === 'duplicate') summary.duplicates++;
+    else summary[outcome]++;
+  }
 }
 
 async function markCovered(deps: AppDeps, key: string, userId: ObjectId, appointmentId: ObjectId, now: Date) {
@@ -181,13 +294,13 @@ export function runNotificationsExclusive(deps: AppDeps): Promise<TickSummary> {
   return run;
 }
 
-/** Checks for due reminders every NOTIFICATIONS_INTERVAL_SEC (0 = off). Returns a stop function. */
+/** Checks for everything due (reminders, feedback requests, come-back reminders) every NOTIFICATIONS_INTERVAL_SEC (0 = off). Returns a stop function. */
 export function startNotificationScheduler(deps: AppDeps, intervalSec = deps.config.notificationsIntervalSec): () => void {
   if (intervalSec <= 0) return () => undefined;
   const tick = () => {
     runNotificationsExclusive(deps)
       .then((s) => {
-        if (s.sent + s.failed > 0) console.info(`[notify] reminders: ${s.sent} sent, ${s.failed} failed, ${s.skipped} skipped`);
+        if (s.sent + s.failed > 0) console.info(`[notify] reminders, feedback requests and come-back reminders: ${s.sent} sent, ${s.failed} failed, ${s.skipped} skipped`);
       })
       .catch((error: unknown) => console.error('[notify] reminder run failed', error));
   };

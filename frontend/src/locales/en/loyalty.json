@@ -1,13 +1,18 @@
 {
   "title": "Loyalty card",
   "subtitle": "Every visit is a stamp. The discounts come by themselves.",
-  "off": "The loyalty card is paused for now.",
-  "stamps": "{{stamps}} of {{cycle}} visits",
+  "off": "The loyalty card is paused for\u00a0now.",
+  "stamps": "{{stamps}}\u00a0of\u00a0{{cycle}} visits",
   "cardNumber": "Card {{card}}",
-  "next": "Next visit: {{percent}}% off",
-  "nextOn": "{{percent}}% off the {{ordinal}} visit",
+  "next": "Next visit: {{percent}}%\u00a0off",
+  "nextOn": "{{percent}}%\u00a0off the\u00a0{{ordinal}}\u00a0visit",
   "stampAria": "Visit {{visit}} of {{cycle}}",
-  "stamped": "stamped",
+  "stamped": {
+    "title_one": "A new stamp!",
+    "title_other": "{{count}}\u00a0new stamps!",
+    "card": "See the card",
+    "done": "Done"
+  },
   "discount": "−{{percent}}%",
   "qr": {
     "title": "Show this at the desk",
@@ -19,41 +24,41 @@
   "how": {
     "title": "How it works",
     "stamp": "Each completed visit adds a stamp.",
-    "reward": "Your {{ordinal}} visit on each card: {{percent}}% off that visit.",
-    "restart": "After visit {{cycle}}, a new card starts.",
+    "reward": "Your {{ordinal}}\u00a0visit on each card: {{percent}}%\u00a0off that visit.",
+    "restart": "After visit\u00a0{{cycle}}, a new card starts.",
     "applied": "The discount is applied at the studio, on the price of that visit."
   },
   "history": {
     "title": "Discounts used",
     "empty": "Your discounts will show up here.",
-    "line": "{{ordinal}} visit · −{{percent}}% (−{{amount}})"
+    "line": "{{ordinal}}\u00a0visit · −{{percent}}% (−{{amount}})"
   },
   "badge": {
-    "predicted": "−{{percent}}% loyalty",
-    "applied": "Loyalty −{{percent}}%"
+    "predicted": "−{{percent}}%\u00a0loyalty",
+    "applied": "Loyalty\u00a0−{{percent}}%"
   },
   "detail": {
     "title": "Loyalty card",
-    "visit": "Visit {{visit}} of {{cycle}}",
+    "visit": "Visit\u00a0{{visit}}\u00a0of\u00a0{{cycle}}",
     "discount": "−{{percent}}% · −{{amount}}",
     "expected": "Expected discount, applied at the studio.",
     "applied": "Discount applied to this visit.",
     "noDiscount": "This visit adds a stamp."
   },
-  "confirm": "This will be your {{ordinal}} visit on the card: {{percent}}% off at the studio.",
+  "confirm": "This will be your {{ordinal}}\u00a0visit on the card: {{percent}}%\u00a0off at the studio.",
   "tile": {
     "title": "Loyalty card",
     "open": "Open loyalty card"
   },
   "link": {
     "title": "Nails by Alynna member card",
-    "text": "This QR code belongs to a client of the studio. Staff scan it in the app.",
+    "text": "This QR code belongs to a client of the studio. Staff scan it in the\u00a0app.",
     "open": "Open the app"
   },
   "scan": {
     "nav": "Scan card",
     "title": "Scan a client card",
-    "subtitle": "Point the camera at the QR code in the client's app.",
+    "subtitle": "Point the camera at the QR code in the client's\u00a0app.",
     "start": "Turn on the camera",
     "stop": "Stop camera",
     "starting": "Starting the camera…",
@@ -69,8 +74,8 @@
     "again": "Scan another"
   },
   "card": {
-    "visits_one": "{{count}} visit",
-    "visits_other": "{{count}} visits",
+    "visits_one": "{{count}}\u00a0visit",
+    "visits_other": "{{count}}\u00a0visits",
     "addStamp": "Add a stamp",
     "removeStamp": "Remove a stamp",
     "stampTitleAdd": "Add a stamp by hand?",
@@ -82,19 +87,19 @@
     "profile": "Client profile",
     "book": "New booking",
     "upcoming": "Coming visits",
-    "noUpcoming": "No bookings coming up.",
+    "noUpcoming": "No bookings coming\u00a0up.",
     "thisVisit": "This visit: −{{percent}}% (−{{amount}})",
-    "stampOnly": "This visit: stamp {{visit}} of {{cycle}}",
+    "stampOnly": "This visit: stamp\u00a0{{visit}}\u00a0of\u00a0{{cycle}}",
     "completeHint": "Mark the visit completed to stamp the card and lock the discount.",
-    "noAccount": "No app account yet"
+    "noAccount": "No app account\u00a0yet"
   },
   "admin": {
     "appointment": {
       "title": "Loyalty card",
-      "stamp": "Stamp {{visit}} of {{cycle}}",
+      "stamp": "Stamp\u00a0{{visit}}\u00a0of\u00a0{{cycle}}",
       "discount": "−{{percent}}% · −{{amount}}",
-      "toPay": "To pay with the discount: {{amount}}",
-      "paid": "Paid with the discount: {{amount}}",
+      "toPay": "To pay with the discount:\u00a0{{amount}}",
+      "paid": "Paid with the discount:\u00a0{{amount}}",
       "whenDone": "The discount is locked in when you mark the visit done.",
       "locked": "Stamped when the visit was completed.",
       "stampWhenDone": "The stamp is added when you mark the visit done."
@@ -108,7 +113,7 @@
       "title": "Loyalty card",
       "text": "Every completed visit is a stamp. Choose how many visits make a card and which visits get a discount.",
       "enabled": "Loyalty card on",
-      "enabledText": "Clients see their card and discounts in the app.",
+      "enabledText": "Clients see their card and discounts in the\u00a0app.",
       "cycle": "Visits per card",
       "rewards": "Discounts",
       "visit": "Visit",
@@ -118,7 +123,7 @@
       "save": "Save",
       "saved": "Loyalty card saved",
       "none": "No discounts yet.",
-      "summary": "{{ordinal}} visit: −{{percent}}%",
+      "summary": "{{ordinal}}\u00a0visit:\u00a0−{{percent}}%",
       "off": "Off"
     }
   }

@@ -11,6 +11,7 @@ import { cx } from '@/lib/cx';
 import { errorMessage } from '@/lib/errors';
 import { formatDuration, formatPrice } from '@/lib/format';
 import { SWATCH } from '@/lib/swatch';
+import { noOrphan } from '@/lib/typography';
 import { adminApi, adminQueries, type AdminCategory, type AdminService } from '../api';
 import { AdminHeader } from '../components/AdminHeader';
 import { CategoryEditor, OriginBadge, ServiceEditor } from '../components/CatalogEditors';
@@ -112,8 +113,9 @@ export default function ServicesPage() {
                             <NailArt art={service.art} color={category.color} className="w-11" />
                           </span>
                           <span className="min-w-0 flex-1">
-                            <span className={cx('block truncate text-[0.9375rem] font-semibold group-hover:underline', !service.isActive && 'text-ink-500')}>
-                              {name(service.name)}
+                            {/* The whole name, on two lines when it must: the size at its end is the point. */}
+                            <span className={cx('block text-balance text-[0.9375rem] font-semibold group-hover:underline', !service.isActive && 'text-ink-500')}>
+                              {noOrphan(name(service.name))}
                             </span>
                             <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-600">
                               <span className="tabular font-semibold text-ink-900">{formatPrice(t, service.price, currency, service.priceFrom)}</span>

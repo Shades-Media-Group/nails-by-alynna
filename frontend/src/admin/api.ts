@@ -3,7 +3,18 @@ import type { Locale } from '@/i18n/config';
 import type { SwatchColor } from '@/lib/swatch';
 import { api } from '@/services/api/client';
 import { LIVE } from '@/services/queries';
-import type { AppointmentStatus, Category, I18nText, NailShape, Role, Service, ServiceArt, StaffAppointment } from '@/types/api';
+import type {
+  AppointmentStatus,
+  Category,
+  FeedbackKind,
+  FeedbackRating,
+  I18nText,
+  NailShape,
+  Role,
+  Service,
+  ServiceArt,
+  StaffAppointment,
+} from '@/types/api';
 
 /*
  * Staff API. This module is only imported from src/admin, which loads on demand for staff,
@@ -37,6 +48,7 @@ export interface ServiceInput {
   categoryId: string;
   name: I18nText;
   description: I18nText;
+  details: I18nText;
   durationMin: number;
   price: number;
   priceFrom: boolean;
@@ -57,6 +69,15 @@ export interface CategoryInput {
  * entry but without the per-client visit and no-show counters.
  */
 export type StaffAppointmentCore = Omit<StaffAppointment, 'clientStats'>;
+
+/** The booking requests waiting for the signed-in staff member's answer. */
+export interface PendingRequests {
+  /** The one waiting longest first. */
+  appointments: StaffAppointment[];
+  total: number;
+  /** 'own': a master's own requests; 'all': the whole studio's (the owner, the desk). */
+  scope: 'all' | 'own';
+}
 
 export interface AppointmentsParams {
   /** First day (YYYY-MM-DD, studio time). */
@@ -218,6 +239,45 @@ export interface StudioSettings {
   maxGapMin: number;
   /** A gap this long (minutes) still fits another visit, so it is allowed. */
   minBookableGapMin: number;
+  /** "Come back" reminders to clients who have not booked since their last visit. */
+  rebook: RebookSettings;
+}
+
+/** The first come-back reminder, the ones in between (with the loyalty card), the last one. */
+export const REBOOK_TONES = ['first', 'nudge', 'last'] as const;
+export type RebookTone = (typeof REBOOK_TONES)[number];
+/** The studio's own wording; an empty language uses the built-in text. */
+export interface RebookText {
+  title: I18nText;
+  body: I18nText;
+}
+export interface RebookSettings {
+  enabled: boolean;
+  /** Days after the last completed visit (14–90). */
+  firstAfterDays: number;
+  /** Days between the next ones (7–60). */
+  repeatEveryDays: number;
+  /** In all, the first included (1–5). */
+  maxReminders: number;
+  channels: { email: boolean; push: boolean };
+  texts: Record<RebookTone, RebookText>;
+}
+/** Any part of the reminders; the API keeps the rest as saved. */
+export type RebookPatch = Partial<Omit<RebookSettings, 'channels' | 'texts'>> & {
+  channels?: Partial<RebookSettings['channels']>;
+  texts?: Partial<Record<RebookTone, RebookText>>;
+};
+/** The built-in texts, and per language the example values previews are filled with. */
+export interface RebookPreview {
+  defaults: Record<RebookTone, RebookText>;
+  placeholders: string[];
+  /** Whether the server can send email / Web Push at all. */
+  available: { email: boolean; push: boolean };
+  sample: Record<Locale, { name: string; services: string; master: string; loyalty: string | null }>;
+}
+export interface RebookTestResult {
+  email: { to: string; sent: boolean } | null;
+  push: { sent: number; devices: number } | null;
 }
 
 export interface AdminUser {
@@ -265,16 +325,53 @@ export interface Paged {
   pages: number;
 }
 
+/** One client's feedback as staff read it (backend/src/modules/feedback). */
+export interface AdminFeedback {
+  id: string;
+  kind: FeedbackKind;
+  rating: FeedbackRating | null;
+  comment: string;
+  createdAt: string;
+  updatedAt: string;
+  /** null when the account is gone. */
+  client: { id: string; name: string; surname: string } | null;
+  /** The visit it is about; null for general feedback. */
+  visit: { id: string; code: string; start: string; services: I18nText[] } | null;
+  master: { id: string; name: string } | null;
+}
+
+/** Who reads what: the owner everything, a master their own visits, other staff nothing. */
+export type FeedbackScope = 'all' | 'own' | 'none';
+
+export interface FeedbackList extends Paged {
+  feedback: AdminFeedback[];
+  summary: {
+    /** One decimal; null before the first rating. */
+    average: number | null;
+    /** Ratings the average is made of. */
+    count: number;
+    byRating: Record<FeedbackRating, number>;
+    /** Everything in scope, general feedback without stars included (whatever the filter). */
+    total: number;
+  };
+  scope: FeedbackScope;
+}
+
 // ── Endpoints ─────────────────────────────────────────────────────────────────
 export const adminApi = {
   stats: (date?: string) => api.get<DashboardStats>(`/admin/stats${query({ date })}`),
 
   appointments: (params: AppointmentsParams) =>
     api.get<{ appointments: StaffAppointment[] }>(`/admin/appointments${query({ ...params })}`).then((r) => r.appointments),
+  /** The owner every request; a master only theirs (scoped by the API). */
+  pendingRequests: () => api.get<PendingRequests>('/admin/appointments/pending'),
   appointment: (id: string) => api.get<{ appointment: StaffAppointment }>(`/admin/appointments/${id}`).then((r) => r.appointment),
   createAppointment: (input: NewAppointmentInput) =>
     api.post<{ appointment: StaffAppointment }>('/admin/appointments', input).then((r) => r.appointment),
-  updateAppointment: (id: string, input: { status?: AppointmentStatus; staffNotes?: string; notes?: string; cancelReason?: string; force?: boolean }) =>
+  updateAppointment: (
+    id: string,
+    input: { status?: AppointmentStatus; staffNotes?: string; notes?: string; cancelReason?: string; force?: boolean; from?: AppointmentStatus },
+  ) =>
     api.patch<{ appointment: StaffAppointment }>(`/admin/appointments/${id}`, input).then((r) => r.appointment),
   /** staffId null keeps the current master. */
   rescheduleAppointment: (id: string, input: { start: string; staffId: string | null; force?: boolean }) =>
@@ -320,6 +417,12 @@ export const adminApi = {
   settings: () => api.get<{ settings: StudioSettings }>('/admin/settings').then((r) => r.settings),
   /** Owner only; send just the fields that changed. */
   updateSettings: (input: Partial<StudioSettings>) => api.patch<{ settings: StudioSettings }>('/admin/settings', input).then((r) => r.settings),
+  /** Owner only: the parts of the come-back reminders that changed. */
+  updateRebook: (patch: RebookPatch) => api.patch<{ settings: StudioSettings }>('/admin/settings', { rebook: patch }).then((r) => r.settings),
+  /** Come-back reminders: built-in texts and example values for the previews. */
+  rebook: () => api.get<RebookPreview>('/admin/settings/rebook'),
+  /** Owner only: the first come-back reminder, sent to the signed-in owner as clients would get it. */
+  rebookTest: () => api.post<RebookTestResult>('/admin/settings/rebook/test'),
 
   users: (params: { q?: string; role?: Role; page?: number; limit?: number }) =>
     api.get<Paged & { users: AdminUser[] }>(`/admin/users${query(params)}`),
@@ -327,6 +430,10 @@ export const adminApi = {
     api.patch<{ user: AdminUser }>(`/admin/users/${id}`, input).then((r) => r.user),
   /** Newest first; at most 200. */
   audit: (limit = 100) => api.get<{ logs: AuditEntry[] }>(`/admin/audit${query({ limit })}`).then((r) => r.logs),
+
+  /** Newest first, 20 a page; `rating` keeps one rating (the summary stays the whole list's). */
+  feedback: (params: { page?: number; rating?: FeedbackRating | null }) =>
+    api.get<FeedbackList>(`/admin/feedback${query(params)}`),
 };
 
 export const adminQueries = {
@@ -336,6 +443,9 @@ export const adminQueries = {
   myStaff: () => queryOptions({ queryKey: ['admin', 'staff', 'me'], queryFn: adminApi.myStaff, staleTime: 60_000, retry: false }),
   appointments: (params: AppointmentsParams) =>
     queryOptions({ queryKey: ['admin', 'appointments', params], queryFn: () => adminApi.appointments(params), staleTime: 15_000, ...LIVE }),
+  /** Under ['admin', 'appointments'], so every booking change refreshes it too. */
+  pendingRequests: () =>
+    queryOptions({ queryKey: ['admin', 'appointments', 'pending'], queryFn: adminApi.pendingRequests, staleTime: 15_000, ...LIVE }),
   appointment: (id: string) =>
     queryOptions({ queryKey: ['admin', 'appointment', id], queryFn: () => adminApi.appointment(id), staleTime: 15_000, ...LIVE }),
   clients: (params: { q?: string; page?: number; limit?: number }) =>
@@ -347,6 +457,7 @@ export const adminQueries = {
     }),
   client: (id: string) => queryOptions({ queryKey: ['admin', 'client', id], queryFn: () => adminApi.client(id), staleTime: 15_000 }),
   settings: () => queryOptions({ queryKey: ['admin', 'settings'], queryFn: adminApi.settings, staleTime: 60_000 }),
+  rebook: () => queryOptions({ queryKey: ['admin', 'settings', 'rebook'], queryFn: adminApi.rebook, staleTime: 60_000 }),
   timeOff: (params: { from: string; to?: string }) =>
     queryOptions({ queryKey: ['admin', 'time-off', params], queryFn: () => adminApi.timeOff(params), staleTime: 60_000 }),
   users: (params: { q?: string; role?: Role; page?: number }) =>
@@ -357,4 +468,11 @@ export const adminQueries = {
       placeholderData: keepPreviousData,
     }),
   audit: (limit = 200) => queryOptions({ queryKey: ['admin', 'audit', limit], queryFn: () => adminApi.audit(limit), staleTime: 30_000 }),
+  feedback: (params: { page?: number; rating?: FeedbackRating | null }) =>
+    queryOptions({
+      queryKey: ['admin', 'feedback', params],
+      queryFn: () => adminApi.feedback(params),
+      staleTime: 30_000,
+      placeholderData: keepPreviousData,
+    }),
 };

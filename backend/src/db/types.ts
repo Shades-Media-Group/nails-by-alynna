@@ -162,6 +162,12 @@ export interface ServiceDoc extends ManagedDefault {
   slug: string;
   name: I18nText;
   description: I18nText;
+  /**
+   * "About the procedure": what clients read when they tap ⓘ next to the service. Plain text, a
+   * blank line starts a paragraph; a language may be empty. Missing on services saved before it
+   * existed (read as empty).
+   */
+  details?: I18nText;
   durationMin: number;
   price: number;
   /** Shows "from" before the price (final price confirmed at the studio). */
@@ -252,6 +258,8 @@ export interface AppointmentDoc {
   promo?: AppointmentPromo | null;
   /** A code that stopped applying when the visit was moved or restored, and why (shown on the booking). */
   promoRemoved?: RemovedPromo | null;
+  /** The client closed the "How was your visit?" card on Home without rating it (it stays closed). */
+  feedbackDismissedAt?: Date | null;
   createdBy: ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -313,6 +321,34 @@ export interface StudioSettings {
   /** Visits per card; the card starts again after the last one. */
   loyaltyCycle: number;
   loyaltyRewards: LoyaltyReward[];
+  /** "Come back" reminders to clients who have not booked since their last visit. */
+  rebook: RebookSettings;
+}
+
+/**
+ * The three kinds of "come back" message: the first one, the ones in between (they carry the
+ * loyalty card's progress) and the last one. With a single reminder only the first is sent.
+ */
+export const REBOOK_TONES = ['first', 'nudge', 'last'] as const;
+export type RebookTone = (typeof REBOOK_TONES)[number];
+
+/** The studio's own wording for one kind of message; an empty language uses the built-in text. */
+export interface RebookText {
+  title: I18nText;
+  body: I18nText;
+}
+
+export interface RebookSettings {
+  enabled: boolean;
+  /** Days after the last completed visit before the first reminder. */
+  firstAfterDays: number;
+  /** Days between the reminders after the first. */
+  repeatEveryDays: number;
+  /** Reminders in all, the first one included. */
+  maxReminders: number;
+  /** How the studio sends them; each client's own preferences still apply. */
+  channels: ChannelPrefs;
+  texts: Record<RebookTone, RebookText>;
 }
 
 export interface SettingsDoc extends StudioSettings {
@@ -356,6 +392,8 @@ export interface NotificationPrefs {
   /** Staff only: a client asked for, booked, moved or cancelled a visit (their own or, for the owner, any). */
   staffBookings: ChannelPrefs;
   loyalty: ChannelPrefs;
+  /** Reminders to book again when the last visit was a while ago (the studio sets when). */
+  rebook: ChannelPrefs;
   /** News and offers: opt-in only; `consentAt` records when it was last switched on. */
   marketing: ChannelPrefs & { consentAt?: Date | null };
   updatedAt?: Date;
@@ -402,7 +440,7 @@ export interface PushSubscriptionDoc {
  */
 export interface NotificationLogDoc {
   _id: string;
-  kind: 'reminder' | 'booking_update' | 'staff_booking' | 'custom';
+  kind: 'reminder' | 'booking_update' | 'staff_booking' | 'feedback_request' | 'rebook' | 'custom';
   userId: ObjectId;
   appointmentId: ObjectId | null;
   status: 'sending' | 'sent' | 'failed' | 'skipped';
@@ -510,4 +548,33 @@ export interface WalletPassDoc {
   /** When a pass file (Apple) or a save link (Google) was last made. */
   appleIssuedAt: Date | null;
   googleIssuedAt: Date | null;
+}
+
+// ── Feedback ─────────────────────────────────────────────────────────────────────
+
+export const FEEDBACK_RATINGS = [1, 2, 3, 4, 5] as const;
+export type FeedbackRating = (typeof FEEDBACK_RATINGS)[number];
+
+/**
+ * What a client thinks, in their own words (modules/feedback): about one completed visit (stars
+ * and an optional comment; one per visit, and sending it again changes it) or about the studio
+ * and the app in general (a comment, stars optional). The master of the visit and the owner read
+ * it in the staff app; it is never published.
+ */
+export interface FeedbackDoc {
+  _id: ObjectId;
+  userId: ObjectId;
+  kind: 'visit' | 'general';
+  /** The visit it is about; null for general feedback. Unique among visits (one feedback each). */
+  appointmentId: ObjectId | null;
+  /** The master of that visit, whose list it shows in; null for general feedback (owner only). */
+  staffId: ObjectId | null;
+  /** Required for a visit, optional in general feedback. */
+  rating: FeedbackRating | null;
+  /** Trimmed, up to 1000 characters; empty when a visit got stars only. */
+  comment: string;
+  /** The client's language when they wrote it. */
+  locale: Locale;
+  createdAt: Date;
+  updatedAt: Date;
 }

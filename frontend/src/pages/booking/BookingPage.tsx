@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router';
 import { useAuth } from '@/app/auth';
@@ -8,6 +8,7 @@ import { ConfirmStep } from '@/components/booking/ConfirmStep';
 import { DoneStep } from '@/components/booking/DoneStep';
 import { MasterStep } from '@/components/booking/MasterStep';
 import { NailShapePicker } from '@/components/booking/NailShapePicker';
+import { preloadClockItHand } from '@/components/brand/nails/clockItHand';
 import { usePromoQuote } from '@/components/promo/usePromoQuote';
 import { SelectionBar } from '@/components/booking/SelectionBar';
 import { ServiceList } from '@/components/booking/ServiceList';
@@ -18,12 +19,14 @@ import { ArrowBackIcon, CloseIcon } from '@/components/ui/icons';
 import { useEligibleMasters } from '@/hooks/useEligibleMasters';
 import { useCatalog, useStudio } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
+import { demoAppointment } from '@/lib/demoBooking';
 import { errorMessage } from '@/lib/errors';
 import { formatDayLong, formatTime } from '@/lib/format';
 import { parseNailShape } from '@/lib/nailShape';
 import { promoProblemText, promoRefusal } from '@/lib/promo';
 import { bringIntoView } from '@/lib/scroll';
 import { toggleService } from '@/lib/selection';
+import { NBSP } from '@/lib/typography';
 import { normalizePhone } from '@/lib/validation';
 import { ApiError } from '@/services/api/client';
 import { appointmentsApi } from '@/services/api/endpoints';
@@ -88,6 +91,10 @@ export default function BookingPage() {
   if (shapeMissing) step = 'services';
   if (step === 'confirm' && !slot) step = 'time';
   const stepIndex = steps.indexOf(step);
+  // The "clock it" hand on the done screen then appears together with its nails.
+  useEffect(() => {
+    if (step === 'confirm' && !rescheduleId) preloadClockItHand();
+  }, [step, rescheduleId]);
   const effectiveStaff = rescheduleId ? (original.data?.staff?.id ?? null) : staffId;
   // The code typed on the confirm step (or, when moving, the booking's own) is checked live.
   const promo = usePromoQuote({
@@ -147,9 +154,23 @@ export default function BookingPage() {
   const normalizedPhone = normalizePhone(phone);
   const phoneError = needsPhone && phoneTouched && !normalizedPhone ? t('common:validation.invalid_phone') : undefined;
 
+  // A demo account sees what comes after "Send request" without sending anything.
+  const demo = Boolean(user?.isDemo) && !rescheduleId;
+
   const submit = useMutation({
     mutationFn: () =>
-      rescheduleId
+      demo
+        ? Promise.resolve(
+            demoAppointment({
+              services,
+              slot: slot!,
+              master: eligible.find((m) => m.id === (staffId ?? slot!.staffIds[0])) ?? null,
+              nailShape,
+              notes: notes.trim(),
+              pending: config?.booking.requireApproval ?? true,
+            }),
+          )
+        : rescheduleId
         ? appointmentsApi.reschedule(rescheduleId, slot!.start, effectiveStaff)
         : appointmentsApi.create({
             serviceIds,
@@ -161,10 +182,12 @@ export default function BookingPage() {
             ...(promo.quote ? { promoCode: promo.quote.code } : {}),
           }),
     onSuccess: (appointment) => {
-      if (needsPhone && user && normalizedPhone) setUser({ ...user, phone: normalizedPhone });
-      queryClient.setQueryData(queries.appointment(appointment.id).queryKey, appointment);
-      void queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      void queryClient.invalidateQueries({ queryKey: ['availability-days'] });
+      if (!demo) {
+        if (needsPhone && user && normalizedPhone) setUser({ ...user, phone: normalizedPhone });
+        queryClient.setQueryData(queries.appointment(appointment.id).queryKey, appointment);
+        void queryClient.invalidateQueries({ queryKey: ['appointments'] });
+        void queryClient.invalidateQueries({ queryKey: ['availability-days'] });
+      }
       setDone(appointment);
       window.scrollTo({ top: 0 });
     },
@@ -195,7 +218,7 @@ export default function BookingPage() {
   if (done) {
     return (
       <main className="gutter-x mx-auto min-h-dvh max-w-xl pb-[calc(var(--safe-bottom)+2rem)] pt-[calc(var(--safe-top)+1.5rem)] animate-page">
-        <DoneStep appointment={done} rescheduled={Boolean(rescheduleId)} promoRemoved={original.data?.promo && !done.promo ? done.promoRemoved : null} />
+        <DoneStep appointment={done} rescheduled={Boolean(rescheduleId)} promoRemoved={original.data?.promo && !done.promo ? done.promoRemoved : null} demo={demo} />
       </main>
     );
   }
@@ -328,7 +351,7 @@ export default function BookingPage() {
           currency={currency}
           detail={
             <span className="first-letter:uppercase">
-              {formatDayLong(slot.start, locale, timeZone)}, {formatTime(slot.start, locale, timeZone)}
+              {formatDayLong(slot.start, locale, timeZone)},{NBSP}{formatTime(slot.start, locale, timeZone)}
             </span>
           }
           actionLabel={t('services.continue')}

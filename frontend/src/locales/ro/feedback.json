@@ -1,0 +1,71 @@
+{
+  "stars_one": "{{count}} stea",
+  "stars_few": "{{count}} stele",
+  "stars_other": "{{count}} de stele",
+  "scale": {
+    "1": "Slab",
+    "2": "Acceptabil",
+    "3": "Bine",
+    "4": "Foarte bine",
+    "5": "Excelent"
+  },
+  "prompt": {
+    "title": "Cum a fost vizita ta la {{name}}?",
+    "titleStudio": "Cum a fost vizita\u00a0ta?",
+    "notNow": "Nu acum"
+  },
+  "visit": {
+    "title": "Cum a fost vizita\u00a0ta?",
+    "subtitle": "Răspunsul tău îl citesc doar {{name}} și salonul. Nu se publică nicăieri.",
+    "subtitleStudio": "Răspunsul tău îl citește doar salonul. Nu se publică nicăieri.",
+    "withMaster": "cu {{name}}",
+    "rating": "Nota ta",
+    "ratingRequired": "Alege de\u00a0la\u00a01\u00a0la\u00a05\u00a0stele",
+    "comment": "Ce ți-a plăcut și ce am putea face mai bine?",
+    "commentHint": "Opțional",
+    "notFound": "Nu am găsit această vizită. Poate ține de alt cont.",
+    "notDone": "O vizită poate primi o notă după ce are\u00a0loc.",
+    "closed": "O vizită poate primi o notă timp de două săptămâni după\u00a0ea.",
+    "writeInstead": "Scrie-i salonului"
+  },
+  "general": {
+    "title": "Trimite feedback",
+    "subtitle": "Idei, aprecieri sau ceva ce nu a mers bine: ajunge direct la salon.",
+    "comment": "Mesajul tău",
+    "commentHint": "Îl citește doar salonul.",
+    "commentRequired": "Scrie câteva cuvinte",
+    "rating": "Cum ți se pare salonul? (opțional)"
+  },
+  "send": "Trimite",
+  "thanks": {
+    "title": "Mulțumim!",
+    "visit": "Răspunsul tău a ajuns la {{name}} și la salon.",
+    "visitStudio": "Răspunsul tău a ajuns la salon.",
+    "general": "Mesajul tău a ajuns direct la salon.",
+    "home": "Înapoi acasă"
+  },
+  "admin": {
+    "title": "Feedback",
+    "subtitleOwner": "Ce spun clienții despre vizite și despre aplicație.",
+    "subtitleMaster": "Ce spun clienții despre vizitele la tine.",
+    "average": "Nota medie",
+    "outOf": "din\u00a05",
+    "ratings_one": "{{count}}\u00a0notă",
+    "ratings_few": "{{count}}\u00a0note",
+    "ratings_other": "{{count}}\u00a0de\u00a0note",
+    "noRatings": "Nicio notă încă",
+    "filter": "Filtrează după notă",
+    "all": "Toate",
+    "chipLabel": "{{stars}}: {{amount}}",
+    "general": "General",
+    "visit": "Vizita din\u00a0{{date}}",
+    "withMaster": "cu {{name}}",
+    "openBooking": "Deschide programarea",
+    "edited": "modificat",
+    "empty": "Niciun feedback încă",
+    "emptyOwner": "După fiecare vizită finalizată, clienții sunt întrebați cum a fost. Răspunsurile și mesajele lor apar aici.",
+    "emptyMaster": "După fiecare vizită finalizată, clienții sunt întrebați cum a fost. Ce spun despre vizitele la tine apare aici.",
+    "emptyNone": "Feedbackul ajunge la maeștri și la proprietar.",
+    "emptyFilter": "Niciun feedback cu această notă."
+  }
+}

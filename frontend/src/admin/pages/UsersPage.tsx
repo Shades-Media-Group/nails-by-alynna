@@ -187,10 +187,10 @@ function UserSheet({ user, isSelf, onClose }: { user: AdminUser; isSelf: boolean
           </Button>
         ) : confirming ? (
           <div className="grid grid-cols-2 gap-2">
-            <Button size="md" variant="soft" onClick={() => setConfirming(false)}>
+            <Button size="md" variant="soft" fit onClick={() => setConfirming(false)}>
               {t('common.back')}
             </Button>
-            <Button size="md" variant={active ? 'primary' : 'danger'} loading={save.isPending} onClick={() => save.mutate()}>
+            <Button size="md" variant={active ? 'primary' : 'danger'} fit loading={save.isPending} onClick={() => save.mutate()}>
               {t('users.confirm')}
             </Button>
           </div>

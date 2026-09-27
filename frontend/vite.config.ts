@@ -175,8 +175,10 @@ const MANIFEST: Partial<ManifestOptions> = {
   display: 'standalone',
   display_override: ['standalone', 'minimal-ui'],
   orientation: 'portrait',
+  // Android draws its launch screen from these: the blush field and, from theme_color, a blush
+  // status bar, as the page's splash has (index.html's theme-color; splash.ts turns it white).
   background_color: BRAND_BACKGROUND,
-  theme_color: '#FFFFFF',
+  theme_color: BRAND_BACKGROUND,
   categories: ['beauty', 'lifestyle'],
   icons: [
     { src: '/icons/pwa-64x64.png', sizes: '64x64', type: 'image/png' },
@@ -251,7 +253,7 @@ export default defineConfig(({ mode }) => {
         workbox: {
           // Web Push: push / notificationclick handlers (public/push-sw.js; production builds only).
           importScripts: ['push-sw.js'],
-          globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,webmanifest}'],
+          globPatterns: ['**/*.{js,css,html,svg,png,webp,ico,woff2,webmanifest}'],
           // Admin code, launch screens and the version probe stay out of the install.
           globIgnores: [
             '**/assets/admin/**',

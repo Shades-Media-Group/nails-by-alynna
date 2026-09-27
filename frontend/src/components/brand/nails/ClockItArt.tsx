@@ -1,127 +1,193 @@
 import { useEffect, useId } from 'react';
-import { SKIN } from './paint';
+import { CLOCK_IT_HAND } from './clockItHand';
 
 /**
- * "Clock it": the ballroom-slang hand sign for "noticed, yes!", as the meme draws it. A raised
- * hand, palm forward, long almond nails; index, ring and little finger up, the middle finger
- * bent over to meet the thumb, and the two nails tap tip to tip, three times. A ring on the
- * ring finger and pearls at the wrist, like the memes. Still (nails touching) for people who
- * switched motion off.
+ * "Clock it": the ballroom-slang hand sign for "noticed, yes!". A raised hand with long pink
+ * nails, three fingers up, and the thumb tapping its nail against the index nail, three times.
+ * Still (nails touching) for people who switched motion off.
  *
- * Every finger is drawn along a curved spine (a quadratic curve from its knuckle to its tip)
- * that tapers toward the tip, and its nail grows out of the tip along the same curve.
+ * The hand is Google's Noto 3D "OK hand" emoji (Apache 2.0, see src/assets/clock-it/NOTICE.md),
+ * placed at 0 0 512 512, with its thumb bent down a little so the long nails meet tip to tip, as
+ * in the meme. The tap is three pictures of the thumb (resting, halfway, down). The nails are
+ * drawn here, under the hand: each one runs straight on from its fingertip, which covers the
+ * nail's base the way it does seen from the palm side.
  */
 
 type Point = readonly [number, number];
-interface FingerSpec {
-  base: Point;
-  control: Point;
+
+interface NailSpec {
+  /** The rounded fingertip in the picture: its centre and radius. */
+  centre: Point;
+  r: number;
+  /** Where the nail's point ends. */
   tip: Point;
-  /** Width at the knuckle and at the tip. */
-  w0: number;
-  w1: number;
-  /** How far the nail reaches past the fingertip. */
-  nail: number;
 }
 
-const FINGERS = {
-  index: { base: [44.5, 53], control: [38, 32], tip: [32, 14], w0: 8.8, w1: 6.4, nail: 13 },
-  ring: { base: [60, 51], control: [62.5, 30], tip: [61.5, 10], w0: 8.8, w1: 6.4, nail: 13.5 },
-  pinky: { base: [68, 55], control: [73.5, 41], tip: [77, 27], w0: 7.8, w1: 5.6, nail: 11 },
-  middle: { base: [52, 51], control: [37, 20], tip: [24.5, 38], w0: 9.2, w1: 6.8, nail: 10.5 },
-  thumb: { base: [45, 74], control: [31, 64.5], tip: [23.5, 51.5], w0: 11.2, w1: 8.4, nail: 8.8 },
-} satisfies Record<string, FingerSpec>;
+const unit = ([x, y]: Point): Point => {
+  const length = Math.hypot(x, y) || 1;
+  return [x / length, y / length];
+};
 
-/** Where the middle-finger and thumb nails meet. */
-const TOUCH: Point = [20.1, 45.5];
+/** Straight on from the fingertip, `length` past it. */
+const along = (centre: Point, r: number, dir: Point, length: number): Point => {
+  const [dx, dy] = unit(dir);
+  return [centre[0] + dx * (r + length), centre[1] + dy * (r + length)];
+};
+
+/** The thumb's base: the pictures bend the emoji's thumb down around it. */
+const THUMB_BASE: Point = [250, 470];
+
+/** Turns a point `degrees` down (counter-clockwise on screen) around `around`. */
+function bendDown([x, y]: Point, degrees: number, around: Point = THUMB_BASE): Point {
+  const a = (degrees * Math.PI) / 180;
+  const dx = x - around[0];
+  const dy = y - around[1];
+  return [
+    around[0] + dx * Math.cos(a) + dy * Math.sin(a),
+    around[1] - dx * Math.sin(a) + dy * Math.cos(a),
+  ];
+}
+
+/** The index fingertip, and the thumb tip as it rests in `hand.webp` (bent 10° from the emoji). */
+const INDEX = { centre: [142, 278.1] as Point, r: 20.5, dir: unit([-0.989, 0.15]) };
+const THUMB = {
+  centre: bendDown([134.2, 326.2], 10),
+  r: 21.6,
+  dir: unit(bendDown([-0.45, -0.89], 10, [0, 0])),
+};
+
+/** Where the two nails meet: the index nail and the thumb nail, each straight on from its finger. */
+const TOUCH: Point = (() => {
+  const [ix, iy] = INDEX.dir;
+  const [tx, ty] = THUMB.dir;
+  const bx = THUMB.centre[0] - INDEX.centre[0];
+  const by = THUMB.centre[1] - INDEX.centre[1];
+  const s = (bx * -ty + tx * by) / (ix * -ty + tx * iy);
+  return [INDEX.centre[0] + ix * s, INDEX.centre[1] + iy * s];
+})();
+
+const NAILS = {
+  middle: { centre: [258.4, 41.7], r: 24.4, tip: along([258.4, 41.7], 24.4, [-0.52, -0.85], 68) },
+  ring: { centre: [241, 67.1], r: 20.5, tip: along([241, 67.1], 20.5, [-0.45, -0.89], 58) },
+  little: { centre: [233, 121.9], r: 14.6, tip: along([233, 121.9], 14.6, [-0.5, -0.87], 44) },
+  index: { centre: INDEX.centre, r: INDEX.r, tip: TOUCH },
+  thumb: { centre: THUMB.centre, r: THUMB.r, tip: TOUCH },
+} satisfies Record<string, NailSpec>;
+
+type NailName = keyof typeof NAILS;
+
+/** Light falls from the top left, as on the hand. */
+const LIGHT = unit([-0.6, -0.8]);
+
+const POLISH = {
+  light: '#FF8DB8',
+  base: '#F7327F',
+  deep: '#A80E48',
+  edge: '#8E0B3E',
+  shade: '#5A0A2A',
+};
 
 const r1 = (v: number) => Math.round(v * 10) / 10;
 const path = (points: Point[]) => `M${points.map(([x, y]) => `${r1(x)} ${r1(y)}`).join(' L')} Z`;
 
-function at({ base, control, tip }: FingerSpec, t: number): Point {
-  const a = (1 - t) ** 2;
-  const b = 2 * (1 - t) * t;
-  const c = t * t;
-  return [a * base[0] + b * control[0] + c * tip[0], a * base[1] + b * control[1] + c * tip[1]];
-}
+/** Half the nail's width along it (0 at the base, 1 at the point): full, then an almond point. */
+const halfWidth = (r: number, s: number) =>
+  0.72 * r * (1 - s ** 1.9) ** 0.85 * (1 + 0.06 * Math.sin(Math.PI * s));
 
-function direction({ base, control, tip }: FingerSpec, t: number): Point {
-  const dx = 2 * (1 - t) * (control[0] - base[0]) + 2 * t * (tip[0] - control[0]);
-  const dy = 2 * (1 - t) * (control[1] - base[1]) + 2 * t * (tip[1] - control[1]);
-  const length = Math.hypot(dx, dy) || 1;
-  return [dx / length, dy / length];
-}
-
-/** The finger: flat at the knuckle (the palm covers it), rounded at the tip. */
-function fingerPath(spec: FingerSpec): string {
-  const left: Point[] = [];
-  const right: Point[] = [];
-  const steps = 28;
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps;
-    const [x, y] = at(spec, t);
-    const [tx, ty] = direction(spec, t);
-    const half = (spec.w0 + (spec.w1 - spec.w0) * t) / 2;
-    left.push([x - ty * half, y + tx * half]);
-    right.push([x + ty * half, y - tx * half]);
-  }
-  const [tx, ty] = direction(spec, 1);
-  const r = spec.w1 / 2;
-  const cap: Point[] = [];
-  for (let k = 1; k < 12; k++) {
-    const a = (Math.PI * k) / 12;
-    cap.push([
-      spec.tip[0] - ty * r * Math.cos(a) + tx * r * Math.sin(a),
-      spec.tip[1] + tx * r * Math.cos(a) + ty * r * Math.sin(a),
-    ]);
-  }
-  return path([...left, ...cap, ...right.reverse()]);
-}
-
-/** The long almond nail, out of the fingertip along the finger's own curve, and its gloss. */
-function nailPaths(spec: FingerSpec): { body: string; gloss: string } {
-  const [tx, ty] = direction(spec, 1);
-  const width = spec.w1 * 0.92;
-  const start: Point = [spec.tip[0] - tx * width * 0.35, spec.tip[1] - ty * width * 0.35];
-  const left: Point[] = [];
-  const right: Point[] = [];
-  const steps = 16;
-  for (let i = 0; i <= steps; i++) {
-    const s = i / steps;
-    const half = (width / 2) * (1 - s ** 1.9) * (1 + 0.08 * Math.sin(s * Math.PI));
-    const cx = start[0] + tx * spec.nail * s;
-    const cy = start[1] + ty * spec.nail * s;
-    left.push([cx - ty * half, cy + tx * half]);
-    right.push([cx + ty * half, cy - tx * half]);
-  }
-  const g = (s: number, side: number): Point => [
-    start[0] + tx * spec.nail * s - ty * width * side,
-    start[1] + ty * spec.nail * s + tx * width * side,
+function nailShapes({ centre, r, tip }: NailSpec) {
+  const at = (s: number): Point => [
+    centre[0] + (tip[0] - centre[0]) * s,
+    centre[1] + (tip[1] - centre[1]) * s,
   ];
-  const [g0, g1] = [g(0.22, 0.18), g(0.78, 0.06)];
+  const [tx, ty] = unit([tip[0] - centre[0], tip[1] - centre[1]]);
+  // Which side of the nail faces the light.
+  const side = -ty * LIGHT[0] + tx * LIGHT[1] > 0 ? 1 : -1;
+
+  const left: Point[] = [];
+  const right: Point[] = [];
+  for (let i = 0; i <= 32; i++) {
+    const s = i / 32;
+    const [x, y] = at(s);
+    const h = halfWidth(r, s);
+    left.push([x - ty * h, y + tx * h]);
+    right.push([x + ty * h, y - tx * h]);
+  }
+
+  // The one soft reflection: a streak on the lit side, thin at both ends.
+  const glossOut: Point[] = [];
+  const glossIn: Point[] = [];
+  for (let i = 0; i <= 20; i++) {
+    const u = i / 20;
+    const s = 0.28 + 0.5 * u;
+    const [x, y] = at(s);
+    const h = halfWidth(r, s);
+    const cx = x - ty * 0.4 * h * side;
+    const cy = y + tx * 0.4 * h * side;
+    const w = 0.11 * h * Math.sin(Math.PI * u);
+    glossOut.push([cx - ty * w, cy + tx * w]);
+    glossIn.push([cx + ty * w, cy - tx * w]);
+  }
+
+  // Lit edge to shaded edge, across the middle of the nail.
+  const [mx, my] = at(0.45);
+  const across = 0.72 * r * side;
   return {
     body: path([...left, ...right.reverse()]),
-    gloss: `M${r1(g0[0])} ${r1(g0[1])} L${r1(g1[0])} ${r1(g1[1])}`,
+    gloss: path([...glossOut, ...glossIn.reverse()]),
+    shine: {
+      x1: r1(mx - ty * across),
+      y1: r1(my + tx * across),
+      x2: r1(mx + ty * across),
+      y2: r1(my - tx * across),
+    },
   };
 }
 
 const SHAPES = Object.fromEntries(
-  Object.entries(FINGERS).map(([name, spec]) => [
-    name,
-    { finger: fingerPath(spec), ...nailPaths(spec) },
-  ]),
-) as Record<keyof typeof FINGERS, { finger: string; body: string; gloss: string }>;
+  Object.entries(NAILS).map(([name, spec]) => [name, nailShapes(spec)]),
+) as Record<NailName, ReturnType<typeof nailShapes>>;
 
-const PALM =
-  'M43 52 C48 49.5 64 48.5 71 52.5 C75.5 55 77.2 60 76 68 C74.8 77 72 86 70 94 L68 112 L47 112 C47 104 45.5 96 43.5 89 C40.8 81 39.6 72 40 64 C40.3 58 40.8 54 43 52 Z';
-const PEARLS: Point[] = [
-  [47.5, 99],
-  [51.5, 100.4],
-  [55.6, 101],
-  [59.7, 100.8],
-  [63.8, 99.9],
-  [67.6, 98.4],
-];
+function NailDefs({ name, id }: { name: NailName; id: (name: string) => string }) {
+  const { centre, r } = NAILS[name];
+  return (
+    <>
+      <linearGradient
+        id={id(`polish-${name}`)}
+        gradientUnits="userSpaceOnUse"
+        {...SHAPES[name].shine}
+      >
+        <stop offset="0" stopColor={POLISH.light} />
+        <stop offset="0.45" stopColor={POLISH.base} />
+        <stop offset="1" stopColor={POLISH.deep} />
+      </linearGradient>
+      {/* The finger's shadow where the nail leaves it. */}
+      <radialGradient
+        id={id(`seat-${name}`)}
+        gradientUnits="userSpaceOnUse"
+        cx={centre[0]}
+        cy={centre[1]}
+        r={r + 16}
+      >
+        <stop offset={r1(r / (r + 16))} stopColor={POLISH.shade} stopOpacity={0.55} />
+        <stop offset="1" stopColor={POLISH.shade} stopOpacity={0} />
+      </radialGradient>
+    </>
+  );
+}
+
+function Nail({ name, id }: { name: NailName; id: (name: string) => string }) {
+  const { body, gloss } = SHAPES[name];
+  return (
+    <>
+      <path d={body} fill={`url(#${id(`polish-${name}`)})`} />
+      <path d={body} fill={`url(#${id(`seat-${name}`)})`} />
+      <path d={gloss} fill="#FFFFFF" fillOpacity={0.8} />
+      <path d={body} fill="none" stroke={POLISH.edge} strokeOpacity={0.35} strokeWidth={1.2} />
+    </>
+  );
+}
+
+const SPARK = `M${r1(TOUCH[0] - 16)} ${r1(TOUCH[1] - 20)}l-12-12M${r1(TOUCH[0] - 22)} ${r1(TOUCH[1] + 2)}h-16M${r1(TOUCH[0] - 15)} ${r1(TOUCH[1] + 22)}l-12 12`;
 
 /** Android buzzes along with the three taps (0.47 s, 0.86 s, 1.25 s into the animation). */
 const TAPS = [0, 470, 12, 378, 12, 378, 12];
@@ -134,104 +200,48 @@ export function ClockItArt({ className }: { className?: string }) {
     navigator.vibrate?.(TAPS);
   }, []);
 
-  const skin = {
-    fill: `url(#${id('skin')})`,
-    stroke: SKIN.edge,
-    strokeOpacity: 0.6,
-    strokeWidth: 0.7,
-    strokeLinejoin: 'round' as const,
-  };
-  const Finger = ({ name }: { name: keyof typeof FINGERS }) => (
-    <>
-      <path d={SHAPES[name].finger} {...skin} />
-      <path d={SHAPES[name].body} fill={`url(#${id('polish')})`} />
-      <path
-        d={SHAPES[name].gloss}
-        stroke="#FFFFFF"
-        strokeOpacity={0.75}
-        strokeWidth={0.9}
-        strokeLinecap="round"
-      />
-    </>
-  );
-
+  const names = Object.keys(NAILS) as NailName[];
   return (
-    <svg viewBox="0 0 100 100" className={className} aria-hidden="true" focusable="false">
+    <svg viewBox="-28 -62 500 500" className={className} aria-hidden="true" focusable="false">
       <defs>
-        <linearGradient id={id('skin')} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor={SKIN.light} />
-          <stop offset="1" stopColor={SKIN.shade} />
-        </linearGradient>
-        <linearGradient id={id('polish')} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#FF7AAB" />
-          <stop offset="0.5" stopColor="#FD2578" />
-          <stop offset="1" stopColor="#B80C4D" />
-        </linearGradient>
-        <radialGradient id={id('pearl')} cx="0.35" cy="0.35" r="0.7">
-          <stop offset="0" stopColor="#FFFFFF" />
-          <stop offset="1" stopColor="#E9E1E6" />
-        </radialGradient>
+        {names.map((name) => (
+          <NailDefs key={name} name={name} id={id} />
+        ))}
       </defs>
-      <Finger name="index" />
-      <Finger name="ring" />
-      <Finger name="pinky" />
-      {/* A thin silver ring on the ring finger. */}
-      <path
-        d="M57.4 37.6 Q62 39.8 66.4 37.6"
-        stroke="#C9CDD1"
-        strokeWidth={2.2}
-        fill="none"
-        strokeLinecap="round"
-      />
-      <path
-        d="M58 37 Q62 38.9 65.8 37"
-        stroke="#FFFFFF"
-        strokeOpacity={0.8}
-        strokeWidth={0.7}
-        fill="none"
-        strokeLinecap="round"
-      />
-      <g className="clock-it-middle">
-        <Finger name="middle" />
-      </g>
-      <g className="clock-it-thumb">
-        <Finger name="thumb" />
-      </g>
-      {/* The palm goes over the knuckles, so every finger grows out of it. */}
-      <path d={PALM} {...skin} />
-      <path
-        d="M47 76 C53 72 61 71 68 73"
-        stroke={SKIN.crease}
-        strokeOpacity={0.3}
-        strokeWidth={0.8}
-        fill="none"
-        strokeLinecap="round"
-      />
-      <path
-        d="M45.5 84 C49 80 54 78.5 58 78.5"
-        stroke={SKIN.crease}
-        strokeOpacity={0.25}
-        strokeWidth={0.7}
-        fill="none"
-        strokeLinecap="round"
-      />
-      {PEARLS.map(([x, y]) => (
-        <circle
-          key={x}
-          cx={x}
-          cy={y}
-          r={2.2}
-          fill={`url(#${id('pearl')})`}
-          stroke="#D9D2D6"
-          strokeWidth={0.4}
+      <g className="clock-it-hand">
+        <Nail name="middle" id={id} />
+        <Nail name="ring" id={id} />
+        <Nail name="little" id={id} />
+        <Nail name="index" id={id} />
+        {/* The thumb nail turns with the thumb, around the thumb's base. */}
+        <g className="clock-it-thumb">
+          <Nail name="thumb" id={id} />
+        </g>
+        <image
+          className="clock-it-frame clock-it-open"
+          href={CLOCK_IT_HAND.open}
+          width={512}
+          height={512}
         />
-      ))}
-      <g className="clock-it-spark" fill="#FFFFFF">
+        <image
+          className="clock-it-frame clock-it-mid"
+          href={CLOCK_IT_HAND.mid}
+          width={512}
+          height={512}
+        />
+        <image
+          className="clock-it-frame clock-it-rest"
+          href={CLOCK_IT_HAND.rest}
+          width={512}
+          height={512}
+        />
         <path
-          d={`M${TOUCH[0] - 6} ${TOUCH[1] - 5}l-2.2-2.2M${TOUCH[0] - 7} ${TOUCH[1] + 1}h-3M${TOUCH[0] - 5} ${TOUCH[1] + 6}l-2.2 2.2`}
-          stroke="#FD2578"
-          strokeWidth={1.2}
+          className="clock-it-spark"
+          d={SPARK}
+          stroke={POLISH.base}
+          strokeWidth={5}
           strokeLinecap="round"
+          fill="none"
         />
       </g>
     </svg>

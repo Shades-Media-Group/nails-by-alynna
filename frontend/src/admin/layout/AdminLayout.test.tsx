@@ -20,6 +20,8 @@ import { AdminLayout } from './AdminLayout';
 
 // The new-booking chime polls the schedule; it plays no part in the menus.
 vi.mock('../components/BookingAlerts', () => ({ BookingAlerts: () => null }));
+// The "New requests" sheet has tests of its own (requests/PendingRequestsSheet.test.tsx).
+vi.mock('../requests/PendingRequestsSheet', () => ({ PendingRequestsSheet: () => null }));
 
 const master = {
   id: 'u-master',
@@ -76,9 +78,12 @@ function renderStaffApp(url: string) {
 }
 
 const saved: Array<{ path: string; body: unknown }> = [];
+/** Requests waiting for this person's answer. */
+let waiting = 0;
 
 beforeEach(() => {
   saved.length = 0;
+  waiting = 0;
   window.localStorage.clear();
   vi.stubGlobal(
     'fetch',
@@ -97,6 +102,8 @@ beforeEach(() => {
       // A receptionist: no master profile of their own.
       if (path === '/api/admin/team/me')
         return json({ error: { code: 'NOT_FOUND', message: 'No master profile' } }, 404);
+      if (path === '/api/admin/appointments/pending')
+        return json({ appointments: [], total: waiting, scope: 'all' });
       throw new Error(`Unmocked request: ${init?.method ?? 'GET'} ${path}`);
     }),
   );
@@ -143,5 +150,37 @@ describe('staff language', () => {
     expect(screen.getByTestId('where')).toHaveTextContent(/^\/ru\/admin\/calendar$/);
     await waitFor(() => expect(saved).toEqual([{ path: '/api/me', body: { locale: 'ru' } }]));
     expect(window.localStorage.getItem(STORAGE_KEYS.locale)).toBe('ru');
+  });
+});
+
+describe('requests waiting', () => {
+  const badge = { setAppBadge: vi.fn(() => Promise.resolve()), clearAppBadge: vi.fn(() => Promise.resolve()) };
+  beforeEach(() => {
+    badge.setAppBadge.mockClear();
+    badge.clearAppBadge.mockClear();
+    for (const [name, value] of Object.entries(badge)) Object.defineProperty(navigator, name, { configurable: true, value });
+  });
+  afterEach(() => {
+    for (const name of Object.keys(badge)) Reflect.deleteProperty(navigator, name);
+  });
+
+  it('"Today" says how many, in the sidebar and the phone bar, and so does the app icon', async () => {
+    waiting = 3;
+    const view = renderStaffApp('/en/admin/calendar');
+    const today = await screen.findAllByRole('link', { name: /^Today\s*3\snew requests$/ }, { timeout: 3000 });
+    expect(today).toHaveLength(2);
+    for (const link of today) expect(link).toHaveTextContent(/^Today\s*3/);
+    expect(badge.setAppBadge).toHaveBeenCalledWith(3);
+
+    // Leaving the staff app (signing out, the client app): the icon is clean again.
+    view.unmount();
+    expect(badge.clearAppBadge).toHaveBeenCalled();
+  });
+
+  it('shows nothing when none wait', async () => {
+    renderStaffApp('/en/admin/calendar');
+    await waitFor(() => expect(badge.clearAppBadge).toHaveBeenCalled(), { timeout: 3000 });
+    expect(screen.getAllByRole('link', { name: 'Today' })).toHaveLength(2);
+    expect(badge.setAppBadge).not.toHaveBeenCalled();
   });
 });

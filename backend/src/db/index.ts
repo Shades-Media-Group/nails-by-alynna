@@ -4,6 +4,7 @@ import type {
   AppointmentDoc,
   AuditLogDoc,
   CategoryDoc,
+  FeedbackDoc,
   MetaDoc,
   InviteDoc,
   NotificationLogDoc,
@@ -40,6 +41,7 @@ export interface Collections {
   notificationLog: Collection<NotificationLogDoc>;
   promoCodes: Collection<PromoCodeDoc>;
   walletPasses: Collection<WalletPassDoc>;
+  feedback: Collection<FeedbackDoc>;
 }
 
 export function collections(db: Database): Collections {
@@ -62,11 +64,12 @@ export function collections(db: Database): Collections {
     notificationLog: db.collection<NotificationLogDoc>('notification_log'),
     promoCodes: db.collection<PromoCodeDoc>('promo_codes'),
     walletPasses: db.collection<WalletPassDoc>('wallet_passes'),
+    feedback: db.collection<FeedbackDoc>('feedback'),
   };
 }
 
 /** Bump when indexes change; the runtime re-applies them once per version. */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 export async function ensureIndexes(db: Database): Promise<void> {
   const c = collections(db);
@@ -122,11 +125,23 @@ export async function ensureIndexes(db: Database): Promise<void> {
       { key: { code: 1 }, unique: true, name: 'code_unique' },
       // Bookings that used a promo code (a used code can't be deleted).
       { key: { 'promo.promoId': 1 }, name: 'promo', partialFilterExpression: { 'promo.promoId': { $exists: true } } },
+      // Visits that just ended, for the "How was your visit?" message (notifications/scheduler).
+      { key: { end: 1, status: 1 }, name: 'end_status' },
     ]),
     c.promoCodes.createIndexes([
       // One code per text, whatever the letter case (codes are stored upper-case).
       { key: { code: 1 }, unique: true, name: 'code_unique' },
       { key: { staffId: 1, createdAt: -1 }, name: 'staff_created' },
+    ]),
+    c.feedback.createIndexes([
+      // One feedback per visit, even when the client sends it from two phones at once; general
+      // feedback has no visit and is not limited.
+      { key: { appointmentId: 1 }, unique: true, name: 'visit_unique', partialFilterExpression: { appointmentId: { $type: 'objectId' } } },
+      // A master's list and the owner's list, newest first.
+      { key: { staffId: 1, createdAt: -1 }, name: 'staff_created' },
+      { key: { createdAt: -1 }, name: 'created' },
+      // The client's own (data export, account deletion).
+      { key: { userId: 1 }, name: 'user' },
     ]),
     // Keep one year of audit history (the TTL index also serves newest-first sorting).
     c.auditLogs.createIndexes([{ key: { at: 1 }, expireAfterSeconds: 365 * 24 * 3600, name: 'ttl' }]),

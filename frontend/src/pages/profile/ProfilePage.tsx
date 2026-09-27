@@ -35,13 +35,14 @@ import {
   NotificationsIcon,
   PersonOutlineIcon,
   PrivacyIcon,
+  RateReviewIcon,
   ShieldIcon,
 } from '@/components/ui/icons';
 import { useLocale } from '@/i18n/useLocale';
 import { openConsentSettings } from '@/lib/consent';
 import { errorMessage, fieldErrors } from '@/lib/errors';
 import { formatDateTime } from '@/lib/format';
-import { signedOutStart } from '@/lib/platform';
+import { currentPlatform, signedOutStart } from '@/lib/platform';
 import { disablePush } from '@/lib/push';
 import { isEmail, nameIssue, normalizePhone, passwordIssue } from '@/lib/validation';
 import { isApiError } from '@/services/api/client';
@@ -106,6 +107,12 @@ export default function ProfilePage() {
               to={lp('/loyalty')}
             />
             <ListRow
+              icon={RateReviewIcon}
+              label={t('profile.feedback')}
+              description={t('profile.feedbackText')}
+              to={lp('/feedback')}
+            />
+            <ListRow
               icon={LanguageIcon}
               label={t('profile.language')}
               trailing={<LanguageSwitcher compact />}
@@ -153,16 +160,14 @@ export default function ProfilePage() {
               onClick={() => setPanel('export')}
             />
             <ListRow icon={PrivacyIcon} label={t('profile.privacyPolicy')} to={lp('/privacy')} />
-            <ListRow
-              icon={ShieldIcon}
-              label={t('profile.terms')}
-             
-              to={lp('/terms')}
-            />
+            <ListRow icon={ShieldIcon} label={t('profile.terms')} to={lp('/terms')} />
           </ListGroup>
 
           <ListGroup title={t('profile.app')}>
-            <ListRow icon={InstallIcon} label={t('profile.install')} to={lp('/app')} />
+            {/* Only in a browser: inside the installed app there is nothing left to install. */}
+            {currentPlatform().standalone ? null : (
+              <ListRow icon={InstallIcon} label={t('profile.install')} to={lp('/app')} />
+            )}
             <ListRow icon={LogoutIcon} label={t('profile.logout')} onClick={() => void signOut()} />
             {user.isDemo ? (
               <ListRow

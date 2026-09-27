@@ -9,14 +9,13 @@
   "contactLine": "{{contact}}",
   "privacy": {
     "title": "Politica de confidențialitate",
-    "intro": "Această politică explică ce date cu caracter personal colectează {{studio}} prin această aplicație și site de programări, de ce, cât timp le păstrăm și ce drepturi ai. Respectă Legea nr. 195/2024 privind protecția datelor cu caracter personal a Republicii Moldova.",
+    "intro": "Această politică explică ce date cu caracter personal colectează {{studio}} prin această aplicație și site de programări, de ce, cât timp le păstrăm și ce drepturi ai. Respectă Legea nr.\u00a0195/2024 privind protecția datelor cu caracter personal a Republicii Moldova.",
     "sections": [
       {
         "id": "who",
         "title": "Cine răspunde de date",
         "body": [
-          "Operatorul datelor tale este {{operator}}, care administrează salonul de unghii {{studio}} din {{city}}.",
-          "Pentru orice întrebare despre date, contactează-ne: {{contact}}."
+          "Operatorul datelor tale este {{operator}}, care administrează salonul de unghii {{studio}} din {{city}}."
         ]
       },
       {
@@ -26,6 +25,7 @@
           "Datele contului: prenumele și numele, adresa de email, numărul de telefon, limba preferată și parola, păstrată doar într-o formă criptată ireversibil (nu vedem și nu păstrăm parola propriu-zisă). Dacă intri cu Google: identificatorul oferit de Google contului tău, numele și emailul transmise de Google.",
           "Programările: serviciile, data și ora, maestrul, prețurile, statutul, notele pe care le scrii pentru salon și, dacă anulezi, motivul indicat.",
           "Notele pe care salonul le păstrează despre vizitele tale, de exemplu preferințe, ca să primești un serviciu constant.",
+          "Feedbackul pe care alegi să-l trimiți: stelele și comentariile despre o vizită sau despre aplicație. Le citesc maestrul vizitei și proprietarul salonului; nu se publică nicăieri.",
           "Date tehnice și de securitate: adresa IP, tipul de browser și dispozitiv, orele autentificării și evidența acțiunilor importante pentru securitate.",
           "Informații despre sănătate doar dacă alegi să le spui (de exemplu o alergie în note). Le folosim exclusiv pentru siguranța ta în timpul serviciului."
         ]
@@ -65,9 +65,10 @@
         "title": "Cât timp păstrăm datele",
         "items": [
           "Contul și istoricul programărilor: cât timp există contul. Când îți ștergi contul, datele personale se șterg, iar programările trecute rămân doar în formă anonimă, pentru evidența salonului.",
-          "Sesiunile de autentificare: 12 ore sau până la un an, dacă alegi să rămâi conectat.",
-          "Linkurile de resetare a parolei: 30 de minute.",
-          "Evidența de securitate: un an.",
+          "Feedbackul: cât timp există contul. Când îți ștergi contul, comentariile se șterg și rămân doar stelele, fără numele\u00a0tău.",
+          "Sesiunile de autentificare: 12\u00a0ore sau până la un an, dacă alegi să rămâi conectat.",
+          "Linkurile de resetare a parolei: 30\u00a0de\u00a0minute.",
+          "Evidența de securitate: un\u00a0an.",
           "Ce ne obligă legea să păstrăm: atât cât cere legea."
         ]
       },
@@ -78,9 +79,9 @@
           "Nu folosim cookie de publicitate sau de urmărire ale terților. Cookie-urile esențiale te mențin autentificat și protejează autentificarea:"
         ],
         "items": [
-          "__Host-nba_at (15 minute) și __Secure-nba_rt (12 ore sau un an, dacă rămâi conectat): sesiunea ta securizată.",
+          "__Host-nba_at (15\u00a0minute) și __Secure-nba_rt (12\u00a0ore sau un an, dacă rămâi conectat): sesiunea ta securizată.",
           "nba_sess: îi spune aplicației că ar putea exista o sesiune, ca să se deschidă mai repede.",
-          "__Secure-nba_oa (10 minute): protejează pasul de autentificare cu Google."
+          "__Secure-nba_oa (10\u00a0minute): protejează pasul de autentificare cu Google."
         ],
         "after": [
           "Cu acordul tău (Preferințe), aplicația mai reține limba, o programare începută și dacă ai închis sfatul de instalare, în memoria locală a browserului. Îți poți schimba alegerea oricând în Profil → Setări cookie."
@@ -96,8 +97,9 @@
           "Restricționare, opoziție, portabilitate și retragerea oricând a consimțământului."
         ],
         "after": [
-          "Pentru a-ți exercita un drept, scrie-ne: {{contact}}. Răspundem în cel mult o lună. Poți depune și o plângere la Centrul Național pentru Protecția Datelor cu Caracter Personal (CNPDCP), datepersonale.md."
-        ]
+          "Pentru a-ți exercita un drept, scrie-ne cu butonul de mai jos. Răspundem în cel mult o lună. Poți depune și o plângere la Centrul Național pentru Protecția Datelor cu Caracter Personal (CNPDCP), datepersonale.md."
+        ],
+        "action": "feedback"
       },
       {
         "id": "security",
@@ -110,7 +112,7 @@
         "id": "children",
         "title": "Copiii",
         "body": [
-          "Aplicația este pentru persoane de la 16 ani. Clienții mai tineri se programează prin părinte sau tutore."
+          "Aplicația este pentru persoane de\u00a0la\u00a016\u00a0ani. Clienții mai tineri se programează prin părinte sau tutore."
         ]
       },
       {
@@ -137,8 +139,8 @@
         "id": "account",
         "title": "Contul tău",
         "items": [
-          "Trebuie să ai cel puțin 16 ani și să oferi date reale, inclusiv un număr de telefon la care salonul te poate contacta.",
-          "Nu împărtăși parola. Ești responsabil de programările făcute din contul tău.",
+          "Trebuie să ai cel puțin 16\u00a0ani și să oferi date reale, inclusiv un număr de telefon la care salonul te poate contacta.",
+          "Nu împărtăși parola. Ești responsabil de programările făcute din contul\u00a0tău.",
           "Un cont pentru o persoană. Îți poți șterge contul oricând din Profil."
         ]
       },
@@ -156,7 +158,7 @@
         "id": "changes",
         "title": "Modificări și anulări",
         "items": [
-          "Poți modifica sau anula o programare în aplicație cu până la {{hours}} ore înainte de începere. Termenul exact apare la fiecare programare.",
+          "Poți modifica sau anula o programare în aplicație cu până\u00a0la\u00a0{{hours}}\u00a0ore înainte de începere. Termenul exact apare la fiecare programare.",
           "Nu există taxe sau penalități pentru anularea, mutarea sau ratarea unei programări.",
           "Dacă o programare trebuie mutată sau anulată din partea salonului, afli în aplicație și prin email."
         ]

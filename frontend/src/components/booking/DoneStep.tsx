@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AddToCalendarSheet } from '@/components/appointments/AddToCalendar';
 import { ClockItArt } from '@/components/brand/nails/ClockItArt';
+import { Alert } from '@/components/common/Alert';
 import { ServiceLines } from '@/components/appointments/ServiceLines';
+import { PushSoftAsk } from '@/components/notifications/PushSoftAsk';
 import { PromoBadge, PromoRemovedNote } from '@/components/promo/PromoBits';
 import { Button, ButtonLink } from '@/components/ui';
 import { CalendarAddIcon } from '@/components/ui/icons';
@@ -36,11 +38,14 @@ export function DoneStep({
   appointment,
   rescheduled,
   promoRemoved,
+  demo = false,
 }: {
   appointment: Appointment;
   rescheduled: boolean;
   /** The move took the booking's promo code off (it didn't cover the new time). */
   promoRemoved?: RemovedPromo | null;
+  /** A demo account's preview: nothing was sent, so there is no booking to open or save. */
+  demo?: boolean;
 }) {
   const { t } = useTranslation(['booking', 'common']);
   const { lp, locale } = useLocale();
@@ -84,6 +89,11 @@ export function DoneStep({
           ? t('flow.doneRequestText', { who: appointment.staff?.name ?? t('flow.theStudio') })
           : t('flow.doneText')}
       </p>
+      {demo ? (
+        <Alert tone="info" className="mt-4 w-full max-w-sm text-left">
+          {t('flow.demoDone')}
+        </Alert>
+      ) : null}
 
       <div className="mt-6 w-full max-w-sm rounded-2xl bg-ink-50 p-4 text-left animate-rise">
         <p className="font-bold first-letter:uppercase">
@@ -103,27 +113,35 @@ export function DoneStep({
       ) : null}
 
       <div className="mt-6 flex w-full max-w-sm flex-col gap-2">
-        <Button
-          variant="primary"
-          icon={CalendarAddIcon}
-          fullWidth
-          onClick={() => setCalendarOpen(true)}
-        >
-          {t('flow.addToCalendar')}
-        </Button>
-        <ButtonLink
-          to={lp(`/bookings/${appointment.id}`)}
-          replace
-          variant="soft"
-          size="md"
-          fullWidth
-        >
-          {t('flow.viewBooking')}
-        </ButtonLink>
+        {demo ? null : (
+          <>
+            <Button
+              variant="primary"
+              icon={CalendarAddIcon}
+              fullWidth
+              onClick={() => setCalendarOpen(true)}
+            >
+              {t('flow.addToCalendar')}
+            </Button>
+            <ButtonLink
+              to={lp(`/bookings/${appointment.id}`)}
+              replace
+              variant="soft"
+              size="md"
+              fullWidth
+            >
+              {t('flow.viewBooking')}
+            </ButtonLink>
+          </>
+        )}
         <ButtonLink to={lp('/home')} replace variant="ghost" size="md" fullWidth>
           {t('flow.backHome')}
         </ButtonLink>
       </div>
+      {/* Hear back without keeping the app open: asked here, where it clearly matters. */}
+      {demo ? null : (
+        <PushSoftAsk placement="booking" booked={!pending} className="mt-6 w-full max-w-sm" />
+      )}
       <AddToCalendarSheet
         appointment={appointment}
         open={calendarOpen}

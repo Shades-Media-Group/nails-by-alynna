@@ -1,9 +1,13 @@
 import type { TFunction } from 'i18next';
 import { LOCALE_TAGS, type Locale } from '@/i18n/config';
+import { NBSP } from './typography';
 
 /**
  * Formatting in the studio's time zone and currency. Times are always shown in Chișinău time,
- * whatever the device's zone, so a visit reads the same for the client and the studio.
+ * whatever the device's zone, so a visit reads the same for the client and the studio. What
+ * these return never breaks inside an amount, a length or a date part ("550 lei", "2 h 30 min",
+ * "16 octombrie", "la 14:00"): the spaces there are no-break spaces, from the locale strings
+ * (common:price, common:duration) or added here to Intl's dates.
  */
 
 export const STUDIO_TZ_FALLBACK = 'Europe/Chisinau';
@@ -19,8 +23,22 @@ function dtf(locale: Locale, timeZone: string, options: Intl.DateTimeFormatOptio
   return f;
 }
 
+/**
+ * The parts of an Intl date that read as one: the day and its month ("16 octombrie", "16 Oct"),
+ * the year and Russian "г.", and a time after a short word ("la 14:00", "в 14:00", "at 14:00").
+ * A line can still break after the weekday, before the year and before "la", "в", "at", so a
+ * date in large type still fits a narrow card.
+ */
+function keepDateTogether(text: string): string {
+  return text
+    .replace(/(^|\s)(\d{1,2}) (?=\p{L})/gu, `$1$2${NBSP}`)
+    .replace(/(\d{4}) (?=г\.)/gu, `$1${NBSP}`)
+    .replace(/(^|\s)(\p{L}{1,2}) (?=\d{1,2}:\d{2})/gu, `$1$2${NBSP}`);
+}
+
 export function formatPrice(t: TFunction, amount: number, currency = 'MDL', from = false): string {
-  const number = new Intl.NumberFormat('ro-MD', { maximumFractionDigits: 0 }).format(amount).replace(/[\u00a0\u202f]/g, ' ');
+  // Digit groups never split either (the narrow no-break space is not in every font).
+  const number = new Intl.NumberFormat('ro-MD', { maximumFractionDigits: 0 }).format(amount).replace(/[\u00a0\u202f ]/g, NBSP);
   const value =
     currency === 'MDL'
       ? t('common:price.currencyMdl', { amount: number })
@@ -42,25 +60,27 @@ export function formatTime(iso: string | Date, locale: Locale, timeZone: string)
 
 /** "Thu, 16 Oct" */
 export function formatDayShort(iso: string | Date, locale: Locale, timeZone: string): string {
-  return dtf(locale, timeZone, { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(iso));
+  return keepDateTogether(dtf(locale, timeZone, { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(iso)));
 }
 
 /** "Thursday, 16 October" */
 export function formatDayLong(iso: string | Date, locale: Locale, timeZone: string): string {
-  return dtf(locale, timeZone, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(iso));
+  return keepDateTogether(dtf(locale, timeZone, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(iso)));
 }
 
-/** "Thursday, 16 October 2026, 14:00" */
+/** "Thursday, 16 October 2026 at 14:00" */
 export function formatDateTime(iso: string | Date, locale: Locale, timeZone: string): string {
-  return dtf(locale, timeZone, {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  }).format(new Date(iso));
+  return keepDateTogether(
+    dtf(locale, timeZone, {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).format(new Date(iso)),
+  );
 }
 
 /** Calendar date (YYYY-MM-DD) of an instant in the studio zone. */
@@ -100,9 +120,9 @@ export function fullName(person: { name: string; surname?: string }): string {
   return [person.name, person.surname].filter(Boolean).join(' ');
 }
 
-/** +37369123456 → +373 69 123 456 (display only). */
+/** +37369123456 → +373 69 123 456 (display only, never split over two lines). */
 export function formatPhone(phone: string | null | undefined): string {
   if (!phone) return '';
   const md = /^\+373(\d{2})(\d{3})(\d{3})$/.exec(phone);
-  return md ? `+373 ${md[1]} ${md[2]} ${md[3]}` : phone;
+  return md ? ['+373', md[1], md[2], md[3]].join(NBSP) : phone;
 }

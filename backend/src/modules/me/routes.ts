@@ -189,11 +189,13 @@ export function meRoutes(deps: AppDeps) {
   /** GDPR data portability: everything we hold about the signed-in user, as a JSON download. */
   app.get('/export', async (c) => {
     const user = c.get('user');
-    const [appointments, sessions, pushDevices] = await Promise.all([
+    const [appointments, sessions, pushDevices, feedback] = await Promise.all([
       deps.col.appointments.find({ clientId: user._id }).sort({ start: -1 }).toArray(),
       deps.col.sessions.find({ userId: user._id, revokedAt: null }).toArray(),
       deps.col.pushSubscriptions.find({ userId: user._id }, { projection: { userAgent: 1, createdAt: 1, lastSuccessAt: 1 } }).toArray(),
+      deps.col.feedback.find({ userId: user._id }).sort({ createdAt: -1 }).toArray(),
     ]);
+    const visitCodes = new Map(appointments.map((a) => [a._id.toHexString(), a.code]));
     const now = deps.now();
     const body = {
       exportedAt: now.toISOString(),
@@ -211,6 +213,14 @@ export function meRoutes(deps: AppDeps) {
         notes: a.notes,
         createdAt: a.createdAt.toISOString(),
         cancelledAt: a.cancelledAt?.toISOString() ?? null,
+      })),
+      feedback: feedback.map((f) => ({
+        about: f.kind,
+        visit: f.appointmentId ? (visitCodes.get(f.appointmentId.toHexString()) ?? null) : null,
+        rating: f.rating,
+        comment: f.comment,
+        sentAt: f.createdAt.toISOString(),
+        changedAt: f.updatedAt.toISOString(),
       })),
       devices: sessions.map((s) => ({
         userAgent: s.userAgent,
@@ -286,6 +296,10 @@ export function meRoutes(deps: AppDeps) {
       deps.col.pushSubscriptions.deleteMany({ userId: user._id }),
       deps.col.otpCodes.deleteMany({ userId: user._id }),
       deps.col.walletPasses.deleteOne({ _id: user._id }),
+      // Feedback loses its words (they were the client's own); stars stay in the studio's numbers
+      // under the anonymised name, and feedback that was only words goes.
+      deps.col.feedback.deleteMany({ userId: user._id, rating: null }),
+      deps.col.feedback.updateMany({ userId: user._id }, { $set: { comment: '', updatedAt: now } }),
     ]);
     await revokeAllSessions(deps, user._id);
     clearSessionCookies(c, deps.config);

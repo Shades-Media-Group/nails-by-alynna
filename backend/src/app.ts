@@ -14,6 +14,7 @@ import { appointmentRoutes } from './modules/appointments/routes';
 import { authRoutes } from './modules/auth/routes';
 import { availabilityRoutes } from './modules/availability/routes';
 import { calendarRoutes } from './modules/calendar/routes';
+import { feedbackRoutes } from './modules/feedback/routes';
 import { loyaltyRoutes } from './modules/loyalty/routes';
 import { meRoutes } from './modules/me/routes';
 import { notificationRoutes } from './modules/notifications';
@@ -35,6 +36,7 @@ export function createApp(deps: AppDeps) {
   app.route('/api/loyalty', loyaltyRoutes(deps));
   app.route('/api/wallet', walletRoutes(deps));
   app.route('/api/promo', promoRoutes(deps));
+  app.route('/api/feedback', feedbackRoutes(deps));
   app.route('/api/calendar', calendarRoutes(deps));
   app.route('/api', notificationRoutes(deps)); // /api/notifications/*, /api/internal/tick
   app.route('/api/admin', adminRoutes(deps));

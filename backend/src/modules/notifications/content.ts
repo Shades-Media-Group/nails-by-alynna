@@ -130,6 +130,8 @@ export function reminderPush(visit: VisitInfo, appointmentId: string, locale: Lo
     body: `${servicesLine(visit, locale)}. ${t.soon}`,
     url: new URL(visit.bookingUrl ?? visit.bookUrl).pathname,
     tag: `visit-${appointmentId}`,
+    lang: locale,
+    timestamp: now.getTime(),
   };
 }
 
@@ -143,12 +145,12 @@ export function bookingChangePush(
 ): PushPayload {
   const t = PUSH_COPY[locale];
   const when = describeVisitTime(visitTime(visit.start, locale, timeZone, now), locale);
-  const tag = `visit-${appointmentId}`;
-  if (kind === 'cancelled') return { title: t.cancelled, body: t.cancelledBody(when), url: new URL(visit.bookUrl).pathname, tag };
+  const meta = { tag: `visit-${appointmentId}`, lang: locale, timestamp: now.getTime() };
+  if (kind === 'cancelled') return { title: t.cancelled, body: t.cancelledBody(when), url: new URL(visit.bookUrl).pathname, ...meta };
   const url = new URL(visit.bookingUrl ?? visit.bookUrl).pathname;
-  if (kind === 'rescheduled') return { title: t.rescheduled, body: `${t.newTime(when)} · ${servicesLine(visit, locale)}`, url, tag };
-  if (kind === 'requested') return { title: t.requested, body: t.requestedBody(when, visit.master), url, tag };
-  return { title: kind === 'booked' ? t.booked : t.confirmed, body: `${when} · ${servicesLine(visit, locale)}`, url, tag };
+  if (kind === 'rescheduled') return { title: t.rescheduled, body: `${t.newTime(when)} · ${servicesLine(visit, locale)}`, url, ...meta };
+  if (kind === 'requested') return { title: t.requested, body: t.requestedBody(when, visit.master), url, ...meta };
+  return { title: kind === 'booked' ? t.booked : t.confirmed, body: `${when} · ${servicesLine(visit, locale)}`, url, ...meta };
 }
 
 const STAFF_PUSH: Record<Locale, Record<StaffBookingEvent, string>> = {
@@ -174,10 +176,38 @@ export function staffBookingPush(
     url: new URL(openUrl).pathname,
     // One notification per booking on the device: a later change replaces the earlier one.
     tag: `staff-visit-${visit.code}`,
+    lang: locale,
+    timestamp: now.getTime(),
   };
 }
 
-export function testPush(appUrl: string, locale: Locale): PushPayload {
+const FEEDBACK_PUSH: Record<Locale, { title: string; body: string }> = {
+  ro: { title: 'Cum a fost vizita ta?', body: 'Dă o notă dintr-o atingere.' },
+  ru: { title: 'Как прошёл ваш визит?', body: 'Оцените в одно касание.' },
+  en: { title: 'How was your visit?', body: 'Rate it in one tap.' },
+};
+
+/** After a visit: "How was your visit?", opening the feedback page for it. */
+export function feedbackPush(visit: VisitInfo, appointmentId: string, feedbackUrl: string, locale: Locale): PushPayload {
+  const t = FEEDBACK_PUSH[locale];
+  const link = new URL(feedbackUrl);
+  return {
+    title: t.title,
+    body: `${servicesLine(visit, locale)}. ${t.body}`,
+    // Path and query: the page needs to know which visit.
+    url: `${link.pathname}${link.search}`,
+    tag: `feedback-${appointmentId}`,
+  };
+}
+
+export function testPush(appUrl: string, locale: Locale, now: Date): PushPayload {
   const t = PUSH_COPY[locale];
-  return { title: t.testTitle, body: t.testBody, url: new URL(appLink(appUrl, locale, '/profile/notifications')).pathname, tag: 'test' };
+  return {
+    title: t.testTitle,
+    body: t.testBody,
+    url: new URL(appLink(appUrl, locale, '/profile/notifications')).pathname,
+    tag: 'test',
+    lang: locale,
+    timestamp: now.getTime(),
+  };
 }

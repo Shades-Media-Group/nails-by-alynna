@@ -2,7 +2,10 @@ import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation } from 'react-router';
 import { useAuth } from '@/app/auth';
 import { BookingStatusToasts } from '@/components/booking/BookingStatusToasts';
+import { VisitConfirmedSheet } from '@/components/booking/VisitConfirmedSheet';
+import { NewStampSheet } from '@/components/loyalty/NewStampSheet';
 import { DemoRibbon } from '@/components/common/DemoRibbon';
+import { PushPrompt } from '@/components/notifications/PushPrompt';
 import { Onboarding } from '@/components/onboarding/Onboarding';
 import { TabBar } from './TabBar';
 import { TopNav } from './TopNav';
@@ -33,10 +36,16 @@ export function AppShell() {
         </div>
       </main>
       <TabBar />
-      {/* A banner when the studio confirms or moves a visit while the app is open. */}
+      {/* A banner when the studio moves a visit while the app is open. */}
       {user ? <BookingStatusToasts /> : null}
+      {/* "You're booked!" once the studio confirms a request, now or the next time they look. */}
+      {user ? <VisitConfirmedSheet /> : null}
+      {/* A new stamp on the loyalty card, pressing in. */}
+      {user ? <NewStampSheet /> : null}
       {/* First sign-in: a short intro to the app (clients only). */}
       {user?.role === 'client' ? <Onboarding key={user.id} user={user} /> : null}
+      {/* Later, when they're idle on a main page: "Turn on notifications?" (clients only). */}
+      <PushPrompt audience="client" />
     </div>
   );
 }

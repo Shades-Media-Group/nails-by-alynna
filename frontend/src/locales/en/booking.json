@@ -1,9 +1,9 @@
 {
   "home": {
     "greeting": "Hi, {{name}}",
-    "greetingLine": "ready for a fresh set?",
+    "greetingLine": "ready for a fresh\u00a0set?",
     "nextVisit": "Your next visit",
-    "visitAt": "{{day}} at {{time}}",
+    "visitAt": "{{day}} at\u00a0{{time}}",
     "durationWith": "{{duration}} with {{name}}",
     "details": "Details",
     "bookTitle": "Book a visit",
@@ -17,7 +17,7 @@
     "shortcutContact": "Write to us",
     "popular": "Popular",
     "allServices": "All services",
-    "openToday": "Open today until {{time}}",
+    "openToday": "Open today until\u00a0{{time}}",
     "closedToday": "Closed today",
     "pending": "The studio will confirm your request soon."
   },
@@ -27,11 +27,18 @@
     "categories": "Categories",
     "add": "Add {{name}}",
     "remove": "Remove {{name}}",
-    "empty": "No services are published yet.",
-    "summary_one": "{{count}} service",
-    "summary_other": "{{count}} services",
+    "about": "About {{name}}",
+    "empty": "No services are published\u00a0yet.",
+    "summary_one": "{{count}}\u00a0service",
+    "summary_other": "{{count}}\u00a0services",
     "continue": "Continue",
-    "clear": "Clear"
+    "clear": "Clear",
+    "details": {
+      "add": "Add to booking",
+      "remove": "Remove from booking",
+      "added": "Added to your booking: {{name}}",
+      "removed": "Removed from your booking: {{name}}"
+    }
   },
   "shape": {
     "title": "Nail shape",
@@ -44,14 +51,14 @@
     "line": "Nail shape: {{shape}}"
   },
   "flow": {
-    "rebookDropped": "Some services from that visit aren't offered anymore, so they were left out.",
+    "rebookDropped": "Some services from that visit aren't offered anymore, so they were left\u00a0out.",
     "title": "New booking",
     "rescheduleTitle": "Change the time",
     "stepServices": "Services",
     "stepMaster": "Master",
     "stepTime": "Time",
     "stepConfirm": "Confirm",
-    "stepOf": "Step {{current}} of {{total}}",
+    "stepOf": "Step\u00a0{{current}}\u00a0of\u00a0{{total}}",
     "leave": "Leave booking",
     "chooseServices": "What would you like?",
     "chooseServicesText": "Choose one or more services and we'll add up the time.",
@@ -60,12 +67,12 @@
     "anyMasterText": "Most free times",
     "chooseTime": "When suits you?",
     "chooseTimeText": "Times are shown in Chișinău time.",
-    "noSlots": "No free times on this day.",
+    "noSlots": "No free times on this\u00a0day.",
     "nextAvailable": "Next free day: {{date}}",
     "noSlotsAtAll": "No free times in the coming weeks. Please contact the studio.",
     "slotsLoading": "Finding free times…",
-    "slotCount_one": "{{count}} time",
-    "slotCount_other": "{{count}} times",
+    "slotCount_one": "{{count}}\u00a0time",
+    "slotCount_other": "{{count}}\u00a0times",
     "confirmTitle": "Check and confirm",
     "when": "When",
     "duration": "Duration",
@@ -96,7 +103,8 @@
     "change": "Change",
     "withMaster": "with {{name}}",
     "phoneLabel": "Phone number",
-    "moreServices": "+{{count}} more"
+    "moreServices": "+{{count}}\u00a0more",
+    "demoDone": "Demo account: nothing was sent. This is what you see after booking."
   },
   "calendar": {
     "title": "Nails by Alynna: {{services}}",
@@ -105,11 +113,11 @@
     "sheetText": "Pick the calendar you use. A reminder an hour before is included.",
     "apple": "iPhone or Mac calendar",
     "google": "Google Calendar",
-    "other": "Outlook or another app"
+    "other": "Outlook or another\u00a0app"
   },
   "studio": {
-    "openNow": "Open now · until {{time}}",
-    "opensToday": "Opens today at {{time}}",
+    "openNow": "Open now · until\u00a0{{time}}",
+    "opensToday": "Opens today at\u00a0{{time}}",
     "closedNow": "Closed now",
     "hours": "Opening hours",
     "today": "Today",
@@ -119,16 +127,20 @@
     "contact": "Get in touch",
     "book": "Book a visit",
     "policy": "Booking policy",
-    "freeCancel_one": "Free cancellation or rescheduling up to {{count}} hour before the visit.",
+    "freeCancel_one": "Free cancellation or rescheduling up to\u00a0{{count}}\u00a0hour before the visit.",
     "approval": "New bookings are confirmed by the studio.",
     "legal": "Terms and privacy",
     "address": "Address",
-    "freeCancel_other": "Free cancellation or rescheduling up to {{count}} hours before the visit."
+    "freeCancel_other": "Free cancellation or rescheduling up to\u00a0{{count}}\u00a0hours before the visit."
   },
   "live": {
     "confirmed": "Your visit is confirmed",
     "moved": "Your visit has a new time",
     "with": "with {{name}}",
-    "view": "View"
+    "view": "View",
+    "confirmedTitle": "You're booked!",
+    "confirmedText": "{{who}} is expecting you {{when}}.",
+    "openVisit": "View booking",
+    "done": "Done"
   }
 }

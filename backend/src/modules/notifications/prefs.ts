@@ -1,20 +1,23 @@
 import { z } from 'zod';
+import type { AppDeps } from '../../context';
 import { REMINDER_LEADS, type ChannelPrefs, type NotificationPrefs, type ReminderLead } from '../../db/types';
 
 /**
- * Notification preferences. Service messages (reminders, changes to a booking) are on by
- * default; news and offers are opt-in only (Law 133/2011 on personal data, GDPR-style
- * consent), and switching them on is recorded with a timestamp.
+ * Notification preferences. Service messages (reminders, changes to a booking, the loyalty card,
+ * reminders to come back) come by email and in the app by default; news and offers are opt-in
+ * only (Law 133/2011 on personal data, GDPR-style consent), and switching them on is recorded
+ * with a timestamp.
  */
 export const DEFAULT_PREFS: NotificationPrefs = {
   reminders: { enabled: true, leadMinutes: [60], email: true, push: true },
   bookingUpdates: { email: true, push: true },
   staffBookings: { email: true, push: true },
-  loyalty: { email: false, push: true },
+  loyalty: { email: true, push: true },
+  rebook: { email: true, push: true },
   marketing: { email: false, push: false, consentAt: null },
 };
 
-export type NotificationCategory = 'reminders' | 'bookingUpdates' | 'staffBookings' | 'loyalty' | 'marketing';
+export type NotificationCategory = 'reminders' | 'bookingUpdates' | 'staffBookings' | 'loyalty' | 'rebook' | 'marketing';
 
 const isLead = (value: unknown): value is ReminderLead => (REMINDER_LEADS as readonly unknown[]).includes(value);
 
@@ -40,6 +43,7 @@ export function resolvePrefs(stored: Partial<NotificationPrefs> | null | undefin
     bookingUpdates: pickChannels(s.bookingUpdates, DEFAULT_PREFS.bookingUpdates),
     staffBookings: pickChannels(s.staffBookings, DEFAULT_PREFS.staffBookings),
     loyalty: pickChannels(s.loyalty, DEFAULT_PREFS.loyalty),
+    rebook: pickChannels(s.rebook, DEFAULT_PREFS.rebook),
     marketing: { ...pickChannels(s.marketing, DEFAULT_PREFS.marketing), consentAt: s.marketing?.consentAt ?? null },
     updatedAt: s.updatedAt,
   };
@@ -61,6 +65,7 @@ export const prefsPatchSchema = z
     bookingUpdates: channelPatch,
     staffBookings: channelPatch,
     loyalty: channelPatch,
+    rebook: channelPatch,
     marketing: channelPatch,
   })
   .partial();
@@ -80,6 +85,7 @@ export function applyPrefsPatch(current: NotificationPrefs, patch: PrefsPatch, n
     bookingUpdates: { ...current.bookingUpdates, ...patch.bookingUpdates },
     staffBookings: { ...current.staffBookings, ...patch.staffBookings },
     loyalty: { ...current.loyalty, ...patch.loyalty },
+    rebook: { ...current.rebook, ...patch.rebook },
     // Consent is dated when it is given; withdrawing it clears the date.
     marketing: { ...marketing, consentAt: isOn ? (wasOn ? (current.marketing.consentAt ?? now) : now) : null },
     updatedAt: now,
@@ -98,6 +104,7 @@ export function publicPrefs(prefs: NotificationPrefs) {
     bookingUpdates: { ...prefs.bookingUpdates },
     staffBookings: { ...prefs.staffBookings },
     loyalty: { ...prefs.loyalty },
+    rebook: { ...prefs.rebook },
     marketing: {
       email: prefs.marketing.email,
       push: prefs.marketing.push,
@@ -111,4 +118,24 @@ export function channelsFor(prefs: NotificationPrefs, category: NotificationCate
   if (category === 'reminders' && !prefs.reminders.enabled) return { email: false, push: false };
   const c = prefs[category];
   return { email: c.email, push: c.push };
+}
+
+const LOYALTY_EMAIL_SWITCH = 'loyaltyEmailDefault';
+
+/**
+ * Loyalty messages used to come in the app only. Once, turn their email on for accounts that
+ * saved their settings while it was off by default (a marker in `meta` keeps it to once).
+ */
+export async function loyaltyEmailOnce(deps: AppDeps): Promise<void> {
+  if (await deps.col.meta.findOne({ _id: LOYALTY_EMAIL_SWITCH })) return;
+  const now = deps.now();
+  for (const user of await deps.col.users.find({}).toArray()) {
+    const prefs = user.notificationPrefs;
+    if (!prefs?.loyalty || prefs.loyalty.email) continue;
+    await deps.col.users.updateOne(
+      { _id: user._id },
+      { $set: { notificationPrefs: { ...prefs, loyalty: { ...prefs.loyalty, email: true } }, updatedAt: now } },
+    );
+  }
+  await deps.col.meta.updateOne({ _id: LOYALTY_EMAIL_SWITCH }, { $set: { value: true, updatedAt: now } }, { upsert: true });
 }

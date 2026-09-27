@@ -54,13 +54,13 @@
   },
   "price": {
     "value": "{{amount}}",
-    "from": "from {{amount}}",
-    "currencyMdl": "{{amount}} MDL"
+    "from": "from\u00a0{{amount}}",
+    "currencyMdl": "{{amount}}\u00a0MDL"
   },
   "duration": {
-    "min": "{{m}} min",
-    "h": "{{h}} h",
-    "hm": "{{h}} h {{m}} min"
+    "min": "{{m}}\u00a0min",
+    "h": "{{h}}\u00a0h",
+    "hm": "{{h}}\u00a0h\u00a0{{m}}\u00a0min"
   },
   "time": {
     "today": "Today",
@@ -68,7 +68,7 @@
     "morning": "Morning",
     "afternoon": "Afternoon",
     "evening": "Evening",
-    "until": "until {{time}}"
+    "until": "until\u00a0{{time}}"
   },
   "language": {
     "label": "Language",
@@ -78,7 +78,7 @@
     "generic": "Something went wrong. Please try again.",
     "network": "No connection. Check your internet and try again.",
     "sessionExpired": "Your session has ended. Please log in again.",
-    "notFoundTitle": "This page took a day off",
+    "notFoundTitle": "This page took a day\u00a0off",
     "notFoundText": "The link may be broken, or the page has moved.",
     "boundaryTitle": "Something went wrong",
     "boundaryText": "Reload the app to continue. If it keeps happening, contact the studio.",
@@ -89,9 +89,9 @@
       "WEAK_PASSWORD": "Choose a stronger password.",
       "WRONG_PASSWORD": "The password is incorrect.",
       "ACCOUNT_DISABLED": "This account is disabled. Please contact the studio.",
-      "RESET_TOKEN_INVALID": "This link is invalid or has expired. Request a new one.",
-      "SLOT_TAKEN": "Someone just booked this time. Please choose another one.",
-      "SLOT_UNAVAILABLE": "This time is no longer available. Please choose another one.",
+      "RESET_TOKEN_INVALID": "This link is invalid or has expired. Request a new\u00a0one.",
+      "SLOT_TAKEN": "Someone just booked this time. Please choose another\u00a0one.",
+      "SLOT_UNAVAILABLE": "This time is no longer available. Please choose another\u00a0one.",
       "BOOKING_LIMIT": "You already have the maximum number of upcoming visits.",
       "BOOKING_BLOCKED": "Online booking is paused for your account. Please contact the studio.",
       "CANCEL_WINDOW_PASSED": "It's too late to change this visit online. Please contact the studio.",
@@ -101,7 +101,7 @@
       "IN_USE": "It's still in use and can't be deleted.",
       "CONFLICT": "It changed meanwhile. Reload and try again.",
       "FORBIDDEN": "You don't have access to this.",
-      "NOT_FOUND": "We couldn't find it.",
+      "NOT_FOUND": "We couldn't find\u00a0it.",
       "RATE_LIMITED": "Too many attempts. Please wait a few minutes and try again.",
       "CSRF_REJECTED": "Request blocked for your security. Reload the page and try again.",
       "VALIDATION_ERROR": "Please check the highlighted fields.",
@@ -113,14 +113,15 @@
       "ALREADY_REGISTERED": "This client already has an account.",
       "EMAIL_NOT_VERIFIED": "Confirm your email first: we sent you a code.",
       "EMAIL_NOT_SENT": "We couldn't send the email right now. Try again in a few minutes.",
-      "CODE_INVALID": "The code is wrong or has expired. Check it or send a new one.",
-      "PUSH_UNAVAILABLE": "Notifications on the phone aren't available yet."
+      "CODE_INVALID": "The code is wrong or has expired. Check it or send a new\u00a0one.",
+      "PUSH_UNAVAILABLE": "Notifications on the phone aren't available\u00a0yet.",
+      "FEEDBACK_CLOSED": "Visits can be rated for two weeks after them. You can still write to the studio."
     }
   },
   "validation": {
     "required": "Required",
     "invalid_email": "Enter a valid email address",
-    "invalid_phone": "Enter a valid phone number, e.g. 069 123 456",
+    "invalid_phone": "Enter a valid phone number, e.g.\u00a0069\u00a0123\u00a0456",
     "invalid_name": "Use letters only",
     "too_short": "Too short",
     "too_long": "Too long",
@@ -129,16 +130,17 @@
     "contains_email": "Don't use your email in the password",
     "taken": "Already registered",
     "wrong": "Incorrect password",
-    "password_rules": "At least 8 characters",
+    "password_rules": "At least 8\u00a0characters",
     "passwords_mismatch": "Passwords don't match",
     "invalid": "Invalid value",
-    "invalid_code": "Enter the 6-digit code",
+    "plain_text": "Plain text only, without HTML tags",
+    "invalid_code": "Enter the\u00a06-digit code",
     "same_email": "This is already your email"
   },
   "offline": "You're offline. Showing what we saved.",
   "update": {
     "title": "A new version is ready",
-    "text": "Update now: it takes a second and you stay signed in.",
+    "text": "Update now: it takes a second and you stay signed\u00a0in.",
     "action": "Update"
   },
   "consent": {
@@ -148,13 +150,13 @@
     "minimal": "Minimal",
     "custom": "Custom",
     "settingsTitle": "Choose what we may store",
-    "settingsText": "Your choice stays on this device for 6 months. Change it any time in Profile → Privacy.",
+    "settingsText": "Your choice stays on this device for\u00a06\u00a0months. Change it any time in Profile → Privacy.",
     "essential": "Essential",
     "essentialText": "Sign-in, security, your language and this choice. The app can't work without them.",
     "preferences": "Preferences",
     "preferencesText": "Remembers tips you dismissed and an unfinished booking on this device.",
     "analytics": "Anonymous statistics",
-    "analyticsText": "Counts which screens are used, without identifying you.",
+    "analyticsText": "Counts which screens are used, without identifying\u00a0you.",
     "save": "Save my choice",
     "policy": "Privacy policy",
     "manage": "Cookie settings"
@@ -193,6 +195,6 @@
     "text": "Demo account · nothing is saved"
   },
   "otp": {
-    "digit": "Digit {{n}} of {{total}}"
+    "digit": "Digit\u00a0{{n}}\u00a0of\u00a0{{total}}"
   }
 }

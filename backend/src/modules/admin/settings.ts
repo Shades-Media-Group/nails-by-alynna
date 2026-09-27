@@ -1,11 +1,14 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import type { AppDeps, AppEnv } from '../../context';
+import { REBOOK_TONES, type RebookSettings, type StudioSettings } from '../../db/types';
 import { audit } from '../../lib/audit';
 import { AppError } from '../../lib/errors';
-import { i18nOptionalTextSchema, i18nTextSchema, parseJson } from '../../lib/validation';
+import { enforceRateLimits } from '../../lib/rate-limit';
+import { MARKUP, i18nOptionalTextSchema, i18nTextSchema, parseJson } from '../../lib/validation';
 import { requireRole } from '../../middleware/auth';
-import { DEFAULT_SETTINGS, getSettings, invalidateSettingsCache } from '../settings';
+import { knownPlaceholders, rebookPreview, sendRebookTest } from '../notifications/rebook';
+import { DEFAULT_SETTINGS, REBOOK_LIMITS, getSettings, invalidateSettingsCache } from '../settings';
 
 const handle = z
   .string()
@@ -18,6 +21,46 @@ const optionalUrl = z
   .trim()
   .max(500, 'too_long')
   .refine((v) => v === '' || /^https:\/\/[^\s]+$/i.test(v), 'invalid_url');
+
+/** One line of a reminder's text: plain text on one line, with only the known placeholders. */
+const rebookLine = (max: number) =>
+  z
+    .string()
+    .overwrite((v) => v.replace(/\s+/g, ' ').trim())
+    .max(max, 'too_long')
+    .refine((v) => !MARKUP.test(v), 'plain_text')
+    .refine(knownPlaceholders, 'unknown_placeholder');
+const rebookI18n = (max: number) => z.object({ ro: rebookLine(max), ru: rebookLine(max), en: rebookLine(max) }).partial();
+const rebookTextSchema = z.object({ title: rebookI18n(80), body: rebookI18n(300) }).partial();
+const between = (range: { min: number; max: number }) => z.number().int().min(range.min, 'out_of_range').max(range.max, 'out_of_range');
+
+/** Any part of the come-back reminders; what is left out keeps its saved value. */
+const rebookSchema = z
+  .object({
+    enabled: z.boolean(),
+    firstAfterDays: between(REBOOK_LIMITS.firstAfterDays),
+    repeatEveryDays: between(REBOOK_LIMITS.repeatEveryDays),
+    maxReminders: between(REBOOK_LIMITS.maxReminders),
+    channels: z.object({ email: z.boolean(), push: z.boolean() }).partial(),
+    texts: z.object({ first: rebookTextSchema, nudge: rebookTextSchema, last: rebookTextSchema }).partial(),
+  })
+  .partial();
+
+function mergeRebook(current: RebookSettings, patch: z.infer<typeof rebookSchema>): RebookSettings {
+  const texts = { ...current.texts };
+  for (const tone of REBOOK_TONES) {
+    const text = patch.texts?.[tone];
+    if (text) texts[tone] = { title: { ...texts[tone].title, ...text.title }, body: { ...texts[tone].body, ...text.body } };
+  }
+  return {
+    enabled: patch.enabled ?? current.enabled,
+    firstAfterDays: patch.firstAfterDays ?? current.firstAfterDays,
+    repeatEveryDays: patch.repeatEveryDays ?? current.repeatEveryDays,
+    maxReminders: patch.maxReminders ?? current.maxReminders,
+    channels: { ...current.channels, ...patch.channels },
+    texts,
+  };
+}
 
 const settingsSchema = z
   .object({
@@ -63,6 +106,7 @@ const settingsSchema = z
     loyaltyRewards: z
       .array(z.object({ visit: z.number().int().min(1).max(20), percent: z.number().int().min(1).max(100) }))
       .max(6),
+    rebook: rebookSchema,
   })
   .partial();
 
@@ -70,6 +114,16 @@ export function adminSettingsRoutes(deps: AppDeps) {
   const app = new Hono<AppEnv>();
 
   app.get('/', async (c) => c.json({ settings: await getSettings(deps) }));
+
+  /** Come-back reminders: the built-in texts and example values to preview them with. */
+  app.get('/rebook', async (c) => c.json(await rebookPreview(deps)));
+
+  /** "Send me a test": the first come-back reminder, to the owner, as clients would get it now. */
+  app.post('/rebook/test', requireRole('administrator'), async (c) => {
+    const user = c.get('user');
+    await enforceRateLimits(deps, [{ key: `rebook:test:user:${user._id.toHexString()}`, limit: 5, windowSec: 3600 }]);
+    return c.json(await sendRebookTest(deps, user));
+  });
 
   app.patch('/', requireRole('administrator'), async (c) => {
     const input = await parseJson(c, settingsSchema);
@@ -86,11 +140,18 @@ export function adminSettingsRoutes(deps: AppDeps) {
       }
       if (input.loyaltyRewards) input.loyaltyRewards = [...input.loyaltyRewards].sort((a, b) => a.visit - b.visit);
     }
+    // The reminders are saved whole: the change over what is saved now.
+    const { rebook: rebookPatch, ...rest } = input;
+    const rebook = rebookPatch ? mergeRebook((await getSettings(deps)).rebook, rebookPatch) : undefined;
+    if (rebook?.enabled && !rebook.channels.email && !rebook.channels.push) {
+      throw new AppError(422, 'VALIDATION_ERROR', 'Reminders need a way to be sent', { fields: { 'rebook.channels': 'one_channel' } });
+    }
+    const values: Partial<StudioSettings> = rebook ? { ...rest, rebook } : rest;
     const now = deps.now();
     await deps.col.settings.updateOne(
       { _id: 'studio' },
       {
-        $set: { ...input, updatedAt: now },
+        $set: { ...values, updatedAt: now },
         $setOnInsert: { ...omit(DEFAULT_SETTINGS, Object.keys(input)) },
         // Saved here = the studio's choice; later default updates leave these fields alone.
         $addToSet: { customized: { $each: Object.keys(input) } },

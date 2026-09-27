@@ -78,6 +78,8 @@ export function publicRoutes(deps: AppDeps) {
         mastersCount: bookable,
       },
       loyalty: { enabled: s.loyaltyEnabled, cycle: s.loyaltyCycle, rewards: s.loyaltyRewards },
+      // Whether clients have "Reminders to come back" to switch in Profile → Notifications.
+      rebook: { enabled: s.rebook.enabled },
     });
   });
 
@@ -105,6 +107,7 @@ export function publicRoutes(deps: AppDeps) {
           slug: s.slug,
           name: s.name,
           description: s.description,
+          details: s.details ?? { ro: '', ru: '', en: '' },
           durationMin: s.durationMin,
           price: s.price,
           priceFrom: s.priceFrom,

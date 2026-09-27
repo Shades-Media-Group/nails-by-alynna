@@ -3,9 +3,19 @@ import NotificationsOffIcon from '@mui/icons-material/NotificationsOffRounded';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
+import { Link } from 'react-router';
 import { useAuth } from '@/app/auth';
 import { Alert } from '@/components/common/Alert';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { PushSoftAsk } from '@/components/notifications/PushSoftAsk';
+import { PushTest } from '@/components/notifications/PushTest';
+import {
+  HOME_SCREEN_NAME,
+  NOTIFICATIONS_KEY,
+  notificationsQuery,
+  onPhone,
+} from '@/components/notifications/pushDevice';
+import { useTurnOnPush } from '@/components/notifications/useTurnOnPush';
 import { Button, ButtonLink, Chip, Skeleton, Switch, toast } from '@/components/ui';
 import { CheckIcon, RefreshIcon } from '@/components/ui/icons';
 import { useLocale } from '@/i18n/useLocale';
@@ -18,8 +28,10 @@ import {
   isAppleDevice,
   readPushState,
   resyncPush,
-  type PushState,
+  softAskFor,
+  type DeviceState,
 } from '@/lib/push';
+import { markPromptDone } from '@/lib/pushPrompt';
 import {
   notificationsApi,
   type NotificationPrefs,
@@ -29,14 +41,11 @@ import {
 } from '@/services/api/endpoints';
 import { queries } from '@/services/queries';
 
-const KEY = ['notifications'] as const;
+const KEY = NOTIFICATIONS_KEY;
 const LEADS: ReminderLead[] = [60, 120, 1440];
-/** The installed app's name on the Home Screen and in iOS Settings (index.html, manifest short_name). */
-const HOME_SCREEN_NAME = 'Nails Alynna';
 /** The shared Switch is 28 px tall: widen its tap area to 44 px without changing how it looks. */
 const SWITCH_TAP_AREA = '[&_[role=switch]]:before:absolute [&_[role=switch]]:before:-inset-2';
-type DeviceState = PushState | 'loading' | 'unavailable';
-type Category = 'reminders' | 'bookingUpdates' | 'staffBookings' | 'loyalty' | 'marketing';
+type Category = 'reminders' | 'bookingUpdates' | 'staffBookings' | 'loyalty' | 'rebook' | 'marketing';
 
 function mergePrefs(prefs: NotificationPrefs, patch: NotificationPrefsPatch): NotificationPrefs {
   return {
@@ -44,6 +53,7 @@ function mergePrefs(prefs: NotificationPrefs, patch: NotificationPrefsPatch): No
     bookingUpdates: { ...prefs.bookingUpdates, ...patch.bookingUpdates },
     staffBookings: { ...prefs.staffBookings, ...patch.staffBookings },
     loyalty: { ...prefs.loyalty, ...patch.loyalty },
+    rebook: { ...prefs.rebook, ...patch.rebook },
     marketing: { ...prefs.marketing, ...patch.marketing },
   };
 }
@@ -54,38 +64,17 @@ export default function NotificationsPage() {
   const { lp } = useLocale();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const settings = useQuery({ queryKey: KEY, queryFn: notificationsApi.get });
+  const settings = useQuery(notificationsQuery());
   const config = useQuery(queries.config());
-  const [device, setDevice] = useState<DeviceState>('loading');
+  // This device (shared with the other places that ask), and "turn on" from any tap on the page.
+  const { device, setDevice, busy, turnOn } = useTurnOnPush();
   const userId = user?.id ?? '';
   const demo = user?.isDemo === true;
-  const pushConfigured = settings.data?.push.available;
 
+  // Make sure this device is attached to the current sign-in.
   useEffect(() => {
-    if (!userId || pushConfigured === undefined) return;
-    let alive = true;
-    const read = () => {
-      const next = pushConfigured
-        ? readPushState(userId)
-        : Promise.resolve<DeviceState>('unavailable');
-      void next.then((state) => {
-        if (!alive) return;
-        setDevice(state);
-        // Make sure this device is attached to the current sign-in.
-        if (state === 'on') void resyncPush(userId);
-      });
-    };
-    read();
-    // Back from the phone's Settings (e.g. after allowing notifications): look again.
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') read();
-    };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => {
-      alive = false;
-      document.removeEventListener('visibilitychange', onVisible);
-    };
-  }, [userId, pushConfigured]);
+    if (userId && device === 'on') void resyncPush(userId);
+  }, [userId, device]);
 
   const update = useMutation({
     mutationFn: notificationsApi.update,
@@ -112,6 +101,8 @@ export default function NotificationsPage() {
   // Loyalty messages only mean something while the studio runs the stamp card.
   const loyalty = (config.data as { loyalty?: { enabled?: boolean } } | undefined)?.loyalty;
   const loyaltyOn = Boolean(config.data) && loyalty?.enabled !== false;
+  // Reminders to come back: only while the studio sends them.
+  const rebookOn = Boolean(config.data) && config.data?.rebook?.enabled !== false;
 
   return (
     <div className="pb-10">
@@ -142,16 +133,22 @@ export default function NotificationsPage() {
           <>
             {demo ? (
               <Alert tone="info">{t('notifications.device.demo')}</Alert>
+            ) : softAskFor(device) === 'ask' ? (
+              // Not on here yet: one friendly button instead of a switch.
+              <PushSoftAsk placement="settings" />
             ) : (
               <DeviceCard state={device} userId={userId} onState={setDevice} />
             )}
             <Preferences
               settings={settings.data}
-              device={device}
+              device={demo ? 'loading' : device}
               loyaltyOn={loyaltyOn}
+              rebookOn={rebookOn}
               staff={user?.role === 'admin' || user?.role === 'administrator'}
               readOnly={demo}
+              busy={busy}
               onChange={(patch) => update.mutate(patch)}
+              onTurnOn={() => void turnOn()}
             />
           </>
         )}
@@ -177,18 +174,9 @@ function DeviceCard({
   const [busy, setBusy] = useState(false);
   const titleId = useId();
   const platform = currentPlatform();
-  const title =
-    platform.os === 'ios' || platform.os === 'android'
-      ? t('notifications.device.titlePhone')
-      : t('notifications.device.titleDevice');
-  const test = useMutation({
-    mutationFn: notificationsApi.test,
-    onSuccess: (result) =>
-      result.sent > 0
-        ? toast.success(t('notifications.device.testSent'))
-        : toast.error(t('notifications.device.testNone')),
-    onError: (error) => toast.error(errorMessage(t, error)),
-  });
+  const title = onPhone()
+    ? t('notifications.device.titlePhone')
+    : t('notifications.device.titleDevice');
 
   // Straight from the tap: Safari shows the permission prompt only for a user gesture.
   const toggle = async (next: boolean) => {
@@ -202,6 +190,8 @@ function DeviceCard({
       } else {
         await disablePush();
         onState('off');
+        // Switched off on purpose: the app stops asking about it on this device.
+        markPromptDone(userId);
         toast.success(t('notifications.device.disabled'));
       }
     } catch (error) {
@@ -296,20 +286,11 @@ function DeviceCard({
               <p className="mt-0.5 text-sm text-ink-600">{message}</p>
             </>
           )}
-          {on ? (
-            <Button
-              variant="outline"
-              size="md"
-              className="mt-3"
-              loading={test.isPending}
-              onClick={() => test.mutate()}
-            >
-              {t('notifications.device.test')}
-            </Button>
-          ) : null}
           {action ? <div className="mt-3">{action}</div> : null}
         </div>
       </div>
+      {/* Full width: the button's label is long in Romanian and Russian. */}
+      {on ? <PushTest /> : null}
     </section>
   );
 }
@@ -356,40 +337,111 @@ function Toggle({
   );
 }
 
+/**
+ * Under a kind of message sent "by app": this device isn't getting app notifications yet, and
+ * what would change that (a tap here, the app on the Home Screen, the phone's settings).
+ */
+function DeviceLine({
+  device,
+  busy,
+  onTurnOn,
+}: {
+  device: DeviceState;
+  busy: boolean;
+  onTurnOn: () => void;
+}) {
+  const { t } = useTranslation(['push', 'common']);
+  const { lp } = useLocale();
+  const link = 'font-semibold text-ink-900 underline underline-offset-2';
+  let line: ReactNode = null;
+  if (device === 'off' || device === 'not-ready') {
+    line = (
+      <>
+        {onPhone() ? t('hint.notHerePhone') : t('hint.notHereDevice')}{' '}
+        <button
+          type="button"
+          className={cx(link, 'disabled:opacity-45')}
+          disabled={busy}
+          onClick={onTurnOn}
+        >
+          {t('hint.turnOn')}
+        </button>
+      </>
+    );
+  } else if (device === 'needs-install') {
+    line = (
+      <>
+        {t('hint.installHere')}{' '}
+        <Link to={lp('/app')} className={link}>
+          {t('hint.installLink')}
+        </Link>
+      </>
+    );
+  } else if (device === 'denied') {
+    // The steps to allow them again are in the card at the top of the page.
+    line = t('hint.blockedHere');
+  } else if (device === 'unsupported') {
+    line = t('hint.unsupported');
+  } else if (device === 'no-service-worker') {
+    line = t('hint.preview');
+  }
+  if (!line) return null;
+  return (
+    <p className="flex items-start gap-1.5 text-[0.8125rem] text-ink-600">
+      <NotificationsOffIcon
+        fontSize="inherit"
+        className="mt-0.5 shrink-0 text-sm text-ink-500"
+        aria-hidden="true"
+      />
+      <span className="min-w-0">{line}</span>
+    </p>
+  );
+}
+
 function Preferences({
   settings,
   device,
   loyaltyOn,
+  rebookOn,
   staff,
   readOnly,
+  busy,
   onChange,
+  onTurnOn,
 }: {
   settings: NotificationSettings;
   device: DeviceState;
   loyaltyOn: boolean;
+  /** Clients hear about coming back while the studio sends these (not staff). */
+  rebookOn: boolean;
   /** Masters and the owner also hear about clients' bookings. */
   staff: boolean;
   readOnly: boolean;
+  /** This device is being switched on. */
+  busy: boolean;
   onChange: (patch: NotificationPrefsPatch) => void;
+  /** Permission prompt and subscription for this device: call it straight from a tap. */
+  onTurnOn: () => void;
 }) {
   const { t } = useTranslation(['account', 'common']);
   const { locale } = useLocale();
   const { prefs } = settings;
   const leadsId = useId();
   const pushConfigured = settings.push.available;
-  // Push can reach this person if this device or another one has it switched on.
-  const pushReady = device === 'on' || (device !== 'loading' && settings.push.devices > 0);
-  const pushLegend = !pushConfigured
-    ? null
-    : pushReady
+  const pushLegend =
+    pushConfigured && (device === 'on' || settings.push.devices > 0)
       ? t('notifications.legend.pushOn')
-      : device === 'needs-install'
-        ? t('notifications.legend.pushInstall')
-        : device === 'denied'
-          ? t('notifications.legend.pushBlocked')
-          : device === 'unsupported'
-            ? t('notifications.legend.pushUnsupported')
-            : t('notifications.legend.pushOff');
+      : null;
+
+  /**
+   * "App" shows what is saved (on by default), also on a device that can't receive it yet.
+   * Switching it on there asks for this device's notifications in the same tap.
+   */
+  const toggleApp = (category: Category) => {
+    const next = !prefs[category].push;
+    onChange({ [category]: { push: next } });
+    if (next && device !== 'on') onTurnOn();
+  };
 
   /** Email / app for one kind of message; the group title names them for screen readers. */
   const channels = (category: Category) => (
@@ -411,14 +463,17 @@ function Preferences({
         </Toggle>
         {pushConfigured ? (
           <Toggle
-            selected={pushReady && prefs[category].push}
-            disabled={readOnly || !pushReady}
-            onClick={() => onChange({ [category]: { push: !prefs[category].push } })}
+            selected={prefs[category].push}
+            disabled={readOnly}
+            onClick={() => toggleApp(category)}
           >
             {t('notifications.channels.push')}
           </Toggle>
         ) : null}
       </div>
+      {pushConfigured && prefs[category].push && !readOnly ? (
+        <DeviceLine device={device} busy={busy} onTurnOn={onTurnOn} />
+      ) : null}
     </div>
   );
 
@@ -507,6 +562,13 @@ function Preferences({
       {loyaltyOn ? (
         <Group title={t('notifications.loyalty.title')} text={t('notifications.loyalty.text')}>
           {channels('loyalty')}
+        </Group>
+      ) : null}
+
+      {/* (An API from before these reminders sends no such preference.) */}
+      {rebookOn && !staff && prefs.rebook ? (
+        <Group title={t('notifications.rebook.title')} text={t('notifications.rebook.text')}>
+          {channels('rebook')}
         </Group>
       ) : null}
 

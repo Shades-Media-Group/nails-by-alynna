@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useI18nText } from '@/hooks/useStudio';
 import { cx } from '@/lib/cx';
+import { noOrphan } from '@/lib/typography';
 import type { Appointment } from '@/types/api';
 
 /**
@@ -18,7 +19,7 @@ export function ServiceLines({ appointment, max = 3, className }: { appointment:
     <ul className={cx('flex flex-col', className)}>
       {shown.map((name, index) => (
         <li key={index} className="[text-wrap:pretty]">
-          {name}
+          {noOrphan(name)}
         </li>
       ))}
       {more > 0 ? <li>{t('flow.moreServices', { count: more })}</li> : null}

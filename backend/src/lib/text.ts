@@ -62,3 +62,29 @@ export function searchQuery(input: string): string {
     .replace(/(?<=\d)[\s-]+(?=\d)/g, '')
     .replace(/^\+/, '');
 }
+
+/** A space that never ends a line: the words on both sides move to the next line together. */
+export const NBSP = '\u00a0';
+
+/**
+ * A short token: a number ("1", "6.", "15%", "−30%", "14:00", "3D") or a word of at most three
+ * letters ("gel", "din", "из", "QR"), punctuation around it aside.
+ */
+const SHORT_TOKEN = /^[("«„'“]*(?:[−+-]?\p{N}[\p{N}.,:/%]*\p{L}{0,2}|\p{L}{1,3})[)»"'”.,:;!?…]*$/u;
+const LAST_WORD = /^(.*[^ \t\n\r\f])[ \t]+([^ \t\n\r\f]+)(\s*)$/su;
+/** A number and the short word after it ("100 MDL", "15% la"); a short word and the number after it ("din 6"). */
+const NUMBER_THEN_SHORT = /(^|[\s(])([−+-]?\p{N}[\p{N}.,:%]*)[ \t](?=\p{L}{1,3}(?:[.,:;!?…)]|\s|$))/gu;
+const SHORT_THEN_NUMBER = /(^|[\s(])(\p{L}{1,3})[ \t](?=[−+-]?\p{N})/gu;
+
+/**
+ * Keeps short words from standing alone at the edge of a line in an email, the same rule as the
+ * app's lib/typography.ts: a short last word stays with the word before it ("Alungire, mărimea
+ * 1", "Următoarea ta vizită are −15%"), and a number stays with a short word next to it ("100
+ * MDL", "din 6"). Only those spaces become no-break spaces; line breaks in the text stay.
+ */
+export function noOrphan(text: string): string {
+  const bound = text.replace(NUMBER_THEN_SHORT, `$1$2${NBSP}`).replace(SHORT_THEN_NUMBER, `$1$2${NBSP}`);
+  const last = LAST_WORD.exec(bound);
+  if (!last || !SHORT_TOKEN.test(last[2]!)) return bound;
+  return `${last[1]}${NBSP}${last[2]}${last[3]}`;
+}

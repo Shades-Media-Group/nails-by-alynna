@@ -1,19 +1,24 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { NailArt } from '@/components/brand/NailArt';
 import { Alert } from '@/components/common/Alert';
 import { Badge, Button, Select, Sheet, Switch, TextField, toast } from '@/components/ui';
-import { CheckIcon } from '@/components/ui/icons';
+import { CheckIcon, InfoIcon } from '@/components/ui/icons';
 import { useLocale } from '@/i18n/useLocale';
 import { ART_GROUPS } from '@/lib/art';
 import { cx } from '@/lib/cx';
 import { errorMessage, fieldErrors } from '@/lib/errors';
 import { SWATCH, SWATCH_ORDER, type SwatchColor } from '@/lib/swatch';
-import type { ServiceArt } from '@/types/api';
+import { api } from '@/services/api/client';
+import { queries } from '@/services/queries';
+import type { Catalog, ServiceArt } from '@/types/api';
 import { adminApi, adminQueries, type AdminCategory, type AdminService, type CategoryInput, type ServiceInput } from '../api';
 import { I18nFields } from './I18nFields';
-import { emptyText, fillFromRo } from './utils';
+import { emptyText, fillFromRo, sameValue } from './utils';
+
+/** "About the procedure", characters per language: the API's limit (SERVICE_DETAILS_MAX). */
+const DETAILS_MAX = 1500;
 
 /** The illustration collection, grouped, drawn in the category's colour. */
 function ArtPicker({ value, color, onChange }: { value: ServiceArt; color: SwatchColor; onChange: (art: ServiceArt) => void }) {
@@ -63,7 +68,11 @@ function useCatalogRefresh() {
   const queryClient = useQueryClient();
   return () => {
     void queryClient.invalidateQueries({ queryKey: adminQueries.catalog().queryKey });
-    void queryClient.invalidateQueries({ queryKey: ['catalog'] });
+    // The browser keeps the clients' price list for a minute (Cache-Control), so a plain refetch
+    // would get the old copy back: fetch past it, and this device's client screens show the change.
+    void queryClient
+      .fetchQuery({ ...queries.catalog(), queryFn: () => api.get<Catalog>('/catalog', { cache: 'reload' }), staleTime: 0 })
+      .catch(() => undefined);
   };
 }
 
@@ -95,6 +104,7 @@ export function ServiceEditor({
           categoryId: service.categoryId,
           name: service.name,
           description: service.description,
+          details: service.details ?? emptyText(),
           durationMin: service.durationMin,
           price: service.price,
           priceFrom: service.priceFrom,
@@ -106,6 +116,7 @@ export function ServiceEditor({
           categoryId: defaultCategoryId ?? categories[0]?.id ?? '',
           name: emptyText(),
           description: emptyText(),
+          details: emptyText(),
           durationMin: 60,
           price: 0,
           priceFrom: false,
@@ -120,11 +131,11 @@ export function ServiceEditor({
 
   const save = useMutation({
     mutationFn: () => {
-      const input = { ...form, name: fillFromRo(form.name), description: fillFromRo(form.description) };
+      const input = { ...form, name: fillFromRo(form.name), description: fillFromRo(form.description), details: fillFromRo(form.details) };
       if (!service) return adminApi.createService(input);
       // Send only what changed, so untouched fields keep following the price list.
       const changed = Object.fromEntries(
-        Object.entries(input).filter(([key, value]) => JSON.stringify(value) !== JSON.stringify(service[key as keyof AdminService])),
+        Object.entries(input).filter(([key, value]) => !sameValue(value, service[key as keyof AdminService])),
       ) as Partial<ServiceInput>;
       return Object.keys(changed).length ? adminApi.updateService(service.id, changed) : Promise.resolve(service);
     },
@@ -233,6 +244,22 @@ export function ServiceEditor({
         <Switch checked={form.priceFrom} onChange={(v) => set('priceFrom', v)} label={t('services.priceFrom')} />
         <ArtPicker value={form.art} color={color} onChange={(art) => set('art', art)} />
         <I18nFields label={t('services.description')} value={form.description} onChange={(v) => set('description', v)} multiline maxLength={400} />
+        <I18nFields
+          label={t('services.details')}
+          hint={
+            <Trans
+              t={t}
+              i18nKey="services.detailsHint"
+              components={{ icon: <InfoIcon fontSize="inherit" titleAccess="ⓘ" className="inline-block align-[-0.2em] text-[1.15em] text-ink-800" /> }}
+            />
+          }
+          value={form.details}
+          onChange={(v) => set('details', v)}
+          multiline
+          rows={5}
+          maxLength={DETAILS_MAX}
+          errors={{ ro: server['details.ro'], ru: server['details.ru'], en: server['details.en'] }}
+        />
         <div className="flex flex-col gap-3 rounded-2xl bg-ink-50 p-4">
           <Switch checked={form.isActive} onChange={(v) => set('isActive', v)} label={t('services.visible')} />
           <Switch checked={form.isPopular} onChange={(v) => set('isPopular', v)} label={t('services.popular')} />
@@ -267,7 +294,7 @@ export function CategoryEditor({ category, onClose }: { category: AdminCategory 
       const input: CategoryInput = { ...form, name: fillFromRo(form.name), description };
       if (!category) return adminApi.createCategory(input);
       const changed = Object.fromEntries(
-        Object.entries(input).filter(([key, value]) => JSON.stringify(value) !== JSON.stringify(category[key as keyof AdminCategory] ?? null)),
+        Object.entries(input).filter(([key, value]) => !sameValue(value, category[key as keyof AdminCategory])),
       ) as Partial<CategoryInput>;
       return Object.keys(changed).length ? adminApi.updateCategory(category.id, changed) : Promise.resolve(category);
     },

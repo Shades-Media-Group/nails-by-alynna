@@ -4,9 +4,11 @@ import '@/lib/pwa';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from '@/app/App';
+import { getRouter } from '@/app/router';
 import { initI18n } from '@/i18n';
 import { splitLocale } from '@/i18n/routing';
 import { listenForPushes } from '@/lib/liveUpdates';
+import { quietSkippedTransitions } from '@/lib/navDirection';
 import { isStandalone } from '@/lib/platform';
 import { queryClient } from '@/services/queries';
 
@@ -20,8 +22,10 @@ if (import.meta.env.DEV && 'serviceWorker' in navigator) {
   });
 }
 
-// A push arrives while the app is open: what's on screen is fetched again right away.
-listenForPushes(queryClient);
+// A push arrives while the app is open: what's on screen is fetched again right away. A tapped
+// notification the service worker couldn't open in this window comes here as a page to go to.
+listenForPushes(queryClient, (path) => void getRouter().navigate(path));
+quietSkippedTransitions();
 
 // Installed on the Home Screen: ask the browser to keep this app's data (sign-in, preferences)
 // even when the phone runs low on space.

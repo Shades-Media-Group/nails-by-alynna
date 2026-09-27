@@ -107,6 +107,28 @@ describe('staff bookings & statuses', () => {
     expect(invalid.body.error.code).toBe('INVALID_STATUS');
   });
 
+  it('refuses a clashing booking stamped before the one already written (a slow request)', async () => {
+    // Two bookings for one time race: this one took its timestamp first but is written after
+    // the other was checked. Only the time counts, so it still loses.
+    const before = ctx.deps.now();
+    const start = '2026-06-11T09:00:00.000Z';
+    ctx.setNow(new Date(before.getTime() + 5_000));
+    const first = await owner.post('/api/admin/appointments', {
+      newClient: { name: 'Irina', surname: 'Fast', phone: '079000444' },
+      serviceIds: [gelId],
+      start,
+    });
+    expect(first.status).toBe(201);
+    ctx.setNow(before);
+    const late = await owner.post('/api/admin/appointments', {
+      newClient: { name: 'Irina', surname: 'Slow', phone: '079000555' },
+      serviceIds: [gelId],
+      start,
+    });
+    expect(late.body.error?.code).toBe('SLOT_TAKEN');
+    expect(await ctx.deps.col.appointments.countDocuments({ start: new Date(start), status: { $in: ['pending', 'confirmed'] } })).toBe(1);
+  });
+
   it('refuses overlapping staff bookings unless forced', async () => {
     const start = '2026-06-03T09:00:00.000Z';
     const client = { newClient: { name: 'Olga', surname: 'First', phone: '079000111' } };
