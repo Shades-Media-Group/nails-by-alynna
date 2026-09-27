@@ -17,21 +17,48 @@
   "toHome": "Mergi la aplicație",
   "steps": "Cum o adaugi",
   "ios": [
-    "Atinge Partajează jos în Safari (sus în dreapta pe iPad).",
-    "Derulează meniul și atinge „Adaugă pe ecranul principal”.",
-    "Atinge „Adaugă”. Pictograma apare pe ecranul principal."
+    "În Safari, atinge ⋯ din dreapta\u00a0jos.",
+    "Atinge „Partajați”.",
+    "Atinge „Afișați mai multe”, apoi „Adăugați la ecranul principal”.",
+    "Lasă „Deschideți ca aplicație web” pornit și atinge „Adăugați”.",
+    "Deschide Nails by Alynna de pe ecranul principal, ca pe orice aplicație."
   ],
-  "iosChrome": "În Chrome pe iPhone: atinge Partajează în bara de adrese, apoi „Adaugă pe ecranul principal”.",
+  "iosAlt": [
+    "Bara de jos din Safari, cu butonul ⋯ încercuit în dreapta.",
+    "Meniul ⋯ din Safari, cu „Partajați” încercuit.",
+    "Opțiunile de partajare, cu „Adăugați la ecranul principal” încercuit.",
+    "Ecranul „Adăugați la ecranul principal”: „Deschideți ca aplicație web” e pornit, iar „Adăugați” e încercuit.",
+    "Pictograma Nails by Alynna pe ecranul principal, încercuită."
+  ],
+  "iosToolbar": "Vezi butonul Partajați direct în bara Safari (sau ești pe iPad)? Atinge-l și continuă de la pasul\u00a03.",
+  "iosChrome": "În Chrome pe iPhone: atinge butonul de partajare din dreapta barei de adrese, apoi „Adăugați la ecranul principal” și „Adăugați”.",
   "androidManual": [
-    "Deschide meniul browserului (⋮ sus sau ☰ jos).",
-    "Atinge „Instalează aplicația” sau „Adaugă pe ecranul de pornire”.",
-    "Confirmă cu „Instalează”."
+    "În Chrome, atinge ⋮ din dreapta sus, apoi „Instalează și creează o comandă rapidă”.",
+    "Alege „Instalează”.",
+    "Confirmă cu „Instalează”.",
+    "Deschide Nails by Alynna de pe ecranul de pornire sau din lista de aplicații."
   ],
+  "androidAlt": [
+    "Chrome cu butonul ⋮ încercuit și meniul deschis la „Instalează și creează o comandă rapidă”.",
+    "Panoul „Instalează și creează o comandă rapidă”, cu „Instalează” încercuit.",
+    "Fereastra de instalare pentru Nails by Alynna, cu butonul „Instalează” încercuit.",
+    "Ecranul de pornire al telefonului, cu pictograma Nails by Alynna încercuită."
+  ],
+  "androidLabels": {
+    "menuItem": "Instalează și creează o comandă rapidă",
+    "install": "Instalează",
+    "shortcut": "Creează o comandă rapidă",
+    "shortcutNote": "Comenzile rapide se deschid în Chrome",
+    "cancel": "Anulează"
+  },
+  "androidOther": "Nu apare? Caută „Instalează aplicația” sau „Adaugă pe ecranul de pornire” în meniul browserului.",
   "inApp": "Ești în browserul integrat din {{app}}, care nu poate adăuga aplicații. Deschide pagina în Safari sau Chrome: atinge ⋯ și alege „Deschide în browser” sau copiază linkul.",
   "copyLink": "Copiază linkul",
   "copied": "Link copiat",
   "qrTitle": "Scanează cu telefonul",
   "qrText": "Îndreaptă camera telefonului spre cod ca să deschizi pagina acolo, apoi urmează pașii.",
   "desktopInstall": "Instalează pe acest calculator",
-  "desktopManual": "În Chrome sau Edge, apasă pictograma de instalare din dreapta barei de adrese."
+  "desktopManual": "În Chrome sau Edge, apasă pictograma de instalare din capătul drept al barei de adrese.",
+  "desktopMenu": "Nu apare? În Chrome: ⋮ → „Salvează și trimite” → „Instalează pagina ca aplicație”. În Safari pe Mac: Partajați → „Adăugați în Dock”.",
+  "desktopAlt": "Bara de adrese a unui browser, cu pictograma de instalare încercuită în capătul din dreapta."
 }

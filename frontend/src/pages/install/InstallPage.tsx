@@ -1,26 +1,21 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState, type CSSProperties, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useNavigate } from 'react-router';
 import { useAuth } from '@/app/auth';
 import { Logo } from '@/components/brand/Logo';
 import { QrCode } from '@/components/common/QrCode';
 import { Button, ButtonLink, IconButton, SegmentedControl, toast } from '@/components/ui';
-import {
-  AddBoxIcon,
-  ArrowBackIcon,
-  CheckCircleIcon,
-  CheckIcon,
-  ContentCopyIcon,
-  InstallIcon,
-  IosShareIcon,
-  LaptopIcon,
-  MoreVertIcon,
-  type IconComponent,
-} from '@/components/ui/icons';
+import { ArrowBackIcon, CheckCircleIcon, CheckIcon, ContentCopyIcon, InstallIcon } from '@/components/ui/icons';
 import { useLocale } from '@/i18n/useLocale';
 import { cx } from '@/lib/cx';
 import { currentPlatform } from '@/lib/platform';
 import { useInstallPrompt } from '@/lib/pwa';
+import { HIGHLIGHT, highlightDelay } from './highlight';
+import { IOS_SHOTS, type Mark, type Shot } from './iosShots';
+
+// Drawings load only with their device's steps (the iPhone pictures are plain image URLs).
+const AndroidArt = lazy(() => import('./AndroidArt'));
+const DesktopArt = lazy(() => import('./DesktopArt'));
 
 type Device = 'iphone' | 'android' | 'computer';
 
@@ -33,7 +28,7 @@ const IN_APP_NAMES = { instagram: 'Instagram', facebook: 'Facebook', tiktok: 'Ti
  */
 export default function InstallPage() {
   const { t } = useTranslation(['install', 'common']);
-  const { lp } = useLocale();
+  const { locale, lp } = useLocale();
   const navigate = useNavigate();
   const { user } = useAuth();
   const platform = currentPlatform();
@@ -130,8 +125,12 @@ export default function InstallPage() {
 
               {device === 'iphone' ? (
                 <>
-                  <Steps icons={[IosShareIcon, AddBoxIcon, CheckCircleIcon]} texts={t('ios', { returnObjects: true }) as string[]} />
-                  <p className="mt-4 text-center text-sm text-ink-600">{t('iosChrome')}</p>
+                  <Steps
+                    texts={t('ios', { returnObjects: true }) as string[]}
+                    picture={(step, alt) => <ShotPicture shot={IOS_SHOTS[locale][step]!} alt={alt} step={step} />}
+                    alts={t('iosAlt', { returnObjects: true }) as string[]}
+                  />
+                  <Notes lines={[t('iosToolbar'), t('iosChrome')]} />
                 </>
               ) : null}
 
@@ -144,7 +143,18 @@ export default function InstallPage() {
                       </Button>
                     </div>
                   ) : (
-                    <Steps icons={[MoreVertIcon, InstallIcon, CheckCircleIcon]} texts={t('androidManual', { returnObjects: true }) as string[]} />
+                    <>
+                      <Steps
+                        texts={t('androidManual', { returnObjects: true }) as string[]}
+                        picture={(step, alt) => (
+                          <Frame ratio="16 / 10">
+                            <AndroidArt step={step} alt={alt} />
+                          </Frame>
+                        )}
+                        alts={t('androidAlt', { returnObjects: true }) as string[]}
+                      />
+                      <Notes lines={[t('androidOther')]} />
+                    </>
                   )}
                 </>
               ) : null}
@@ -156,16 +166,19 @@ export default function InstallPage() {
                     <h3 className="mt-3 font-bold">{t('qrTitle')}</h3>
                     <p className="mt-1 max-w-64 text-sm text-ink-600">{t('qrText')}</p>
                   </div>
-                  <div className="flex max-w-xs flex-col items-center gap-3 text-center md:items-start md:pt-6 md:text-left">
-                    <span className="inline-flex size-11 items-center justify-center rounded-pill bg-ink-50 text-2xl text-ink-800">
-                      <LaptopIcon fontSize="inherit" />
-                    </span>
+                  <div className="flex w-full max-w-sm flex-col items-center gap-3 text-center md:items-start md:pt-2 md:text-left">
                     {canPrompt && detected === 'computer' ? (
                       <Button size="md" icon={InstallIcon} onClick={() => void install()}>
                         {t('desktopInstall')}
                       </Button>
                     ) : (
-                      <p className="text-sm text-ink-600">{t('desktopManual')}</p>
+                      <>
+                        <Frame ratio="16 / 7">
+                          <DesktopArt alt={t('desktopAlt')} />
+                        </Frame>
+                        <p className="text-[0.9375rem] leading-snug">{t('desktopManual')}</p>
+                        <p className="text-sm text-ink-600">{t('desktopMenu')}</p>
+                      </>
                     )}
                   </div>
                 </div>
@@ -178,28 +191,64 @@ export default function InstallPage() {
   );
 }
 
-/** Numbered steps with the icon the visitor will actually see on their screen. */
-function Steps({ icons, texts }: { icons: IconComponent[]; texts: string[] }) {
+/**
+ * Numbered steps, each with a picture of what the visitor will see and our mark on what to tap:
+ * under the text on phones, beside it from sm up. Pictures keep their aspect ratio (no shift).
+ */
+function Steps({ texts, alts, picture }: { texts: string[]; alts: string[]; picture: (step: number, alt: string) => ReactNode }) {
   return (
-    <ol className="mx-auto flex max-w-md flex-col gap-3">
-      {texts.map((text, index) => {
-        const Icon = icons[index] ?? CheckCircleIcon;
-        return (
-          <li
-            key={text}
-            className={cx('stagger flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-inset ring-ink-100')}
-            style={{ ['--i' as string]: index }}
-          >
+    <ol className="mx-auto flex max-w-md flex-col gap-3 sm:max-w-2xl">
+      {texts.map((text, index) => (
+        <li
+          key={text}
+          className="stagger rounded-2xl bg-white p-3 ring-1 ring-inset ring-ink-100 sm:grid sm:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] sm:items-center sm:gap-5 sm:p-4"
+          style={{ ['--i' as string]: index }}
+        >
+          <div className="flex items-start gap-3">
             <span className="tabular flex size-8 shrink-0 items-center justify-center rounded-pill bg-ink-900 text-sm font-bold text-white">
               {index + 1}
             </span>
-            <span className="min-w-0 flex-1 text-[0.9375rem] leading-snug">{text}</span>
-            <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-blush-100 text-xl text-rose-700">
-              <Icon fontSize="inherit" />
-            </span>
-          </li>
-        );
-      })}
+            <p className="min-w-0 flex-1 pt-1 text-[0.9375rem] leading-snug">{text}</p>
+          </div>
+          <div className="mt-3 sm:mt-0">{picture(index, alts[index] ?? '')}</div>
+        </li>
+      ))}
     </ol>
+  );
+}
+
+/** Fixed-ratio frame for a step picture; a drawing still loading leaves the same box. */
+function Frame({ ratio, maxWidth, children }: { ratio: string; maxWidth?: number; children: ReactNode }) {
+  return (
+    <figure
+      className="@container relative mx-auto w-full overflow-hidden rounded-md bg-ink-50 ring-1 ring-ink-100"
+      style={{ aspectRatio: ratio, maxWidth }}
+    >
+      <Suspense fallback={null}>{children}</Suspense>
+    </figure>
+  );
+}
+
+const MARK_SHAPE: Record<Mark['shape'], string> = { circle: 'rounded-full', pill: 'rounded-pill', icon: 'rounded-[26%]' };
+
+/** A screenshot, shown at most at its own size, with our mark drawn over the control to tap. */
+function ShotPicture({ shot, alt, step }: { shot: Shot; alt: string; step: number }) {
+  const { mark } = shot;
+  const place: CSSProperties = { left: `${mark.x}%`, top: `${mark.y}%`, width: `${mark.w}%`, height: `${mark.h}%`, ...highlightDelay(step) };
+  return (
+    <Frame ratio={`${shot.width} / ${shot.height}`} maxWidth={shot.width / 2}>
+      <img src={shot.src} width={shot.width} height={shot.height} alt={alt} loading="lazy" decoding="async" draggable={false} className="block size-full select-none" />
+      <span aria-hidden="true" className={cx('pointer-events-none absolute', MARK_SHAPE[mark.shape], HIGHLIGHT)} style={place} />
+    </Frame>
+  );
+}
+
+function Notes({ lines }: { lines: string[] }) {
+  return (
+    <div className="mx-auto mt-4 flex max-w-md flex-col gap-2 text-center text-sm text-ink-600 sm:max-w-xl">
+      {lines.map((line) => (
+        <p key={line}>{line}</p>
+      ))}
+    </div>
   );
 }

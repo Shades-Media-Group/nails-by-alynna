@@ -4,6 +4,7 @@
  */
 export { default as AddBoxIcon } from '@mui/icons-material/AddBoxOutlined';
 export { default as AddIcon } from '@mui/icons-material/AddRounded';
+export { default as AddToHomeScreenIcon } from '@mui/icons-material/AddToHomeScreenRounded';
 export { default as AdminIcon } from '@mui/icons-material/AdminPanelSettingsRounded';
 export { default as ArrowBackIcon } from '@mui/icons-material/ArrowBackRounded';
 export { default as ArrowForwardIcon } from '@mui/icons-material/ArrowForwardRounded';
@@ -44,6 +45,7 @@ export { default as HomeOutlinedIcon } from '@mui/icons-material/HomeOutlined';
 export { default as HourglassIcon } from '@mui/icons-material/HourglassTopRounded';
 export { default as InfoIcon } from '@mui/icons-material/InfoOutlined';
 export { default as InstagramIcon } from '@mui/icons-material/Instagram';
+export { default as InstallDesktopIcon } from '@mui/icons-material/InstallDesktopRounded';
 export { default as InstallIcon } from '@mui/icons-material/InstallMobileRounded';
 export { default as IosShareIcon } from '@mui/icons-material/IosShareRounded';
 export { default as KeyboardIcon } from '@mui/icons-material/KeyboardRounded';

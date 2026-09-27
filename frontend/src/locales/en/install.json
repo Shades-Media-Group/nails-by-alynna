@@ -17,21 +17,48 @@
   "toHome": "Go to the\u00a0app",
   "steps": "How to add\u00a0it",
   "ios": [
-    "Tap Share at the bottom of Safari (top right on iPad).",
-    "Scroll the menu and tap “Add to Home Screen”.",
-    "Tap “Add”. The icon appears on your home screen."
+    "In Safari, tap ⋯ at the bottom\u00a0right.",
+    "Tap “Share”.",
+    "Tap “View More”, then “Add to Home Screen”.",
+    "Leave “Open as Web App” on and tap\u00a0“Add”.",
+    "Open Nails by Alynna from your Home Screen, like any\u00a0app."
   ],
-  "iosChrome": "In Chrome on iPhone: tap Share in the address bar, then “Add to Home Screen”.",
+  "iosAlt": [
+    "Safari's bottom bar with the ⋯ button circled at the right.",
+    "Safari's ⋯ menu with “Share” circled.",
+    "The share options with “Add to Home Screen” circled.",
+    "The “Add to Home Screen” screen: “Open as Web App” is on and “Add” is circled.",
+    "The Nails by Alynna icon on the Home Screen, circled."
+  ],
+  "iosToolbar": "Is the Share button right in Safari's toolbar (or are you on an iPad)? Tap it and carry on from step\u00a03.",
+  "iosChrome": "Chrome on iPhone: tap Share on the right of the address bar, then “Add to Home Screen” and\u00a0“Add”.",
   "androidManual": [
-    "Open the browser menu (⋮ at the top or ☰ at the bottom).",
-    "Tap “Install app” or “Add to Home screen”.",
-    "Confirm with “Install”."
+    "In Chrome, tap ⋮ at the top right, then “Install and create shortcut”.",
+    "Choose “Install”.",
+    "Confirm with “Install”.",
+    "Open Nails by Alynna from your home screen or app\u00a0list."
   ],
+  "androidAlt": [
+    "Chrome with the ⋮ button circled and its menu open at “Install and create shortcut”.",
+    "The “Install and create shortcut” panel with “Install” circled.",
+    "The install window for Nails by Alynna with its “Install” button circled.",
+    "A phone home screen with the Nails by Alynna icon circled."
+  ],
+  "androidLabels": {
+    "menuItem": "Install and create shortcut",
+    "install": "Install",
+    "shortcut": "Create shortcut",
+    "shortcutNote": "Shortcuts open in Chrome",
+    "cancel": "Cancel"
+  },
+  "androidOther": "Not there? Look for “Install app” or “Add to Home screen” in the browser's menu.",
   "inApp": "You're inside {{app}}'s built-in browser, which can't add apps. Open this page in Safari or Chrome: tap ⋯ and choose “Open in browser”, or copy the link.",
   "copyLink": "Copy link",
   "copied": "Link copied",
   "qrTitle": "Scan with your phone",
   "qrText": "Point your phone's camera at the code to open this page there, then follow the steps.",
   "desktopInstall": "Install on this computer",
-  "desktopManual": "In Chrome or Edge, click the install icon at the right of the address\u00a0bar."
+  "desktopManual": "In Chrome or Edge, click the install icon at the right end of the address\u00a0bar.",
+  "desktopMenu": "No icon? In Chrome: ⋮ → “Cast, save, and share” → “Install page as app”. In Safari on a Mac: Share → “Add to\u00a0Dock”.",
+  "desktopAlt": "A browser address bar with the install icon circled at its right end."
 }

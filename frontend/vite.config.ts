@@ -260,6 +260,8 @@ export default defineConfig(({ mode }) => {
             '**/splash/**',
             // Pictures for emails, loaded by mail apps, never by the installed app.
             '**/email/**',
+            // The /app install guide's screenshots: only a visitor still in the browser needs them.
+            '**/assets/install-*.webp',
             'version.json',
             // Onest subsets the app never renders (ro/ru/en need latin, latin-ext, cyrillic).
             '**/onest-{math,symbols,vietnamese}-*.woff2',
