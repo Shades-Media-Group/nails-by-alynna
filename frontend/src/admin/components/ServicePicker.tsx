@@ -11,6 +11,7 @@ import { errorMessage } from '@/lib/errors';
 import { formatDuration, formatPrice } from '@/lib/format';
 import { toggleService } from '@/lib/selection';
 import { SWATCH } from '@/lib/swatch';
+import { noOrphan } from '@/lib/typography';
 import { useBookableCatalog } from './hooks';
 import { SearchField } from './SearchField';
 import { matches } from './utils';
@@ -83,7 +84,7 @@ export function ServicePicker({ selected, onChange }: { selected: string[]; onCh
                         <NailArt art={service.art} color={category.color} className="w-10" />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-[0.9375rem] font-semibold leading-snug">{name(service.name)}</span>
+                        <span className="block text-balance text-[0.9375rem] font-semibold leading-snug">{noOrphan(name(service.name))}</span>
                         <span className="mt-0.5 flex flex-wrap gap-x-2 text-sm text-ink-600">
                           <span className="tabular font-semibold text-ink-900">{formatPrice(t, service.price, currency, service.priceFrom)}</span>
                           <span>{formatDuration(t, service.durationMin)}</span>

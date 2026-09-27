@@ -141,7 +141,7 @@ describe('reminders', () => {
     expect(first).toMatchObject({ sent: 1, failed: 0 });
     const mail = mailsTo(user.email).at(-1)!;
     expect(mail.subject).toBe('Memento: vizita ta de azi, la 12:00');
-    expect(mail.html).toContain('Gel lac');
+    expect(mail.html).toContain('Gel\u00a0lac');
     expect(mail.html).toContain(`/bookings/${appt._id.toHexString()}`);
     expect(mail.text).toContain(appt.code);
 

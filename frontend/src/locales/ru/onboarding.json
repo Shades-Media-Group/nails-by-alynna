@@ -3,7 +3,7 @@
   "skip": "Пропустить знакомство",
   "next": "Далее",
   "start": "Начать",
-  "step": "Шаг {{current}} из {{total}}",
+  "step": "Шаг\u00a0{{current}}\u00a0из\u00a0{{total}}",
   "visit": "визит",
   "book": {
     "title": "Запись",
@@ -32,11 +32,11 @@
   },
   "scene": {
     "time": "Вт · 12:00",
-    "reminder": "Напоминание за 1 час",
+    "reminder": "Напоминание за\u00a01\u00a0час",
     "calendar": "В вашем календаре",
     "change": "Перенос или отмена",
     "card": "Карта лояльности",
-    "stamps": "3 из 8",
+    "stamps": "3\u00a0из\u00a08",
     "addHome": "На экран «Домой»",
     "appName": "Nails Alynna",
     "selected": "Выбрано"

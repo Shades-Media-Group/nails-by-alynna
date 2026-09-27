@@ -26,6 +26,7 @@ import { parseNailShape } from '@/lib/nailShape';
 import { promoProblemText, promoRefusal } from '@/lib/promo';
 import { bringIntoView } from '@/lib/scroll';
 import { toggleService } from '@/lib/selection';
+import { NBSP } from '@/lib/typography';
 import { normalizePhone } from '@/lib/validation';
 import { ApiError } from '@/services/api/client';
 import { appointmentsApi } from '@/services/api/endpoints';
@@ -350,7 +351,7 @@ export default function BookingPage() {
           currency={currency}
           detail={
             <span className="first-letter:uppercase">
-              {formatDayLong(slot.start, locale, timeZone)}, {formatTime(slot.start, locale, timeZone)}
+              {formatDayLong(slot.start, locale, timeZone)},{NBSP}{formatTime(slot.start, locale, timeZone)}
             </span>
           }
           actionLabel={t('services.continue')}

@@ -39,10 +39,10 @@ export function ConfirmSheet({
       description={description}
       footer={
         <div className="grid grid-cols-2 gap-2">
-          <Button variant="soft" size="md" onClick={onClose}>
+          <Button variant="soft" size="md" fit onClick={onClose}>
             {cancelLabel ?? t('common.cancel')}
           </Button>
-          <Button variant={tone} size="md" loading={loading} onClick={onConfirm}>
+          <Button variant={tone} size="md" fit loading={loading} onClick={onConfirm}>
             {confirmLabel}
           </Button>
         </div>

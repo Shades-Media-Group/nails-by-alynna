@@ -6,6 +6,7 @@ import { useLocale } from '@/i18n/useLocale';
 import { cx } from '@/lib/cx';
 import { dayParts, formatDuration, formatPrice, formatTime, fullName, zonedDate } from '@/lib/format';
 import { SWATCH } from '@/lib/swatch';
+import { noOrphan } from '@/lib/typography';
 import { PromoBadge } from '@/components/promo/PromoBits';
 import type { StaffAppointmentCore } from '../api';
 import { StatusBadge } from './StatusBadge';
@@ -35,7 +36,7 @@ export function AppointmentRow({
   const { lp, locale } = useLocale();
   const pick = useI18nText();
   const { timeZone, currency } = useStudio();
-  const names = a.services.map((s) => pick(s.name));
+  const names = a.services.map((s) => noOrphan(pick(s.name)));
   const more = names.length - 2;
   const inactive = a.status === 'cancelled' || a.status === 'no_show';
   const leaf = withDate ? dayParts(zonedDate(new Date(a.start), timeZone), locale) : null;

@@ -352,13 +352,34 @@
       }
     }
   }
+  /*
+   * Line breaks, in every language: no word stands alone on a last line. Text wraps "pretty"
+   * (inherited, so the spans in cards and rows get it too, not only <p>); headings and titles
+   * balance their lines (text-balance on the ones that aren't headings). Where a browser has
+   * neither (pretty: Safari 26+, Chrome 117+; balance: Safari 17.5+), it wraps as before, and
+   * the no-break spaces in the copy and noOrphan() still keep numbers with their units.
+   */
+  html {
+    text-wrap: pretty;
+  }
   h1,
   h2,
-  h3 {
+  h3,
+  h4,
+  h5,
+  h6,
+  legend,
+  caption,
+  figcaption,
+  dt,
+  th {
     text-wrap: balance;
   }
-  p {
-    text-wrap: pretty;
+  /* What is being typed wraps as typed. */
+  input,
+  textarea,
+  [contenteditable] {
+    text-wrap: wrap;
   }
   button:not(:disabled),
   [role='button']:not([aria-disabled='true']) {

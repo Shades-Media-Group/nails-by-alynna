@@ -8,6 +8,7 @@ import { useI18nText } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
 import { cx } from '@/lib/cx';
 import { errorMessage } from '@/lib/errors';
+import { noOrphan } from '@/lib/typography';
 import {
   dayParts,
   formatDateTime,
@@ -222,7 +223,7 @@ function RequestRow({
               {withMaster && a.staff ? ` · ${a.staff.name}` : ''}
             </span>
             <span className={cx('block text-sm', tone.muted)}>
-              {a.services.map((s) => pick(s.name)).join(', ')}
+              {a.services.map((s) => noOrphan(pick(s.name))).join(', ')}
             </span>
             {a.nailShape ? (
               <span className={cx('block text-sm', tone.muted)}>
@@ -237,11 +238,12 @@ function RequestRow({
           </span>
         </Link>
         <div className="grid grid-cols-2 gap-2 @xl:w-80 @xl:shrink-0">
-          <Button size="md" variant="outline" disabled={disabled} onClick={onDecline}>
+          <Button size="md" variant="outline" fit disabled={disabled} onClick={onDecline}>
             {t('appointment.decline')}
           </Button>
           <Button
             size="md"
+            fit
             loading={confirming}
             disabled={disabled && !confirming}
             onClick={onConfirm}

@@ -3,7 +3,7 @@
   "skip": "Sari peste introducere",
   "next": "Continuă",
   "start": "Să începem",
-  "step": "Pasul {{current}} din {{total}}",
+  "step": "Pasul\u00a0{{current}}\u00a0din\u00a0{{total}}",
   "visit": "vizită",
   "book": {
     "title": "Te programezi",
@@ -28,15 +28,15 @@
   "ready": {
     "title": "Totul",
     "accent": "e gata.",
-    "text": "Servicii, programări, cardul de fidelitate și contactele salonului, într-un singur loc."
+    "text": "Servicii, programări, cardul de fidelitate și contactele salonului, într-un singur\u00a0loc."
   },
   "scene": {
     "time": "Mar · 12:00",
-    "reminder": "Memento cu 1 oră înainte",
+    "reminder": "Memento cu\u00a01\u00a0oră înainte",
     "calendar": "În calendarul tău",
     "change": "Mută sau anulează",
     "card": "Card de fidelitate",
-    "stamps": "3 din 8",
+    "stamps": "3\u00a0din\u00a08",
     "addHome": "Adaugă pe ecranul principal",
     "appName": "Nails Alynna",
     "selected": "Ales"

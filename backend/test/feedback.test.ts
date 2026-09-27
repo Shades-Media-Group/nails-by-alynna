@@ -365,9 +365,9 @@ describe('"How was your visit?" after a visit', () => {
     expect(first).toMatchObject({ sent: 1, failed: 0 });
     const mail = mailsTo(user.email).at(-1)!;
     expect(mail.subject).toBe('Cum a fost vizita ta la Nails by Alynna?');
-    expect(mail.html).toContain('Cum a fost vizita ta?');
+    expect(mail.html).toContain('Cum a fost vizita\u00a0ta?');
     expect(mail.html).toContain('Alina ar vrea să afle cum ți s-a părut');
-    expect(mail.html).toContain('Gel lac');
+    expect(mail.html).toContain('Gel\u00a0lac');
     expect(mail.html).toContain(done.code);
     for (const rating of [1, 2, 3, 4, 5]) {
       expect(mail.html).toContain(`http://localhost:5180/feedback?visit=${id}&amp;rating=${rating}`);
@@ -507,7 +507,7 @@ describe('the feedback email', () => {
     expect(mail.html).toContain('Гель &lt;script&gt;');
     expect(mail.html).toContain('Мастеру Alina &quot;the best&quot; важно знать');
     expect(mail.html).not.toContain('javascript:');
-    expect(mail.html).toContain('1 ч 30 мин');
+    expect(mail.html).toContain('1\u00a0ч\u00a030\u00a0мин');
     expect(mail.text).toContain('Отзыв увидит только салон');
   });
 });

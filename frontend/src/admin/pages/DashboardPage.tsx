@@ -14,6 +14,7 @@ import { cx } from '@/lib/cx';
 import { errorMessage } from '@/lib/errors';
 import { dateToInstant, formatDayLong, formatDuration, formatPrice, formatTime, fullName } from '@/lib/format';
 import { SWATCH } from '@/lib/swatch';
+import { noOrphan } from '@/lib/typography';
 import { adminQueries, type DashboardStats } from '../api';
 import { AdminHeader } from '../components/AdminHeader';
 import { useStatusChange, useStudioToday } from '../components/hooks';
@@ -184,7 +185,7 @@ function NextUp({ stats, now, multiMaster }: { stats: DashboardStats; now: numbe
   }
 
   const started = new Date(next.start).getTime() <= now;
-  const names = next.services.map((s) => pick(s.name));
+  const names = next.services.map((s) => noOrphan(pick(s.name)));
   return (
     <section aria-label={t('dashboard.nextUp')} className="rounded-2xl bg-ink-900 p-4 text-white sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -279,7 +280,7 @@ function TopServices({ stats }: { stats: DashboardStats }) {
       {stats.topServices.map((service) => (
         <li key={service.id}>
           <div className="flex items-baseline justify-between gap-3 text-sm">
-            <span className="min-w-0 font-semibold">{pick(service.name)}</span>
+            <span className="min-w-0 font-semibold">{noOrphan(pick(service.name))}</span>
             <span className="tabular shrink-0 text-ink-600">{t('dashboard.top.count', { count: service.count })}</span>
           </div>
           <span className="mt-1.5 block h-1.5 overflow-hidden rounded-pill bg-ink-100" aria-hidden="true">

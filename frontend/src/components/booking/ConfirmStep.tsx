@@ -13,6 +13,7 @@ import { useLocale } from '@/i18n/useLocale';
 import { cx } from '@/lib/cx';
 import { formatDateTime, formatDuration, formatPrice } from '@/lib/format';
 import { SWATCH } from '@/lib/swatch';
+import { noOrphan } from '@/lib/typography';
 import type { NailShape, Service, Slot } from '@/types/api';
 
 interface ConfirmStepProps {
@@ -79,7 +80,7 @@ export function ConfirmStep(props: ConfirmStepProps) {
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-sm text-ink-600">{t('flow.when')}</span>
-            <span className="block font-bold first-letter:uppercase">{formatDateTime(slot.start, locale, timeZone)}</span>
+            <span className="block text-balance font-bold first-letter:uppercase">{formatDateTime(slot.start, locale, timeZone)}</span>
             <span className="block text-sm text-ink-600">
               {formatDuration(t, durationMin)}
               {masterName ? ` · ${t('flow.withMaster', { name: masterName })}` : ''}
@@ -110,7 +111,7 @@ export function ConfirmStep(props: ConfirmStepProps) {
                   <RealisticNailArt art={service.art} color={color} className="w-10" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[0.9375rem] font-semibold leading-snug">{pick(service.name)}</span>
+                  <span className="block text-balance text-[0.9375rem] font-semibold leading-snug">{noOrphan(pick(service.name))}</span>
                   <span className="block text-sm text-ink-600">{formatDuration(t, service.durationMin)}</span>
                 </span>
                 <span className="tabular shrink-0 text-[0.9375rem] font-semibold">

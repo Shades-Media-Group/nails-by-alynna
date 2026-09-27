@@ -54,13 +54,13 @@
   },
   "price": {
     "value": "{{amount}}",
-    "from": "de la {{amount}}",
-    "currencyMdl": "{{amount}} lei"
+    "from": "de\u00a0la\u00a0{{amount}}",
+    "currencyMdl": "{{amount}}\u00a0lei"
   },
   "duration": {
-    "min": "{{m}} min",
-    "h": "{{h}} h",
-    "hm": "{{h}} h {{m}} min"
+    "min": "{{m}}\u00a0min",
+    "h": "{{h}}\u00a0h",
+    "hm": "{{h}}\u00a0h\u00a0{{m}}\u00a0min"
   },
   "time": {
     "today": "Azi",
@@ -68,15 +68,15 @@
     "morning": "Dimineața",
     "afternoon": "După-amiaza",
     "evening": "Seara",
-    "until": "până la {{time}}"
+    "until": "până\u00a0la\u00a0{{time}}"
   },
   "language": {
     "label": "Limba",
     "choose": "Alege limba"
   },
   "errors": {
-    "generic": "Ceva n-a mers bine. Te rugăm să încerci din nou.",
-    "network": "Nu există conexiune. Verifică internetul și încearcă din nou.",
+    "generic": "Ceva n-a mers bine. Te rugăm să încerci din\u00a0nou.",
+    "network": "Nu există conexiune. Verifică internetul și încearcă din\u00a0nou.",
     "sessionExpired": "Sesiunea s-a încheiat. Te rugăm să intri din nou în cont.",
     "notFoundTitle": "Pagina și-a luat o zi liberă",
     "notFoundText": "Linkul poate fi greșit sau pagina a fost mutată.",
@@ -89,7 +89,7 @@
       "WEAK_PASSWORD": "Alege o parolă mai puternică.",
       "WRONG_PASSWORD": "Parola este incorectă.",
       "ACCOUNT_DISABLED": "Acest cont este dezactivat. Te rugăm să contactezi salonul.",
-      "RESET_TOKEN_INVALID": "Linkul nu este valid sau a expirat. Cere unul nou.",
+      "RESET_TOKEN_INVALID": "Linkul nu este valid sau a expirat. Cere unul\u00a0nou.",
       "SLOT_TAKEN": "Cineva tocmai a rezervat această oră. Te rugăm să alegi alta.",
       "SLOT_UNAVAILABLE": "Această oră nu mai este disponibilă. Te rugăm să alegi alta.",
       "BOOKING_LIMIT": "Ai deja numărul maxim de programări viitoare.",
@@ -99,21 +99,21 @@
       "LAST_ADMINISTRATOR": "Trebuie să rămână cel puțin un administrator.",
       "SELF_ACTION": "Nu îți poți schimba propriul rol sau statut.",
       "IN_USE": "Este încă folosit și nu poate fi șters.",
-      "CONFLICT": "S-a modificat între timp. Reîncarcă și încearcă din nou.",
+      "CONFLICT": "S-a modificat între timp. Reîncarcă și încearcă din\u00a0nou.",
       "FORBIDDEN": "Nu ai acces la această secțiune.",
       "NOT_FOUND": "Nu am găsit ce căutai.",
-      "RATE_LIMITED": "Prea multe încercări. Așteaptă câteva minute și încearcă din nou.",
-      "CSRF_REJECTED": "Cerere blocată pentru siguranța ta. Reîncarcă pagina și încearcă din nou.",
+      "RATE_LIMITED": "Prea multe încercări. Așteaptă câteva minute și încearcă din\u00a0nou.",
+      "CSRF_REJECTED": "Cerere blocată pentru siguranța ta. Reîncarcă pagina și încearcă din\u00a0nou.",
       "VALIDATION_ERROR": "Verifică câmpurile marcate.",
-      "NETWORK": "Nu există conexiune. Verifică internetul și încearcă din nou.",
+      "NETWORK": "Nu există conexiune. Verifică internetul și încearcă din\u00a0nou.",
       "DEMO_READ_ONLY": "Acesta este un cont demo, așa că modificările nu se salvează.",
       "ONE_PER_CATEGORY": "Alege o singură mărime pentru o vizită.",
       "NOT_A_DEFAULT": "Acest serviciu nu face parte din lista de prețuri standard.",
       "INVITE_INVALID": "Invitația a expirat sau a fost deja folosită.",
       "ALREADY_REGISTERED": "Acest client are deja cont.",
-      "EMAIL_NOT_VERIFIED": "Confirmă mai întâi emailul: ți-am trimis un cod.",
+      "EMAIL_NOT_VERIFIED": "Confirmă mai întâi emailul: ți-am trimis un\u00a0cod.",
       "EMAIL_NOT_SENT": "Nu am putut trimite emailul acum. Încearcă din nou peste câteva minute.",
-      "CODE_INVALID": "Codul este greșit sau a expirat. Verifică-l sau cere unul nou.",
+      "CODE_INVALID": "Codul este greșit sau a expirat. Verifică-l sau cere unul\u00a0nou.",
       "PUSH_UNAVAILABLE": "Notificările pe telefon nu sunt disponibile încă.",
       "FEEDBACK_CLOSED": "O vizită poate primi o notă timp de două săptămâni după ea. Poți oricând să-i scrii salonului."
     }
@@ -121,7 +121,7 @@
   "validation": {
     "required": "Câmp obligatoriu",
     "invalid_email": "Introdu o adresă de email validă",
-    "invalid_phone": "Introdu un număr de telefon valid, de ex. 069 123 456",
+    "invalid_phone": "Introdu un număr de telefon valid, de\u00a0ex.\u00a0069\u00a0123\u00a0456",
     "invalid_name": "Folosește doar litere",
     "too_short": "Prea scurt",
     "too_long": "Prea lung",
@@ -130,12 +130,12 @@
     "contains_email": "Nu folosi emailul în parolă",
     "taken": "Deja înregistrat",
     "wrong": "Parolă incorectă",
-    "password_rules": "Cel puțin 8 caractere",
+    "password_rules": "Cel puțin 8\u00a0caractere",
     "passwords_mismatch": "Parolele nu coincid",
     "invalid": "Valoare nevalidă",
     "plain_text": "Doar text simplu, fără etichete HTML",
-    "invalid_code": "Introdu codul din 6 cifre",
-    "same_email": "Acesta este deja emailul tău"
+    "invalid_code": "Introdu codul din\u00a06\u00a0cifre",
+    "same_email": "Acesta este deja emailul\u00a0tău"
   },
   "offline": "Ești offline. Îți arătăm ce am salvat.",
   "update": {
@@ -150,7 +150,7 @@
     "minimal": "Minim",
     "custom": "Personalizat",
     "settingsTitle": "Alege ce putem păstra",
-    "settingsText": "Alegerea rămâne pe acest dispozitiv 6 luni. O poți schimba oricând în Profil → Confidențialitate.",
+    "settingsText": "Alegerea rămâne pe acest dispozitiv 6\u00a0luni. O poți schimba oricând în Profil → Confidențialitate.",
     "essential": "Esențiale",
     "essentialText": "Autentificarea, securitatea, limba și această alegere. Fără ele aplicația nu funcționează.",
     "preferences": "Preferințe",
@@ -195,6 +195,6 @@
     "text": "Cont demo · nimic nu se salvează"
   },
   "otp": {
-    "digit": "Cifra {{n}} din {{total}}"
+    "digit": "Cifra\u00a0{{n}}\u00a0din\u00a0{{total}}"
   }
 }

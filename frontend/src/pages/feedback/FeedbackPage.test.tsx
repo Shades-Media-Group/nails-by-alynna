@@ -184,7 +184,7 @@ describe('feedback on a visit', () => {
 
     expect(posts).toEqual([]);
     const group = screen.getByRole('radiogroup', { name: 'Your rating' });
-    expect(group).toHaveAccessibleDescription('Choose from 1 to 5 stars');
+    expect(group).toHaveAccessibleDescription(/^Choose from\s1\sto\s5\sstars$/);
     expect(screen.getByRole('radio', { name: '1 star' })).toHaveFocus();
 
     await user.keyboard('{End}');
