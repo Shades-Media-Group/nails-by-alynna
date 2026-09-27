@@ -20,6 +20,7 @@ import { meRoutes } from './modules/me/routes';
 import { notificationRoutes } from './modules/notifications';
 import { promoRoutes } from './modules/promo/routes';
 import { publicRoutes } from './modules/public/routes';
+import { walletRoutes } from './modules/wallet/routes';
 
 export function createApp(deps: AppDeps) {
   const app = new Hono<AppEnv>();
@@ -33,6 +34,7 @@ export function createApp(deps: AppDeps) {
   app.route('/api/availability', availabilityRoutes(deps));
   app.route('/api/appointments', appointmentRoutes(deps));
   app.route('/api/loyalty', loyaltyRoutes(deps));
+  app.route('/api/wallet', walletRoutes(deps));
   app.route('/api/promo', promoRoutes(deps));
   app.route('/api/feedback', feedbackRoutes(deps));
   app.route('/api/calendar', calendarRoutes(deps));

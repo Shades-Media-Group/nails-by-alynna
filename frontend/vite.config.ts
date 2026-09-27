@@ -260,6 +260,8 @@ export default defineConfig(({ mode }) => {
             '**/splash/**',
             // Pictures for emails, loaded by mail apps, never by the installed app.
             '**/email/**',
+            // The Google Wallet logo, fetched by Google, never by the app.
+            '**/wallet/**',
             // The /app install guide's screenshots: only a visitor still in the browser needs them.
             '**/assets/install-*.webp',
             'version.json',

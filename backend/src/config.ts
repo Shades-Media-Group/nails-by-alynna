@@ -1,4 +1,6 @@
+import type { KeyObject } from 'node:crypto';
 import { z } from 'zod';
+import { certificateFromEnv, rsaKeyFromEnv } from './lib/pem';
 
 /**
  * Runtime configuration, parsed once from `process.env`. Invalid configuration fails fast with
@@ -59,8 +61,31 @@ const schema = z.object({
     .string()
     .regex(/^(on|off|(client|admin|administrator)(,(client|admin|administrator))*)$/, 'use off, on or roles like client,admin')
     .optional(),
+  /** Apple Wallet loyalty card: every value but the passphrase, or it stays off (see .env.template). */
+  APPLE_WALLET_PASS_TYPE_ID: optionalString,
+  APPLE_WALLET_TEAM_ID: optionalString,
+  APPLE_WALLET_SIGNER_CERT: optionalString,
+  APPLE_WALLET_SIGNER_KEY: optionalString,
+  APPLE_WALLET_SIGNER_KEY_PASSPHRASE: optionalString,
+  APPLE_WALLET_WWDR_CERT: optionalString,
+  /** Google Wallet loyalty card: all three, or it stays off. */
+  GOOGLE_WALLET_ISSUER_ID: optionalString,
+  GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL: optionalString,
+  GOOGLE_WALLET_PRIVATE_KEY: optionalString,
   PORT: z.coerce.number().int().min(1).max(65535).default(8787),
 });
+
+type Env = z.infer<typeof schema>;
+
+/** The settings each Wallet needs; with any of them missing, that Wallet is off. */
+export const APPLE_WALLET_VARS = [
+  'APPLE_WALLET_PASS_TYPE_ID',
+  'APPLE_WALLET_TEAM_ID',
+  'APPLE_WALLET_SIGNER_CERT',
+  'APPLE_WALLET_SIGNER_KEY',
+  'APPLE_WALLET_WWDR_CERT',
+] as const;
+export const GOOGLE_WALLET_VARS = ['GOOGLE_WALLET_ISSUER_ID', 'GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL', 'GOOGLE_WALLET_PRIVATE_KEY'] as const;
 
 export type Role = 'client' | 'admin' | 'administrator';
 
@@ -68,6 +93,30 @@ export type MailConfig =
   | { provider: 'smtp'; host: string; port: number; user: string; password: string; from: string }
   | { provider: 'emailjs'; serviceId: string; templateId: string; publicKey: string; privateKey?: string }
   | { provider: 'resend'; resendApiKey: string; from: string };
+
+export interface AppleWalletConfig {
+  passTypeId: string;
+  teamId: string;
+  /** PEM. The key is held decrypted, so signing needs no passphrase. */
+  signerCert: string;
+  signerKey: string;
+  wwdr: string;
+  /** Wallet refuses passes signed after this: Apple turns itself off until a new certificate is in. */
+  certificateExpiresAt: Date;
+}
+
+export interface GoogleWalletConfig {
+  issuerId: string;
+  serviceAccountEmail: string;
+  privateKey: KeyObject;
+}
+
+export interface WalletConfig {
+  apple?: AppleWalletConfig;
+  google?: GoogleWalletConfig;
+  /** A Wallet only partly set up stays off; these are the settings it still lacks. */
+  missing: { apple: string[]; google: string[] };
+}
 
 export interface AppConfig {
   env: 'development' | 'test' | 'production';
@@ -97,6 +146,8 @@ export interface AppConfig {
   rateLimits: boolean;
   /** Roles whose shared demo account may sign in. Empty = demo switched off (the default). */
   demoRoles: Role[];
+  /** The loyalty card in Apple Wallet and Google Wallet (modules/wallet). */
+  wallet: WalletConfig;
   port: number;
 }
 
@@ -222,8 +273,83 @@ export function loadConfig(source: Record<string, unknown>): AppConfig {
     proxySecret: e.PROXY_SECRET,
     rateLimits: e.RATE_LIMITS === 'on',
     demoRoles: parseDemoRoles(e.DEMO_LOGIN),
+    wallet: walletConfig(e),
     port: e.PORT,
   };
+}
+
+/**
+ * Apple Wallet and Google Wallet switch on once all their settings are in. Settings that are
+ * there but wrong (a certificate for another pass type, a key that doesn't match) stop the start
+ * with a message saying which one, like every other setting.
+ */
+function walletConfig(e: Env): WalletConfig {
+  const lacking = (names: readonly (keyof Env)[]) => names.filter((name) => !e[name]);
+  const apple = lacking(APPLE_WALLET_VARS);
+  const google = lacking(GOOGLE_WALLET_VARS);
+  const appleTouched = apple.length < APPLE_WALLET_VARS.length || Boolean(e.APPLE_WALLET_SIGNER_KEY_PASSPHRASE);
+  return {
+    apple: apple.length === 0 ? appleWallet(e) : undefined,
+    google: google.length === 0 ? googleWallet(e) : undefined,
+    missing: {
+      apple: appleTouched ? apple : [],
+      google: google.length < GOOGLE_WALLET_VARS.length ? google : [],
+    },
+  };
+}
+
+function appleWallet(e: Env): AppleWalletConfig {
+  const passTypeId = e.APPLE_WALLET_PASS_TYPE_ID!;
+  const teamId = e.APPLE_WALLET_TEAM_ID!.toUpperCase();
+  if (!/^pass\.[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/.test(passTypeId)) {
+    throw new Error('Invalid configuration: APPLE_WALLET_PASS_TYPE_ID is the Pass Type ID, e.g. pass.md.nailsbyalynna.loyalty');
+  }
+  if (!/^[A-Z0-9]{10}$/.test(teamId)) {
+    throw new Error('Invalid configuration: APPLE_WALLET_TEAM_ID is the 10-character Team ID of the Apple Developer account');
+  }
+  const cert = certificateFromEnv('APPLE_WALLET_SIGNER_CERT', e.APPLE_WALLET_SIGNER_CERT!);
+  const wwdr = certificateFromEnv('APPLE_WALLET_WWDR_CERT', e.APPLE_WALLET_WWDR_CERT!);
+  const key = rsaKeyFromEnv('APPLE_WALLET_SIGNER_KEY', e.APPLE_WALLET_SIGNER_KEY!, {
+    name: 'APPLE_WALLET_SIGNER_KEY_PASSPHRASE',
+    value: e.APPLE_WALLET_SIGNER_KEY_PASSPHRASE,
+  });
+  if (!cert.checkPrivateKey(key)) {
+    throw new Error('Invalid configuration: APPLE_WALLET_SIGNER_KEY is not the key of APPLE_WALLET_SIGNER_CERT');
+  }
+  // Apple's pass certificates name their pass type (UID) and team (OU).
+  const uid = /^UID=(.+)$/m.exec(cert.subject)?.[1];
+  if (uid && uid !== passTypeId) {
+    throw new Error(`Invalid configuration: APPLE_WALLET_SIGNER_CERT is for ${uid}, not APPLE_WALLET_PASS_TYPE_ID ${passTypeId}`);
+  }
+  const team = /^OU=([A-Z0-9]{10})$/m.exec(cert.subject)?.[1];
+  if (team && team !== teamId) {
+    throw new Error(`Invalid configuration: APPLE_WALLET_SIGNER_CERT belongs to team ${team}, not APPLE_WALLET_TEAM_ID ${teamId}`);
+  }
+  if (!cert.checkIssued(wwdr) || !cert.verify(wwdr.publicKey)) {
+    throw new Error(
+      'Invalid configuration: APPLE_WALLET_WWDR_CERT did not issue APPLE_WALLET_SIGNER_CERT (use "Worldwide Developer Relations - G4" from apple.com/certificateauthority)',
+    );
+  }
+  return {
+    passTypeId,
+    teamId,
+    signerCert: cert.toString(),
+    signerKey: key.export({ type: 'pkcs8', format: 'pem' }).toString(),
+    wwdr: wwdr.toString(),
+    certificateExpiresAt: new Date(cert.validTo),
+  };
+}
+
+function googleWallet(e: Env): GoogleWalletConfig {
+  const issuerId = e.GOOGLE_WALLET_ISSUER_ID!;
+  const serviceAccountEmail = e.GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL!;
+  if (!/^\d{6,30}$/.test(issuerId)) {
+    throw new Error('Invalid configuration: GOOGLE_WALLET_ISSUER_ID is the Issuer ID (digits) from the Google Pay & Wallet Console');
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(serviceAccountEmail)) {
+    throw new Error('Invalid configuration: GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL is the service account\'s email ("client_email" in its JSON key)');
+  }
+  return { issuerId, serviceAccountEmail, privateKey: rsaKeyFromEnv('GOOGLE_WALLET_PRIVATE_KEY', e.GOOGLE_WALLET_PRIVATE_KEY!) };
 }
 
 const DEMO_ROLES: Role[] = ['client', 'admin', 'administrator'];

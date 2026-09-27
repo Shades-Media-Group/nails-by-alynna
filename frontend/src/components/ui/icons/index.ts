@@ -88,6 +88,7 @@ export { default as TodayIcon } from '@mui/icons-material/TodayRounded';
 export { default as TuneIcon } from '@mui/icons-material/TuneRounded';
 export { default as VisibilityIcon } from '@mui/icons-material/VisibilityRounded';
 export { default as VisibilityOffIcon } from '@mui/icons-material/VisibilityOffRounded';
+export { default as WalletIcon } from '@mui/icons-material/WalletRounded';
 export { default as WarningIcon } from '@mui/icons-material/WarningAmberRounded';
 export { default as WhatsAppIcon } from '@mui/icons-material/WhatsApp';
 

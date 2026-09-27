@@ -37,6 +37,10 @@ function clientIpResolver(config: AppConfig) {
 async function main() {
   loadDotEnv(process.env.ENV_FILE ?? '.env');
   const config = loadConfig(process.env);
+  // A Wallet only partly set up stays off; say what it still needs.
+  const { missing } = config.wallet;
+  if (missing.apple.length > 0) console.warn(`[wallet] Apple Wallet is off until these are set: ${missing.apple.join(', ')}`);
+  if (missing.google.length > 0) console.warn(`[wallet] Google Wallet is off until these are set: ${missing.google.join(', ')}`);
   const db = createDatabase(config);
   const deps = createDeps(config, db, {
     clientIp: clientIpResolver(config),

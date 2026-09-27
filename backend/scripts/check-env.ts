@@ -49,6 +49,25 @@ console.info(
     `; cron endpoint ${config.cronSecret ? 'on' : 'off (no CRON_SECRET / PROXY_SECRET)'}`,
 );
 console.info(`  demo roles     ${config.demoRoles.join(', ') || 'none'}`);
+const { apple, google, missing } = config.wallet;
+console.info(
+  `  Apple Wallet   ${
+    apple
+      ? `on (${apple.passTypeId}, team ${apple.teamId}; certificate valid until ${apple.certificateExpiresAt.toISOString().slice(0, 10)})`
+      : missing.apple.length > 0
+        ? `off, missing ${missing.apple.join(', ')}`
+        : 'off'
+  }`,
+);
+console.info(
+  `  Google Wallet  ${
+    google
+      ? `on (issuer ${google.issuerId} as ${google.serviceAccountEmail})`
+      : missing.google.length > 0
+        ? `off, missing ${missing.google.join(', ')}`
+        : 'off'
+  }`,
+);
 if (placeholders.length > 0) {
   console.error(`✗ still placeholders in: ${placeholders.join(', ')}`);
   process.exit(1);

@@ -130,5 +130,21 @@
       "summary": "{{ordinal}}\u00a0визит:\u00a0−{{percent}}%",
       "off": "Выключена"
     }
+  },
+  "wallet": {
+    "title": "Карта лояльности в Wallet",
+    "text": "QR-код и отметки прямо в Wallet: на ресепшене не нужно искать приложение.",
+    "preview": "Ваша карта, как она будет выглядеть в Wallet",
+    "add": "Добавить в Wallet",
+    "addApple": "Добавить в Apple\u00a0Wallet",
+    "addGoogle": "Добавить в Google\u00a0Wallet",
+    "stamps": "Отметки",
+    "next": "Следующая скидка",
+    "nextVisit": "−{{percent}}%\u00a0на следующий визит",
+    "soon": "Добавление в Wallet скоро появится.",
+    "soonText": "А пока покажите QR-код из приложения на ресепшене.",
+    "soonApple": "Добавление в Apple\u00a0Wallet скоро появится.",
+    "soonGoogle": "Добавление в Google\u00a0Wallet скоро появится.",
+    "snapshot": "В Wallet — отметки на сегодня; актуальное число всегда в приложении."
   }
 }

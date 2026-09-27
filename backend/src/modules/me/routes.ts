@@ -295,6 +295,7 @@ export function meRoutes(deps: AppDeps) {
     await Promise.all([
       deps.col.pushSubscriptions.deleteMany({ userId: user._id }),
       deps.col.otpCodes.deleteMany({ userId: user._id }),
+      deps.col.walletPasses.deleteOne({ _id: user._id }),
       // Feedback loses its words (they were the client's own); stars stay in the studio's numbers
       // under the anonymised name, and feedback that was only words goes.
       deps.col.feedback.deleteMany({ userId: user._id, rating: null }),

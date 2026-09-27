@@ -27,6 +27,7 @@
     "hono": "^4.13.9",
     "jose": "^6.2.12",
     "nodemailer": "^10",
+    "passkit-generator": "^3.6.1",
     "pg": "^8.23.0",
     "web-push": "^3.6.7",
     "zod": "^4.6.5"
@@ -34,6 +35,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^22.19.0",
+    "@types/node-forge": "^1.3.14",
     "@types/nodemailer": "^8.0.2",
     "@types/pg": "^8.23.1",
     "@types/web-push": "^3.6.4",
@@ -41,6 +43,7 @@
     "eslint": "^10.11.0",
     "globals": "^17.12.0",
     "mongodb": "^7.6.0",
+    "node-forge": "^1.4.0",
     "tsx": "^4.23.15",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.70.1",
