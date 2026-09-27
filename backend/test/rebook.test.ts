@@ -254,7 +254,7 @@ describe('come-back reminders', () => {
     expect(logs.some((l) => l._id.includes(last._id.toHexString()))).toBe(false);
   });
 
-  it('end the count once the client booked after the visit, even a booking that was cancelled or missed', async () => {
+  it('wait while a booking stands after the visit; one cancelled or missed does not stop them', async () => {
     const cancelled = await client();
     const missed = await client();
     const unmarked = await client();
@@ -267,7 +267,9 @@ describe('come-back reminders', () => {
     await visit(unmarked.user.id, at(20), { status: 'confirmed' });
 
     for (const day of [28, 42, 56]) await tick(at(day));
-    for (const c of [cancelled, missed, unmarked]) expect(mailsTo(c)).toHaveLength(0);
+    // Nothing booked any more: the three reminders go out as for anyone.
+    for (const c of [cancelled, missed]) expect(mailsTo(c)).toHaveLength(3);
+    expect(mailsTo(unmarked)).toHaveLength(0);
   });
 
   it('send only the latest due one after downtime, and never two within one period', async () => {

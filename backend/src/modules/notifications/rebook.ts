@@ -189,10 +189,10 @@ interface Plan {
 /**
  * Sends the reminders that are due. A client gets them only while all of this holds: a client
  * account they signed up for (not a walk-in record, a demo or a blocked account), a last completed
- * visit at least `firstAfterDays` ago, and no booking since that visit, whatever became of it
- * (upcoming, not yet marked done, missed or cancelled: they have been in touch, so the next visit
- * starts a new count). Each step goes out once per last visit, never earlier in the count than
- * one already sent, and never within `repeatEveryDays` of the one before.
+ * visit at least `firstAfterDays` ago, and no booking standing since that visit (a request or a
+ * confirmed visit, upcoming or not yet marked done). One they cancelled or missed doesn't count:
+ * they still have nothing booked. Each step goes out once per last visit, never earlier in the
+ * count than one already sent, and never within `repeatEveryDays` of the one before.
  */
 export async function sendRebookReminders(deps: AppDeps, now: Date, summary: TickSummary): Promise<void> {
   const settings = await getSettings(deps);
@@ -233,7 +233,8 @@ export async function sendRebookReminders(deps: AppDeps, now: Date, summary: Tic
       .filter((a) => a.status === 'completed')
       .reduce<AppointmentDoc | null>((latest, a) => (!latest || a.end > latest.end ? a : latest), null);
     if (!last || last.end > newest) continue;
-    if (own.some((a) => !a._id.equals(last._id) && a.start > last.start)) continue;
+    const standing = (a: AppointmentDoc) => a.status === 'pending' || a.status === 'confirmed';
+    if (own.some((a) => !a._id.equals(last._id) && a.start > last.start && standing(a))) continue;
     const step = dueStep(last.end, now, rebook);
     if (step) plans.push({ user, last, step });
   }
