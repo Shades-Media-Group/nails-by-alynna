@@ -262,6 +262,8 @@ export default defineConfig(({ mode }) => {
             '**/email/**',
             // The Google Wallet logo, fetched by Google, never by the app.
             '**/wallet/**',
+            // The /app install guide's screenshots: only a visitor still in the browser needs them.
+            '**/assets/install-*.webp',
             'version.json',
             // Onest subsets the app never renders (ro/ru/en need latin, latin-ext, cyrillic).
             '**/onest-{math,symbols,vietnamese}-*.woff2',
