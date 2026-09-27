@@ -456,6 +456,43 @@
   animation: clock-it-spark 1.5s var(--ease-in-out) 0.2s both;
 }
 
+/*
+ * Switching tabs (the tab bar and top links navigate with view transitions): the page you leave
+ * glides out toward the tab you came from while the new one fades in, and the bars stay put.
+ * Browsers without view transitions simply switch.
+ */
+@keyframes nav-leave-left {
+  to { opacity: 0; transform: translateX(-8%); }
+}
+@keyframes nav-leave-right {
+  to { opacity: 0; transform: translateX(8%); }
+}
+::view-transition-old(root) {
+  animation: nav-leave-left 260ms var(--ease-out) both;
+}
+html[data-nav-dir='back']::view-transition-old(root) {
+  animation-name: nav-leave-right;
+}
+::view-transition-new(root) {
+  animation-duration: 260ms;
+  animation-timing-function: var(--ease-out);
+}
+::view-transition-old(tabbar),
+::view-transition-old(topnav) {
+  display: none;
+}
+::view-transition-new(tabbar),
+::view-transition-new(topnav) {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
 @utility no-scrollbar {
   scrollbar-width: none;
   &::-webkit-scrollbar {

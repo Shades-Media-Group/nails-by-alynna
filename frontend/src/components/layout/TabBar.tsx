@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router';
 import { cx } from '@/lib/cx';
+import { setNavDirection } from '@/lib/navDirection';
 import { useClientNav } from './nav';
 
 interface Pill {
@@ -67,7 +68,7 @@ export function TabBar() {
   return (
     <nav
       aria-label={t('nav.main')}
-      className="fixed inset-x-0 bottom-[calc(var(--safe-bottom)+0.75rem)] z-40 flex justify-center px-4 lg:hidden"
+      className="fixed inset-x-0 bottom-[calc(var(--safe-bottom)+0.75rem)] z-40 flex justify-center px-4 [view-transition-name:tabbar] lg:hidden"
     >
       <ul ref={listRef} className="relative flex items-center gap-1 rounded-pill bg-ink-900 p-1.5 shadow-float">
         {pill ? (
@@ -86,6 +87,8 @@ export function TabBar() {
             <li key={item.to} className="relative">
               <Link
                 to={item.to}
+                viewTransition
+                onClick={() => setNavDirection(activeIndex, index)}
                 data-tab=""
                 aria-label={item.label}
                 aria-current={isActive ? 'page' : undefined}
