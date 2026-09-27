@@ -4,6 +4,7 @@ import { AddToCalendarSheet } from '@/components/appointments/AddToCalendar';
 import { ClockItArt } from '@/components/brand/nails/ClockItArt';
 import { Alert } from '@/components/common/Alert';
 import { ServiceLines } from '@/components/appointments/ServiceLines';
+import { PushSoftAsk } from '@/components/notifications/PushSoftAsk';
 import { PromoBadge, PromoRemovedNote } from '@/components/promo/PromoBits';
 import { Button, ButtonLink } from '@/components/ui';
 import { CalendarAddIcon } from '@/components/ui/icons';
@@ -137,6 +138,10 @@ export function DoneStep({
           {t('flow.backHome')}
         </ButtonLink>
       </div>
+      {/* Hear back without keeping the app open: asked here, where it clearly matters. */}
+      {demo ? null : (
+        <PushSoftAsk placement="booking" booked={!pending} className="mt-6 w-full max-w-sm" />
+      )}
       <AddToCalendarSheet
         appointment={appointment}
         open={calendarOpen}

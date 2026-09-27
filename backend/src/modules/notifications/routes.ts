@@ -1,5 +1,5 @@
 import { ObjectId } from 'bson';
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import type { AppDeps, AppEnv } from '../../context';
 import { audit } from '../../lib/audit';
@@ -38,6 +38,14 @@ const subscriptionSchema = z.object({
   keys: z.object({ p256dh: base64Url(200), auth: base64Url(64) }),
   expirationTime: z.number().nullable().optional(),
 });
+
+/** Longest wait a test notification may ask for: time to lock the phone or close the app. */
+export const MAX_TEST_DELAY_SEC = 10;
+const testSchema = z.object({ delaySec: z.number().int().min(0).max(MAX_TEST_DELAY_SEC).optional() });
+
+/** Older apps post the test without a body. */
+const hasBody = (c: Context) => Number(c.req.header('content-length') ?? 0) > 0 || c.req.header('transfer-encoding') !== undefined;
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /**
  * /api/notifications/* (signed in): preferences, this device's Web Push subscription, a test
@@ -105,17 +113,35 @@ export function notificationRoutes(deps: AppDeps) {
     return c.json({ ok: true });
   });
 
-  /** "Send a test": shows what a reminder looks like on every device that has push on. */
+  /**
+   * "Send a test notification" to every device that has push on, after `delaySec` (so the phone
+   * can be locked or the app closed first). Answers once it went out: how many devices, and
+   * what each push service said.
+   */
   app.post('/notifications/push/test', auth, async (c) => {
     const user = c.get('user');
-    await enforceRateLimits(deps, [{ key: `push:test:user:${user._id.toHexString()}`, limit: 5, windowSec: 3600 }]);
+    await enforceRateLimits(deps, [{ key: `push:test:user:${user._id.toHexString()}`, limit: 10, windowSec: 3600 }]);
     if (!pushAvailable(deps)) throw new AppError(503, 'PUSH_UNAVAILABLE', 'Push notifications are not configured');
-    const result = await sendPushToUser(deps, user._id, testPush(deps.config.appUrl, user.locale), {
-      ttlSec: 300,
-      urgency: 'high',
-      topic: 'test',
+    const { delaySec = 0 } = hasBody(c) ? await parseJson(c, testSchema) : {};
+    // Runs on its own: closing the app during the wait (what the wait is for) can drop this
+    // request, and the notification must still go out.
+    const job = wait(delaySec * 1000).then(() =>
+      sendPushToUser(deps, user._id, testPush(deps.config.appUrl, user.locale, deps.now()), {
+        ttlSec: 300,
+        urgency: 'high',
+        topic: 'test',
+      }),
+    );
+    deps.defer(job);
+    const result = await job;
+    return c.json({
+      delaySec,
+      sent: result.sent,
+      devices: result.devices,
+      failed: result.failed,
+      removed: result.removed,
+      deliveries: result.deliveries,
     });
-    return c.json({ sent: result.sent, devices: result.devices });
   });
 
   // ── External cron (Cloudflare Worker trigger, cron-job.org…) ──────────────────────

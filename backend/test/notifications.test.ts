@@ -29,6 +29,7 @@ afterEach(() => {
   ctx.setNow(START);
   setPushTransport(ctx.deps, null);
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 /** A visit written straight to the database (the booking rules are tested elsewhere). */
@@ -270,12 +271,12 @@ describe('reminders', () => {
 });
 
 describe('Web Push', () => {
-  const pushed: Array<{ target: PushTarget; payload: Record<string, string>; options: PushSendOptions }> = [];
+  const pushed: Array<{ target: PushTarget; payload: Record<string, unknown>; options: PushSendOptions }> = [];
   function fakePush() {
     pushed.length = 0;
     setPushTransport(ctx.deps, {
       async send(target, payload, options) {
-        pushed.push({ target, payload: JSON.parse(payload) as Record<string, string>, options });
+        pushed.push({ target, payload: JSON.parse(payload) as Record<string, unknown>, options });
         return target.endpoint.includes('/gone') ? 410 : 201;
       },
     });
@@ -309,7 +310,7 @@ describe('Web Push', () => {
     expect(await ctx.deps.col.pushSubscriptions.countDocuments({ userId })).toBe(2);
 
     const test = await phone.post('/api/notifications/push/test');
-    expect(test.body).toEqual({ sent: 1, devices: 2 });
+    expect(test.body).toMatchObject({ delaySec: 0, sent: 1, devices: 2, failed: 0, removed: 1 });
     expect(pushed.map((p) => p.payload.title)).toContain('Notificările sunt pornite');
     expect(await ctx.deps.col.pushSubscriptions.countDocuments({ userId })).toBe(1);
 
@@ -331,8 +332,103 @@ describe('Web Push', () => {
     ctx.setNow(START);
     await phone.post('/api/auth/logout');
     const laptop = await loginAs(ctx, user.email, strongPassword);
-    expect((await laptop.post('/api/notifications/push/test')).body).toEqual({ sent: 0, devices: 0 });
+    expect((await laptop.post('/api/notifications/push/test')).body).toMatchObject({ sent: 0, devices: 0, deliveries: [] });
     expect(await ctx.deps.col.pushSubscriptions.countDocuments({ userId })).toBe(0);
+  });
+
+  it('report each device on a test, drop only subscriptions that can never work again, and log the rest', async () => {
+    const answers: Record<string, number | { status: number; body: string } | Error> = {
+      ok: 201,
+      gone: 410,
+      missing: 404,
+      otherkey: { status: 403, body: '{"reason":"VapidPkHashMismatch"}' },
+      badjwt: { status: 403, body: '{"reason":"BadJwtToken"}' },
+      down: new Error('connect ECONNRESET'),
+    };
+    setPushTransport(ctx.deps, {
+      async send(target) {
+        const answer = answers[target.endpoint.split('/').pop()!.split('-')[0]!]!;
+        if (answer instanceof Error) throw answer;
+        return answer;
+      },
+    });
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
+    const { client: phone, user } = await registerClient(ctx);
+    const iphone = { 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5 like Mac OS X) AppleWebKit/605.1.15 Version/26.5 Mobile/15E148 Safari/604.1' };
+    const android = { 'user-agent': 'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Mobile Safari/537.36' };
+    const apple = (id: string) => ({ ...sub(id), endpoint: `https://web.push.apple.com/${id}` });
+    for (const [body, headers] of [
+      [apple(`ok-${user.id}`), iphone],
+      [sub(`ok-${user.id}`), android],
+      [sub(`gone-${user.id}`), android],
+      [apple(`missing-${user.id}`), iphone],
+      [apple(`otherkey-${user.id}`), iphone],
+      [apple(`badjwt-${user.id}`), iphone],
+      [sub(`down-${user.id}`), android],
+    ] as const) {
+      expect((await phone.post('/api/notifications/push/subscribe', body, headers)).status).toBe(200);
+    }
+
+    const res = await phone.post('/api/notifications/push/test', { delaySec: 0 });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ delaySec: 0, devices: 7, sent: 2, removed: 3, failed: 2 });
+    const byOutcome = (outcome: string) =>
+      (res.body.deliveries as Array<{ service: string; device: string; status: number | null; outcome: string }>)
+        .filter((d) => d.outcome === outcome)
+        .map((d) => `${d.device}/${d.service}/${d.status}`)
+        .sort();
+    expect(byOutcome('sent')).toEqual(['android/google/201', 'iphone/apple/201']);
+    expect(byOutcome('gone')).toEqual(['android/google/410', 'iphone/apple/403', 'iphone/apple/404']);
+    expect(byOutcome('failed')).toEqual(['android/google/null', 'iphone/apple/403']);
+
+    // A bad token or an outage is our problem or a passing one: the device stays, with the failure counted and logged.
+    const left = await ctx.deps.col.pushSubscriptions.find({ userId: new ObjectId(user.id) }).toArray();
+    expect(left.map((s) => s.endpoint.split('/').pop()!.split('-')[0]).sort()).toEqual(['badjwt', 'down', 'ok', 'ok']);
+    expect(left.filter((s) => s.failures === 1)).toHaveLength(2);
+    const logged = errors.mock.calls.map((call) => String(call[0])).join('\n');
+    expect(logged).toContain('web.push.apple.com answered 403 (BadJwtToken)');
+    expect(logged).toContain('ECONNRESET');
+    expect(info.mock.calls.map((call) => String(call[0])).join('\n')).toContain('answered 403 (VapidPkHashMismatch): subscription removed');
+  });
+
+  it('send a test after the asked wait, so the phone can be locked or the app closed first', async () => {
+    fakePush();
+    const { client: phone, user } = await registerClient(ctx);
+    await phone.post('/api/notifications/push/subscribe', sub(`ok-${user.id}`));
+    const started = Date.now();
+    const request = phone.post('/api/notifications/push/test', { delaySec: 1 });
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(pushed).toHaveLength(0);
+    const res = await request;
+    expect(Date.now() - started).toBeGreaterThanOrEqual(1000);
+    expect(res.body).toMatchObject({ delaySec: 1, sent: 1, devices: 1 });
+    expect(pushed).toHaveLength(1);
+    expect(pushed[0]!.options).toEqual({ ttlSec: 300, urgency: 'high', topic: 'test' });
+    expect(pushed[0]!.payload).toMatchObject({ tag: 'test', lang: 'ro', web_push: 8030, mutable: true });
+
+    expect((await phone.post('/api/notifications/push/test', { delaySec: 11 })).status).toBe(422);
+    expect((await phone.post('/api/notifications/push/test', { delaySec: -1 })).status).toBe(422);
+  });
+
+  it('send booking changes as urgent, one per visit on the device, openable without the service worker', async () => {
+    fakePush();
+    const { client: phone, user } = await registerClient(ctx);
+    await phone.post('/api/notifications/push/subscribe', sub(`ok-${user.id}`));
+    const appt = await visit(user.id, new Date(START.getTime() + 26 * HOUR), { status: 'confirmed' });
+    const hex = appt._id.toHexString();
+    expect(await notifyBookingChange(ctx.deps, appt._id, 'confirmed')).toBe('sent');
+    expect(pushed).toHaveLength(1);
+    expect(pushed[0]!.options).toEqual({ ttlSec: 86_400, urgency: 'high', topic: `b${hex}` });
+    expect(pushed[0]!.payload).toMatchObject({
+      title: 'Programare confirmată',
+      url: `/bookings/${hex}`,
+      tag: `visit-${hex}`,
+      lang: 'ro',
+      timestamp: START.getTime(),
+      web_push: 8030,
+      notification: { title: 'Programare confirmată', navigate: `http://localhost:5180/bookings/${hex}`, tag: `visit-${hex}` },
+    });
   });
 });
 

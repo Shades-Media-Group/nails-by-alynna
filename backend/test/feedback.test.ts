@@ -411,12 +411,14 @@ describe('"How was your visit?" after a visit', () => {
     expect(mail.html).toContain(`http://localhost:5180/en/feedback?visit=${id}&amp;rating=5`);
     expect(mail.text).toContain('Rate it from 1 (poor) to 5 (excellent)');
     expect(pushed).toHaveLength(1);
-    expect(pushed[0]!.payload).toEqual({
+    expect(pushed[0]!.payload).toMatchObject({
       title: 'How was your visit?',
       body: 'Gel polish · with Alina. Rate it in one tap.',
       url: `/en/feedback?visit=${id}`,
       tag: `feedback-${id}`,
     });
+    // The declarative copy (shown by Safari if the service worker can't) opens the same page.
+    expect(pushed[0]!.payload).toHaveProperty('notification.navigate', `http://localhost:5180/en/feedback?visit=${id}`);
   });
 
   it('stays quiet for visits not completed, already rated, too old, demo accounts and walk-ins', async () => {
