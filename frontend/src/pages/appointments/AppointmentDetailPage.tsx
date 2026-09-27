@@ -20,6 +20,7 @@ import { dayParts, formatDateTime, formatDuration, formatPrice, formatTime, zone
 import { errorMessage } from '@/lib/errors';
 import { visitDiscount } from '@/lib/promo';
 import { SWATCH } from '@/lib/swatch';
+import { noOrphan } from '@/lib/typography';
 import { appointmentsApi } from '@/services/api/endpoints';
 import { queries } from '@/services/queries';
 
@@ -97,7 +98,7 @@ export default function AppointmentDetailPage() {
               <span className="tabular text-[1.625rem] font-extrabold leading-none tracking-[-0.03em]">{leaf.day}</span>
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-[1.0625rem] font-bold first-letter:uppercase">{formatDateTime(a.start, locale, timeZone)}</p>
+              <p className="text-balance text-[1.0625rem] font-bold first-letter:uppercase">{formatDateTime(a.start, locale, timeZone)}</p>
               <p className={cx('mt-0.5 flex items-center gap-1.5 text-sm', active ? 'text-white/65' : 'text-ink-600')}>
                 <ScheduleIcon fontSize="inherit" />
                 {formatTime(a.start, locale, timeZone)} · {formatDuration(t, a.durationMin)}
@@ -157,7 +158,7 @@ export default function AppointmentDetailPage() {
                     <NailArt art={service?.art ?? 'gel'} color={color} className="w-10" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[0.9375rem] font-semibold leading-snug">{pick(line.name)}</span>
+                    <span className="block text-balance text-[0.9375rem] font-semibold leading-snug">{noOrphan(pick(line.name))}</span>
                     <span className="block text-sm text-ink-600">{formatDuration(t, line.durationMin)}</span>
                   </span>
                   <span className="tabular shrink-0 text-[0.9375rem] font-semibold">{formatPrice(t, line.price, currency, line.priceFrom)}</span>
@@ -222,10 +223,10 @@ export default function AppointmentDetailPage() {
         description={t('booking.cancelText')}
         footer={
           <div className="grid grid-cols-2 gap-2">
-            <Button variant="soft" size="md" onClick={() => setCancelOpen(false)}>
+            <Button variant="soft" size="md" fit onClick={() => setCancelOpen(false)}>
               {t('booking.keep')}
             </Button>
-            <Button variant="danger" size="md" loading={cancel.isPending} onClick={() => cancel.mutate()}>
+            <Button variant="danger" size="md" fit loading={cancel.isPending} onClick={() => cancel.mutate()}>
               {t('booking.cancelConfirm')}
             </Button>
           </div>

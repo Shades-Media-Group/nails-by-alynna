@@ -102,10 +102,10 @@ export function ConsentBanner() {
         ) : (
           <div className="mt-4 flex flex-col gap-2">
             <div className="grid grid-cols-2 gap-2">
-              <Button size="sm" variant="outline" onClick={acceptMinimal}>
+              <Button size="sm" variant="outline" fit onClick={acceptMinimal}>
                 {t('consent.minimal')}
               </Button>
-              <Button size="sm" variant="outline" onClick={() => setCustomLocal(true)}>
+              <Button size="sm" variant="outline" fit onClick={() => setCustomLocal(true)}>
                 {t('consent.custom')}
               </Button>
             </div>
@@ -156,6 +156,7 @@ function CustomChoices({ initial, onDone }: { initial: ConsentChoice | null; onD
         <Button
           size="sm"
           variant="outline"
+          fit
           onClick={() => {
             acceptMinimal();
             onDone();
@@ -163,7 +164,7 @@ function CustomChoices({ initial, onDone }: { initial: ConsentChoice | null; onD
         >
           {t('consent.minimal')}
         </Button>
-        <Button size="sm" type="submit">
+        <Button size="sm" type="submit" fit>
           {t('consent.save')}
         </Button>
       </div>

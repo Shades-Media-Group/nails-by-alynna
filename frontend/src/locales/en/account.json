@@ -6,7 +6,7 @@
     "book": "Book",
     "emptyUpcomingTitle": "No visits planned",
     "emptyUpcomingText": "Pick a service and a time. It takes a minute.",
-    "emptyPastTitle": "No past visits yet",
+    "emptyPastTitle": "No past visits\u00a0yet",
     "emptyPastText": "Your visits show up here after the appointment.",
     "bookAgain": "Book again",
     "waiting": "Waiting for the studio to confirm"
@@ -52,12 +52,12 @@
     "emailDemo": "The demo account's email can't be changed.",
     "emailChange": {
       "title": "Change email",
-      "text": "We'll send a 6-digit code to the new address. Your email changes once you enter it.",
+      "text": "We'll send a\u00a06-digit code to the new address. Your email changes once you enter\u00a0it.",
       "newEmail": "New email",
       "password": "Current password",
       "send": "Send the code",
       "codeTitle": "Enter the code",
-      "codeText": "We sent a 6-digit code to <email>{{email}}</email>. It's valid for 10 minutes.",
+      "codeText": "We sent a\u00a06-digit code to <email>{{email}}</email>. It's valid for\u00a010\u00a0minutes.",
       "confirm": "Confirm the new email",
       "changed": "Your email is now {{email}}.",
       "back": "Back"
@@ -73,14 +73,14 @@
     "passwordSet": "Set a password",
     "currentPassword": "Current password",
     "newPassword": "New password",
-    "passwordChanged": "Password saved. Your other devices were signed out.",
+    "passwordChanged": "Password saved. Your other devices were signed\u00a0out.",
     "devices": "Devices",
-    "devicesText": "Where you're signed in",
+    "devicesText": "Where you're signed\u00a0in",
     "thisDevice": "This device",
     "lastActive": "Last active {{date}}",
     "remembered": "Stays signed in",
     "signOutDevice": "Sign out",
-    "deviceSignedOut": "That device was signed out.",
+    "deviceSignedOut": "That device was signed\u00a0out.",
     "privacy": "Privacy",
     "cookies": "Cookie settings",
     "export": "Download my data",
@@ -111,7 +111,7 @@
   },
   "notifications": {
     "title": "Notifications",
-    "subtitle": "Choose what we tell you, and how.",
+    "subtitle": "Choose what we tell you, and\u00a0how.",
     "saved": "Saved",
     "device": {
       "titlePhone": "Notifications on this phone",
@@ -124,12 +124,12 @@
       "enabled": "Notifications are on for this device.",
       "disabled": "Notifications are off for this device.",
       "dismissed": "No problem. You can allow notifications any time.",
-      "unavailable": "Notifications on the phone aren't available yet.",
+      "unavailable": "Notifications on the phone aren't available\u00a0yet.",
       "unsupported": "This browser can't show notifications. Open the app in Chrome, Safari or Edge.",
-      "unsupportedIos": "Update your iPhone to iOS 16.4 or later to get notifications.",
+      "unsupportedIos": "Update your iPhone to iOS\u00a016.4 or later to get notifications.",
       "installTitle": "Add the app to your Home Screen",
-      "install": "On iPhone and iPad, notifications only work in the app added to the Home Screen (iOS 16.4 or later).",
-      "installAction": "How to add it",
+      "install": "On iPhone and iPad, notifications only work in the app added to the Home Screen (iOS\u00a016.4 or later).",
+      "installAction": "How to add\u00a0it",
       "deniedTitle": "Notifications are blocked",
       "deniedIos": "Open Settings → Notifications → {{app}} and turn on Allow Notifications.",
       "deniedAndroid": "Tap and hold the app icon → App info → Notifications, and allow them. In the browser: tap the icon next to the address → Notifications → Allow.",
@@ -146,7 +146,7 @@
     },
     "legend": {
       "email": "Emails go to <email>{{email}}</email>.",
-      "pushOn": "App notifications reach the devices where you turned them on.",
+      "pushOn": "App notifications reach the devices where you turned them\u00a0on.",
       "pushOff": "For app notifications, turn them on for this device above.",
       "pushInstall": "App notifications need the app on your Home Screen.",
       "pushBlocked": "App notifications are blocked in this device's settings.",
@@ -158,11 +158,11 @@
       "enabled": "Remind me of my visits",
       "when": "How long before",
       "lead": {
-        "60": "1 hour",
-        "120": "2 hours",
-        "1440": "1 day"
+        "60": "1\u00a0hour",
+        "120": "2\u00a0hours",
+        "1440": "1\u00a0day"
       },
-      "keepOne": "Keep at least one time, or turn reminders off."
+      "keepOne": "Keep at least one time, or turn reminders\u00a0off."
     },
     "bookingUpdates": {
       "title": "Booking updates",
@@ -178,12 +178,12 @@
     },
     "rebook": {
       "title": "Reminders to come back",
-      "text": "A note a few weeks after a visit, if you haven't booked the next one yet."
+      "text": "A note a few weeks after a visit, if you haven't booked the next one\u00a0yet."
     },
     "marketing": {
       "title": "News and offers",
       "text": "Occasional news and offers from the studio. Only if you want them; turn them off any time.",
-      "consent": "Subscribed on {{date}}"
+      "consent": "Subscribed on\u00a0{{date}}"
     }
   }
 }

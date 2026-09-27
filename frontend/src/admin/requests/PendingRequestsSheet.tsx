@@ -67,11 +67,11 @@ export function PendingRequestsSheet() {
       description={t('dashboard.requestsHint')}
       footer={
         <div className={cx('grid gap-2', more && 'grid-cols-2')}>
-          <Button variant="soft" size="md" onClick={close}>
+          <Button variant="soft" size="md" fit onClick={close}>
             {t('requests.later')}
           </Button>
           {more ? (
-            <ButtonLink to={lp('/admin?requests=all')} variant="outline" size="md" onClick={close}>
+            <ButtonLink to={lp('/admin?requests=all')} variant="outline" size="md" fit onClick={close}>
               {t('requests.seeAll', { n: count })}
             </ButtonLink>
           ) : null}

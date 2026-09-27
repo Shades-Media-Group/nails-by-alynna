@@ -6,6 +6,7 @@ import { useI18nText } from '@/hooks/useStudio';
 import { cx } from '@/lib/cx';
 import type { SwatchColor } from '@/lib/swatch';
 import { SWATCH } from '@/lib/swatch';
+import { noOrphan } from '@/lib/typography';
 import type { Service } from '@/types/api';
 import { ServiceDetailsSheet, ServiceMeta } from './ServiceDetails';
 
@@ -36,9 +37,9 @@ export function ServiceCard({ service, color, currency, selected, onToggle }: Se
         <RealisticNailArt art={service.art} color={color} className="w-[4.5rem]" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-[0.9375rem] font-bold leading-snug text-ink-900">{name}</span>
+        <span className="block text-balance text-[0.9375rem] font-bold leading-snug text-ink-900">{noOrphan(name)}</span>
         {tr(service.description) ? (
-          <span className="mt-1 line-clamp-2 block text-sm leading-snug text-ink-600">{tr(service.description)}</span>
+          <span className="mt-1 line-clamp-2 block text-sm leading-snug text-ink-600">{noOrphan(tr(service.description))}</span>
         ) : null}
         <ServiceMeta service={service} currency={currency} className="mt-2" />
       </span>

@@ -26,7 +26,7 @@
     "cancelConfirm": "Da, anulează",
     "keep": "Nu, păstrez",
     "cancelled": "Programarea a fost anulată.",
-    "freeUntil": "Poți modifica sau anula gratuit până pe {{date}}.",
+    "freeUntil": "Poți modifica sau anula gratuit până\u00a0pe\u00a0{{date}}.",
     "tooLate": "Vizita e curând, așa că modificările se fac acum prin salon.",
     "contactStudio": "Contactează salonul",
     "cancelledBy_client": "Ai anulat această programare.",
@@ -37,7 +37,7 @@
   },
   "profile": {
     "title": "Profil",
-    "memberSince": "Cu noi din {{date}}",
+    "memberSince": "Cu noi din\u00a0{{date}}",
     "details": "Date personale",
     "detailsText": "Nume și număr de telefon",
     "notifications": "Notificări",
@@ -52,12 +52,12 @@
     "emailDemo": "Emailul contului demo nu poate fi schimbat.",
     "emailChange": {
       "title": "Schimbă emailul",
-      "text": "Îți trimitem un cod din 6 cifre pe noua adresă. Emailul se schimbă după ce îl introduci.",
+      "text": "Îți trimitem un cod din\u00a06\u00a0cifre pe noua adresă. Emailul se schimbă după ce îl introduci.",
       "newEmail": "Emailul nou",
       "password": "Parola actuală",
       "send": "Trimite codul",
       "codeTitle": "Introdu codul",
-      "codeText": "Ți-am trimis un cod din 6 cifre la <email>{{email}}</email>. Este valabil 10 minute.",
+      "codeText": "Ți-am trimis un cod din\u00a06\u00a0cifre la <email>{{email}}</email>. Este valabil 10\u00a0minute.",
       "confirm": "Confirmă noul email",
       "changed": "Emailul tău este acum {{email}}.",
       "back": "Înapoi"
@@ -75,7 +75,7 @@
     "newPassword": "Parola nouă",
     "passwordChanged": "Parola a fost salvată. Celelalte dispozitive au fost deconectate.",
     "devices": "Dispozitive",
-    "devicesText": "Unde este deschis contul tău",
+    "devicesText": "Unde este deschis contul\u00a0tău",
     "thisDevice": "Acest dispozitiv",
     "lastActive": "Activ ultima dată {{date}}",
     "remembered": "Rămâne conectat",
@@ -111,7 +111,7 @@
   },
   "notifications": {
     "title": "Notificări",
-    "subtitle": "Alege ce îți transmitem și cum.",
+    "subtitle": "Alege ce îți transmitem și\u00a0cum.",
     "saved": "Salvat",
     "device": {
       "titlePhone": "Notificări pe acest telefon",
@@ -126,14 +126,14 @@
       "dismissed": "Nicio problemă. Poți permite notificările oricând.",
       "unavailable": "Notificările pe telefon nu sunt disponibile încă.",
       "unsupported": "Acest browser nu poate afișa notificări. Deschide aplicația în Chrome, Safari sau Edge.",
-      "unsupportedIos": "Actualizează iPhone-ul la iOS 16.4 sau mai nou ca să primești notificări.",
+      "unsupportedIos": "Actualizează iPhone-ul la iOS\u00a016.4 sau mai nou ca să primești notificări.",
       "installTitle": "Adaugă aplicația pe ecranul principal",
-      "install": "Pe iPhone și iPad, notificările funcționează doar în aplicația adăugată pe ecranul principal (iOS 16.4 sau mai nou).",
+      "install": "Pe iPhone și iPad, notificările funcționează doar în aplicația adăugată pe ecranul principal (iOS\u00a016.4 sau mai\u00a0nou).",
       "installAction": "Cum o adaug",
       "deniedTitle": "Notificările sunt blocate",
       "deniedIos": "Deschide Configurări → Notificări → {{app}} și pornește Permite notificările.",
       "deniedAndroid": "Ține apăsat pe iconița aplicației → Informații aplicație → Notificări și permite-le. În browser: apasă iconița de lângă adresă → Notificări → Permite.",
-      "deniedDesktop": "Apasă iconița din stânga adresei → Notificări → Permite. Apoi alege Verifică din nou.",
+      "deniedDesktop": "Apasă iconița din stânga adresei → Notificări → Permite. Apoi alege Verifică din\u00a0nou.",
       "checkAgain": "Verifică din nou",
       "preview": "Notificările funcționează în aplicația publicată, nu în această previzualizare.",
       "notReady": "Notificările se pregătesc încă pe acest dispozitiv. Verifică din nou peste câteva clipe.",
@@ -158,9 +158,9 @@
       "enabled": "Amintește-mi de vizite",
       "when": "Cu cât timp înainte",
       "lead": {
-        "60": "1 oră",
-        "120": "2 ore",
-        "1440": "1 zi"
+        "60": "1\u00a0oră",
+        "120": "2\u00a0ore",
+        "1440": "1\u00a0zi"
       },
       "keepOne": "Păstrează cel puțin o variantă sau oprește mementourile."
     },
@@ -178,12 +178,12 @@
     },
     "rebook": {
       "title": "Amintiri pentru următoarea vizită",
-      "text": "Un mesaj la câteva săptămâni după vizită, dacă nu te-ai programat încă din nou."
+      "text": "Un mesaj la câteva săptămâni după vizită, dacă nu te-ai programat încă din\u00a0nou."
     },
     "marketing": {
       "title": "Noutăți și oferte",
       "text": "Noutăți și oferte ocazionale de la salon. Doar dacă vrei; le poți opri oricând.",
-      "consent": "Te-ai abonat pe {{date}}"
+      "consent": "Te-ai abonat pe\u00a0{{date}}"
     }
   }
 }

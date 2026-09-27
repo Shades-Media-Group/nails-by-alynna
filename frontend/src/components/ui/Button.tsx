@@ -1,6 +1,7 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { Link, type LinkProps } from 'react-router';
 import { cx } from '@/lib/cx';
+import { FitText } from './FitText';
 import { Spinner } from './Spinner';
 import type { IconComponent } from './icons';
 
@@ -32,6 +33,12 @@ interface CommonProps {
   icon?: IconComponent;
   trailingIcon?: IconComponent;
   fullWidth?: boolean;
+  /**
+   * For a button whose width comes from its container (a grid cell, a sheet's footer): a label
+   * too long for it (Russian on a small phone) shrinks to fit on one line instead of being cut
+   * off with "…".
+   */
+  fit?: boolean;
   children?: ReactNode;
 }
 
@@ -46,12 +53,12 @@ function classes({ variant = 'primary', size = 'lg', fullWidth }: CommonProps, c
   );
 }
 
-function Content({ icon: Icon, trailingIcon: Trailing, loading, children, size = 'lg' }: CommonProps & { loading?: boolean }) {
+function Content({ icon: Icon, trailingIcon: Trailing, loading, children, size = 'lg', fit }: CommonProps & { loading?: boolean }) {
   const iconSize = size === 'sm' ? 'text-lg' : 'text-[1.25rem]';
   return (
     <>
       {loading ? <Spinner className="size-5" /> : Icon ? <Icon className={iconSize} fontSize="inherit" /> : null}
-      {children ? <span className="truncate">{children}</span> : null}
+      {children ? fit ? <FitText>{children}</FitText> : <span className="truncate">{children}</span> : null}
       {Trailing && !loading ? (
         // The arrow leans the way the button goes.
         <Trailing
@@ -68,7 +75,7 @@ export interface ButtonProps extends CommonProps, Omit<ButtonHTMLAttributes<HTML
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant, size, icon, trailingIcon, fullWidth, loading, disabled, className, children, type = 'button', ...rest },
+  { variant, size, icon, trailingIcon, fullWidth, fit, loading, disabled, className, children, type = 'button', ...rest },
   ref,
 ) {
   return (
@@ -80,7 +87,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       className={classes({ variant, size, fullWidth }, className)}
       {...rest}
     >
-      <Content icon={icon} trailingIcon={trailingIcon} loading={loading} size={size}>
+      <Content icon={icon} trailingIcon={trailingIcon} loading={loading} size={size} fit={fit}>
         {children}
       </Content>
     </button>
@@ -89,10 +96,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 
 export interface ButtonLinkProps extends CommonProps, Omit<LinkProps, 'children'> {}
 
-export function ButtonLink({ variant, size, icon, trailingIcon, fullWidth, className, children, ...rest }: ButtonLinkProps) {
+export function ButtonLink({ variant, size, icon, trailingIcon, fullWidth, fit, className, children, ...rest }: ButtonLinkProps) {
   return (
     <Link className={classes({ variant, size, fullWidth }, className)} {...rest}>
-      <Content icon={icon} trailingIcon={trailingIcon} size={size}>
+      <Content icon={icon} trailingIcon={trailingIcon} size={size} fit={fit}>
         {children}
       </Content>
     </Link>
@@ -106,13 +113,14 @@ export function ButtonAnchor({
   icon,
   trailingIcon,
   fullWidth,
+  fit,
   className,
   children,
   ...rest
 }: CommonProps & Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'children'>) {
   return (
     <a className={classes({ variant, size, fullWidth }, className)} {...rest}>
-      <Content icon={icon} trailingIcon={trailingIcon} size={size}>
+      <Content icon={icon} trailingIcon={trailingIcon} size={size} fit={fit}>
         {children}
       </Content>
     </a>

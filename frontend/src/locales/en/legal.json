@@ -2,14 +2,14 @@
   "updated": "Last updated: {{date}}",
   "contents": "On this page",
   "testNotice": {
-    "title": "This is a test app",
+    "title": "This is a test\u00a0app",
     "body": "Nails by Alynna here is a demo project for trying the app out, not a real business. Bookings, prices, discounts and promo codes are not real offers: nothing is sold or charged, no contract is formed, and no fees or penalties apply. Please don't enter anything you want to keep private."
   },
   "operatorFull": "{{legalName}}, IDNO {{legalId}}",
   "contactLine": "{{contact}}",
   "privacy": {
     "title": "Privacy policy",
-    "intro": "This policy explains what personal data {{studio}} collects through this booking app and website, why, for how long, and what your rights are. It follows Law no. 195/2024 on personal data protection of the Republic of Moldova.",
+    "intro": "This policy explains what personal data {{studio}} collects through this booking app and website, why, for how long, and what your rights are. It follows Law no.\u00a0195/2024 on personal data protection of the Republic of Moldova.",
     "sections": [
       {
         "id": "who",
@@ -32,7 +32,7 @@
       },
       {
         "id": "why",
-        "title": "Why we use it",
+        "title": "Why we use\u00a0it",
         "items": [
           "To create and run your account and bookings: necessary to provide the service you ask for (contract).",
           "To contact you about a visit, for example if it has to move: contract.",
@@ -42,12 +42,12 @@
           "Where the law requires us to keep or disclose data: legal obligation."
         ],
         "after": [
-          "We do not sell your data, do not use it for advertising and make no automated decisions about you."
+          "We do not sell your data, do not use it for advertising and make no automated decisions about\u00a0you."
         ]
       },
       {
         "id": "processors",
-        "title": "Who else handles it",
+        "title": "Who else handles\u00a0it",
         "body": [
           "Only studio staff see your data, each as far as their work needs. We also use these providers, bound by data processing agreements:"
         ],
@@ -62,12 +62,12 @@
       },
       {
         "id": "retention",
-        "title": "How long we keep it",
+        "title": "How long we keep\u00a0it",
         "items": [
           "Account and booking history: while your account exists. When you delete your account, your personal details are erased and past bookings are kept only in anonymous form for the studio's records.",
           "Feedback: while your account exists. When you delete your account, your comments are erased and only the stars stay, without your name.",
-          "Sign-in sessions: 12 hours, or up to one year if you choose to stay signed in.",
-          "Password-reset links: 30 minutes.",
+          "Sign-in sessions: 12\u00a0hours, or up to one year if you choose to stay signed\u00a0in.",
+          "Password-reset links: 30\u00a0minutes.",
           "Security records: one year.",
           "Anything the law obliges us to keep: for as long as the law requires."
         ]
@@ -79,9 +79,9 @@
           "There are no advertising or third-party tracking cookies. Essential cookies keep you signed in and protect sign-in:"
         ],
         "items": [
-          "__Host-nba_at (15 minutes) and __Secure-nba_rt (12 hours, or one year when you stay signed in): your secure sign-in session.",
+          "__Host-nba_at (15\u00a0minutes) and __Secure-nba_rt (12\u00a0hours, or one year when you stay signed in): your secure sign-in session.",
           "nba_sess: tells the app that a session may exist, so it opens faster.",
-          "__Secure-nba_oa (10 minutes): protects the Google sign-in step."
+          "__Secure-nba_oa (10\u00a0minutes): protects the Google sign-in step."
         ],
         "after": [
           "With your consent (Preferences), the app also remembers your language, a booking in progress and whether you closed the install hint, in your browser's local storage. You can change your choice at any time in Profile → Cookie settings."
@@ -103,7 +103,7 @@
       },
       {
         "id": "security",
-        "title": "How we protect it",
+        "title": "How we protect\u00a0it",
         "body": [
           "Connections are encrypted (HTTPS). Passwords are stored only as salted scrypt hashes. Sign-in cookies cannot be read by scripts. Staff access is limited by role, and important actions are logged."
         ]
@@ -112,14 +112,14 @@
         "id": "children",
         "title": "Children",
         "body": [
-          "The app is for people aged 16 and over. Younger clients book through a parent or guardian."
+          "The app is for people aged 16\u00a0and\u00a0over. Younger clients book through a parent or guardian."
         ]
       },
       {
         "id": "changes",
         "title": "Changes to this policy",
         "body": [
-          "When this policy changes, the date above changes too; important changes are announced in the app."
+          "When this policy changes, the date above changes too; important changes are announced in the\u00a0app."
         ]
       }
     ]
@@ -139,7 +139,7 @@
         "id": "account",
         "title": "Your account",
         "items": [
-          "You must be 16 or older and give true details, including a phone number the studio can reach you on.",
+          "You must be\u00a016 or older and give true details, including a phone number the studio can reach you\u00a0on.",
           "Keep your password to yourself. You are responsible for bookings made from your account.",
           "One account per person. You can delete your account at any time in Profile."
         ]
@@ -149,8 +149,8 @@
         "title": "Bookings",
         "items": [
           "Bookings made here are for trying the app out: no real appointment, sale or contract results from them.",
-          "A booking reserves a time with a master for the services you chose. It is confirmed right away, or, when the studio reviews requests, once the master accepts it.",
-          "Prices in the app are examples. Durations are estimates used to plan the day.",
+          "A booking reserves a time with a master for the services you chose. It is confirmed right away, or, when the studio reviews requests, once the master accepts\u00a0it.",
+          "Prices in the app are examples. Durations are estimates used to plan the\u00a0day.",
           "The app never takes payments, and nothing is charged."
         ]
       },
@@ -158,7 +158,7 @@
         "id": "changes",
         "title": "Changes and cancellations",
         "items": [
-          "You can change or cancel a booking in the app until {{hours}} hours before it starts. The exact deadline is shown on each booking.",
+          "You can change or cancel a booking in the app until\u00a0{{hours}}\u00a0hours before it starts. The exact deadline is shown on each booking.",
           "There are no fees or penalties for cancelling, moving or missing a booking.",
           "If a booking has to be moved or cancelled on the studio's side, you are told in the app and by email."
         ]
@@ -182,7 +182,7 @@
         "id": "liability",
         "title": "Responsibility",
         "body": [
-          "This is a test app, provided as it is, for trying it out, with no guarantee that it is available, correct or complete. No services are sold through it."
+          "This is a test app, provided as it is, for trying it out, with no guarantee that it is available, correct or complete. No services are sold through\u00a0it."
         ]
       },
       {

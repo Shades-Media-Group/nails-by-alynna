@@ -2,15 +2,15 @@
   "title": "Card de fidelitate",
   "subtitle": "Fiecare vizită e o ștampilă. Reducerile vin singure.",
   "off": "Cardul de fidelitate este pus pe pauză deocamdată.",
-  "stamps": "{{stamps}} din {{cycle}} vizite",
+  "stamps": "{{stamps}}\u00a0din\u00a0{{cycle}} vizite",
   "cardNumber": "Cardul {{card}}",
-  "next": "Următoarea vizită: −{{percent}}%",
-  "nextOn": "−{{percent}}% la {{ordinal}} vizită",
+  "next": "Următoarea vizită:\u00a0−{{percent}}%",
+  "nextOn": "−{{percent}}%\u00a0la\u00a0{{ordinal}}\u00a0vizită",
   "stampAria": "Vizita {{visit}} din {{cycle}}",
   "stamped": {
     "title_one": "Ai o ștampilă nouă!",
-    "title_few": "Ai {{count}} ștampile noi!",
-    "title_other": "Ai {{count}} de ștampile noi!",
+    "title_few": "Ai\u00a0{{count}}\u00a0ștampile\u00a0noi!",
+    "title_other": "Ai\u00a0{{count}}\u00a0de\u00a0ștampile\u00a0noi!",
     "card": "Vezi cardul",
     "done": "Gata"
   },
@@ -25,28 +25,28 @@
   "how": {
     "title": "Cum funcționează",
     "stamp": "Fiecare vizită finalizată adaugă o ștampilă.",
-    "reward": "{{ordinal}} vizită de pe fiecare card: −{{percent}}% la acea vizită.",
-    "restart": "După vizita {{cycle}}, începe un card nou.",
+    "reward": "{{ordinal}}\u00a0vizită de pe fiecare card: −{{percent}}%\u00a0la acea vizită.",
+    "restart": "După vizita\u00a0{{cycle}}, începe un card\u00a0nou.",
     "applied": "Reducerea se aplică la salon, la prețul acelei vizite."
   },
   "history": {
     "title": "Reduceri folosite",
     "empty": "Reducerile tale vor apărea aici.",
-    "line": "{{ordinal}} vizită · −{{percent}}% (−{{amount}})"
+    "line": "{{ordinal}}\u00a0vizită · −{{percent}}% (−{{amount}})"
   },
   "badge": {
-    "predicted": "−{{percent}}% fidelitate",
-    "applied": "Fidelitate −{{percent}}%"
+    "predicted": "−{{percent}}%\u00a0fidelitate",
+    "applied": "Fidelitate\u00a0−{{percent}}%"
   },
   "detail": {
     "title": "Card de fidelitate",
-    "visit": "Vizita {{visit}} din {{cycle}}",
+    "visit": "Vizita\u00a0{{visit}}\u00a0din\u00a0{{cycle}}",
     "discount": "−{{percent}}% · −{{amount}}",
     "expected": "Reducere estimată, aplicată la salon.",
     "applied": "Reducere aplicată la această vizită.",
     "noDiscount": "Vizita aceasta adaugă o ștampilă."
   },
-  "confirm": "Va fi {{ordinal}} vizită pe card: −{{percent}}% la salon.",
+  "confirm": "Va fi\u00a0{{ordinal}}\u00a0vizită pe card: −{{percent}}%\u00a0la salon.",
   "tile": {
     "title": "Card de fidelitate",
     "open": "Deschide cardul de fidelitate"
@@ -75,9 +75,9 @@
     "again": "Scanează altul"
   },
   "card": {
-    "visits_one": "{{count}} vizită",
-    "visits_few": "{{count}} vizite",
-    "visits_other": "{{count}} de vizite",
+    "visits_one": "{{count}}\u00a0vizită",
+    "visits_few": "{{count}}\u00a0vizite",
+    "visits_other": "{{count}}\u00a0de\u00a0vizite",
     "addStamp": "Adaugă o ștampilă",
     "removeStamp": "Scoate o ștampilă",
     "stampTitleAdd": "Adaugi o ștampilă manual?",
@@ -91,17 +91,17 @@
     "upcoming": "Vizite viitoare",
     "noUpcoming": "Nicio programare viitoare.",
     "thisVisit": "Vizita aceasta: −{{percent}}% (−{{amount}})",
-    "stampOnly": "Vizita aceasta: ștampila {{visit}} din {{cycle}}",
+    "stampOnly": "Vizita aceasta: ștampila\u00a0{{visit}}\u00a0din\u00a0{{cycle}}",
     "completeHint": "Marchează vizita ca finalizată ca să pui ștampila și să fixezi reducerea.",
     "noAccount": "Încă fără cont în aplicație"
   },
   "admin": {
     "appointment": {
       "title": "Card de fidelitate",
-      "stamp": "Ștampila {{visit}} din {{cycle}}",
+      "stamp": "Ștampila\u00a0{{visit}}\u00a0din\u00a0{{cycle}}",
       "discount": "−{{percent}}% · −{{amount}}",
-      "toPay": "De plată cu reducere: {{amount}}",
-      "paid": "Plătit cu reducere: {{amount}}",
+      "toPay": "De plată cu reducere:\u00a0{{amount}}",
+      "paid": "Plătit cu reducere:\u00a0{{amount}}",
       "whenDone": "Reducerea se fixează când marchezi vizita ca finalizată.",
       "locked": "Ștampilat la finalizarea vizitei.",
       "stampWhenDone": "Ștampila se pune când marchezi vizita ca finalizată."
@@ -125,7 +125,7 @@
       "save": "Salvează",
       "saved": "Cardul de fidelitate a fost salvat",
       "none": "Încă nicio reducere.",
-      "summary": "{{ordinal}} vizită: −{{percent}}%",
+      "summary": "{{ordinal}}\u00a0vizită:\u00a0−{{percent}}%",
       "off": "Oprit"
     }
   }

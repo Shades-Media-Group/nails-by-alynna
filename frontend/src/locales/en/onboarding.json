@@ -3,7 +3,7 @@
   "skip": "Skip the intro",
   "next": "Continue",
   "start": "Let's go",
-  "step": "Step {{current}} of {{total}}",
+  "step": "Step\u00a0{{current}}\u00a0of\u00a0{{total}}",
   "visit": "visit",
   "book": {
     "title": "Book your nails",
@@ -32,11 +32,11 @@
   },
   "scene": {
     "time": "Tue · 12:00",
-    "reminder": "Reminder 1 h before",
+    "reminder": "Reminder 1\u00a0h before",
     "calendar": "In your calendar",
     "change": "Change or cancel",
     "card": "Loyalty card",
-    "stamps": "3 of 8",
+    "stamps": "3\u00a0of\u00a08",
     "addHome": "Add to Home Screen",
     "appName": "Nails Alynna",
     "selected": "Selected"

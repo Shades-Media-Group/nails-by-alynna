@@ -11,6 +11,7 @@ import { LOCALE_TAGS } from '@/i18n/config';
 import { useLocale } from '@/i18n/useLocale';
 import { errorMessage } from '@/lib/errors';
 import { formatDayShort, fullName } from '@/lib/format';
+import { noOrphan } from '@/lib/typography';
 import type { FeedbackRating } from '@/types/api';
 import { adminQueries, type AdminFeedback, type FeedbackList } from '../api';
 import { AdminHeader } from '../components/AdminHeader';
@@ -184,7 +185,7 @@ function FeedbackRow({
   const about = f.visit
     ? [
         t('admin.visit', { date: formatDayShort(f.visit.start, locale, timeZone) }),
-        f.visit.services.map((name) => pick(name)).join(', '),
+        f.visit.services.map((name) => noOrphan(pick(name))).join(', '),
         showMaster && f.master ? t('admin.withMaster', { name: f.master.name }) : null,
       ]
         .filter(Boolean)

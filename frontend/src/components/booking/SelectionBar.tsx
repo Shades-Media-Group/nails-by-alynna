@@ -4,6 +4,7 @@ import { Button } from '@/components/ui';
 import { ArrowForwardIcon } from '@/components/ui/icons';
 import { cx } from '@/lib/cx';
 import { formatDuration, formatPrice } from '@/lib/format';
+import { NBSP } from '@/lib/typography';
 
 interface SelectionBarProps {
   count: number;
@@ -44,10 +45,13 @@ export function SelectionBar({
       )}
     >
       <div className="flex items-center gap-3 rounded-2xl bg-ink-900 p-2.5 pl-5 text-white shadow-float">
-        <div className="min-w-0 flex-1" aria-live="polite">
-          {detail ? <p className="truncate text-xs text-rose-200">{detail}</p> : null}
-          <p className="truncate text-sm font-semibold">
-            {t('services.summary', { count })} · {formatDuration(t, durationMin)}
+        {/* On a small phone (in Russian) the lines wrap rather than lose the time to "…"; the
+            dot stays at the end of the first line and the length moves down whole. */}
+        <div className="min-w-0 flex-1 text-balance" aria-live="polite">
+          {detail ? <p className="text-xs text-rose-200">{detail}</p> : null}
+          <p className="text-sm font-semibold">
+            {t('services.summary', { count })}
+            {NBSP}· {formatDuration(t, durationMin)}
           </p>
           <p className="tabular text-sm text-white/70">{formatPrice(t, price, currency, priceFrom)}</p>
         </div>

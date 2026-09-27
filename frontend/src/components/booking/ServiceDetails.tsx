@@ -7,6 +7,7 @@ import { useI18nText } from '@/hooks/useStudio';
 import { cx } from '@/lib/cx';
 import { formatDuration, formatPrice } from '@/lib/format';
 import { SWATCH, type SwatchColor } from '@/lib/swatch';
+import { noOrphan } from '@/lib/typography';
 import type { Service } from '@/types/api';
 
 /** Time and price of a service, the same on its row and in its details sheet. */
@@ -62,7 +63,7 @@ export function ServiceDetailsSheet({ service, color, currency, selected = false
     <Sheet
       open
       onClose={onClose}
-      title={name}
+      title={noOrphan(name)}
       footer={
         onToggle ? (
           <Button fullWidth variant={selected ? 'outline' : 'primary'} icon={selected ? RemoveIcon : AddIcon} onClick={toggle}>
@@ -80,7 +81,7 @@ export function ServiceDetailsSheet({ service, color, currency, selected = false
       <div className="mt-5 flex max-w-[62ch] flex-col gap-3">
         {paragraphs(pick(service.details)).map((paragraph, index) => (
           <p key={index} className="whitespace-pre-line break-words text-[0.9375rem] leading-relaxed text-ink-700">
-            {paragraph}
+            {noOrphan(paragraph)}
           </p>
         ))}
       </div>

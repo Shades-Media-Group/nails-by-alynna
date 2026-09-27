@@ -13,6 +13,7 @@ import { cx } from '@/lib/cx';
 import { errorMessage } from '@/lib/errors';
 import { dateToInstant, dayParts, formatDateTime, formatDayLong, formatDuration, formatPhone, formatPrice, formatTime, fullName, zonedDate } from '@/lib/format';
 import { SWATCH } from '@/lib/swatch';
+import { noOrphan } from '@/lib/typography';
 import { isApiError } from '@/services/api/client';
 import type { StaffAppointment } from '@/types/api';
 import { adminApi, adminQueries } from '../api';
@@ -149,6 +150,7 @@ export default function AppointmentPage() {
                 key={action.key}
                 size="md"
                 variant={action.variant}
+                fit
                 loading={action.loading}
                 disabled={setStatus.isPending && !action.loading}
                 onClick={action.onClick}
@@ -299,7 +301,7 @@ function Services({ appointment: a }: { appointment: StaffAppointment }) {
                 <NailArt art={service?.art ?? 'gel'} color={color} className="w-10" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-[0.9375rem] font-semibold leading-snug">{pick(line.name)}</span>
+                <span className="block text-balance text-[0.9375rem] font-semibold leading-snug">{noOrphan(pick(line.name))}</span>
                 <span className="block text-sm text-ink-600">{formatDuration(t, line.durationMin)}</span>
               </span>
               <span className="tabular shrink-0 text-[0.9375rem] font-semibold">{formatPrice(t, line.price, currency, line.priceFrom)}</span>

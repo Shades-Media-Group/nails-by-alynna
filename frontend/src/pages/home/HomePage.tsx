@@ -29,6 +29,7 @@ import { cx } from '@/lib/cx';
 import { formatDuration, formatPrice } from '@/lib/format';
 import { studioHours, weekdayIn } from '@/lib/hours';
 import { SWATCH } from '@/lib/swatch';
+import { noOrphan } from '@/lib/typography';
 import { queries } from '@/services/queries';
 
 /** Entrance order for the staggered rise (see the `stagger` utility). */
@@ -162,7 +163,7 @@ export default function HomePage() {
                             className="w-24 transition-transform duration-500 ease-(--ease-out) group-hover:scale-105"
                           />
                         </span>
-                        <span className="mt-2 line-clamp-2 px-1 text-sm font-bold leading-snug">{pick(service.name)}</span>
+                        <span className="mt-2 line-clamp-2 text-balance px-1 text-sm font-bold leading-snug">{noOrphan(pick(service.name))}</span>
                         <span className="mt-auto flex items-baseline justify-between gap-2 px-1 pb-0.5 pt-1.5 text-xs">
                           <span className="text-ink-600">{formatDuration(t, service.durationMin)}</span>
                           <span className="tabular text-[0.8125rem] font-bold text-rose-700">

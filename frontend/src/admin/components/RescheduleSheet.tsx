@@ -70,10 +70,10 @@ export function RescheduleSheet({
             </p>
           ) : null}
           <div className="grid grid-cols-2 gap-2">
-            <Button variant="soft" size="md" onClick={onClose}>
+            <Button variant="soft" size="md" fit onClick={onClose}>
               {t('common.cancel')}
             </Button>
-            <Button size="md" disabled={!choice} loading={save.isPending} onClick={() => choice && save.mutate(choice)}>
+            <Button size="md" fit disabled={!choice} loading={save.isPending} onClick={() => choice && save.mutate(choice)}>
               {t('appointment.move')}
             </Button>
           </div>

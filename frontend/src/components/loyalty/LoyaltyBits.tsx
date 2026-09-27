@@ -8,6 +8,7 @@ import { useLocale } from '@/i18n/useLocale';
 import { cx } from '@/lib/cx';
 import { formatPrice } from '@/lib/format';
 import { ordinal } from '@/lib/ordinal';
+import { NBSP } from '@/lib/typography';
 import { loyaltyQueries } from '@/services/api/loyalty';
 import type { AppointmentLoyalty } from '@/types/api';
 import { StampCard } from './StampCard';
@@ -84,8 +85,10 @@ export function LoyaltyLine({
         <LoyaltyIcon fontSize="inherit" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block font-semibold">
-          {t('detail.title')} · {t('detail.visit', { visit: loyalty.visit, cycle: loyalty.cycle })}
+        {/* On two lines, the dot ends the first one and "Visit 3 of 8" moves down whole. */}
+        <span className="block text-balance font-semibold">
+          {t('detail.title')}
+          {NBSP}· {t('detail.visit', { visit: loyalty.visit, cycle: loyalty.cycle })}
         </span>
         <span className="block text-sm text-ink-600">
           {hasDiscount

@@ -200,7 +200,7 @@ describe('the line under "Send by"', () => {
     const line = group('Booking updates').getByText('Only in the app added to the Home Screen.', {
       exact: false,
     });
-    expect(within(line).getByRole('link', { name: 'How to add it' })).toHaveAttribute(
+    expect(within(line).getByRole('link', { name: /^How to add\sit$/ })).toHaveAttribute(
       'href',
       '/en/app',
     );
