@@ -239,6 +239,45 @@ export interface StudioSettings {
   maxGapMin: number;
   /** A gap this long (minutes) still fits another visit, so it is allowed. */
   minBookableGapMin: number;
+  /** "Come back" reminders to clients who have not booked since their last visit. */
+  rebook: RebookSettings;
+}
+
+/** The first come-back reminder, the ones in between (with the loyalty card), the last one. */
+export const REBOOK_TONES = ['first', 'nudge', 'last'] as const;
+export type RebookTone = (typeof REBOOK_TONES)[number];
+/** The studio's own wording; an empty language uses the built-in text. */
+export interface RebookText {
+  title: I18nText;
+  body: I18nText;
+}
+export interface RebookSettings {
+  enabled: boolean;
+  /** Days after the last completed visit (14–90). */
+  firstAfterDays: number;
+  /** Days between the next ones (7–60). */
+  repeatEveryDays: number;
+  /** In all, the first included (1–5). */
+  maxReminders: number;
+  channels: { email: boolean; push: boolean };
+  texts: Record<RebookTone, RebookText>;
+}
+/** Any part of the reminders; the API keeps the rest as saved. */
+export type RebookPatch = Partial<Omit<RebookSettings, 'channels' | 'texts'>> & {
+  channels?: Partial<RebookSettings['channels']>;
+  texts?: Partial<Record<RebookTone, RebookText>>;
+};
+/** The built-in texts, and per language the example values previews are filled with. */
+export interface RebookPreview {
+  defaults: Record<RebookTone, RebookText>;
+  placeholders: string[];
+  /** Whether the server can send email / Web Push at all. */
+  available: { email: boolean; push: boolean };
+  sample: Record<Locale, { name: string; services: string; master: string; loyalty: string | null }>;
+}
+export interface RebookTestResult {
+  email: { to: string; sent: boolean } | null;
+  push: { sent: number; devices: number } | null;
 }
 
 export interface AdminUser {
@@ -378,6 +417,12 @@ export const adminApi = {
   settings: () => api.get<{ settings: StudioSettings }>('/admin/settings').then((r) => r.settings),
   /** Owner only; send just the fields that changed. */
   updateSettings: (input: Partial<StudioSettings>) => api.patch<{ settings: StudioSettings }>('/admin/settings', input).then((r) => r.settings),
+  /** Owner only: the parts of the come-back reminders that changed. */
+  updateRebook: (patch: RebookPatch) => api.patch<{ settings: StudioSettings }>('/admin/settings', { rebook: patch }).then((r) => r.settings),
+  /** Come-back reminders: built-in texts and example values for the previews. */
+  rebook: () => api.get<RebookPreview>('/admin/settings/rebook'),
+  /** Owner only: the first come-back reminder, sent to the signed-in owner as clients would get it. */
+  rebookTest: () => api.post<RebookTestResult>('/admin/settings/rebook/test'),
 
   users: (params: { q?: string; role?: Role; page?: number; limit?: number }) =>
     api.get<Paged & { users: AdminUser[] }>(`/admin/users${query(params)}`),
@@ -412,6 +457,7 @@ export const adminQueries = {
     }),
   client: (id: string) => queryOptions({ queryKey: ['admin', 'client', id], queryFn: () => adminApi.client(id), staleTime: 15_000 }),
   settings: () => queryOptions({ queryKey: ['admin', 'settings'], queryFn: adminApi.settings, staleTime: 60_000 }),
+  rebook: () => queryOptions({ queryKey: ['admin', 'settings', 'rebook'], queryFn: adminApi.rebook, staleTime: 60_000 }),
   timeOff: (params: { from: string; to?: string }) =>
     queryOptions({ queryKey: ['admin', 'time-off', params], queryFn: () => adminApi.timeOff(params), staleTime: 60_000 }),
   users: (params: { q?: string; role?: Role; page?: number }) =>

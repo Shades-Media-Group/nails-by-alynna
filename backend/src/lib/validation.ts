@@ -113,7 +113,7 @@ export const i18nOptionalTextSchema = (max = 600) =>
   z.object({ ro: i18nField(max, false), ru: i18nField(max, false), en: i18nField(max, false) });
 
 /** An HTML tag or comment: longer texts are plain text, shown exactly as typed. */
-const MARKUP = /<\/?[a-z!][^<>]*>/i;
+export const MARKUP = /<\/?[a-z!][^<>]*>/i;
 
 /**
  * Plain text as it is stored: Unix line breaks, no control characters or trailing spaces, at

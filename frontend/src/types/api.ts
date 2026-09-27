@@ -78,6 +78,8 @@ export interface PublicConfig {
     mastersCount: number;
   };
   loyalty: { enabled: boolean; cycle: number; rewards: LoyaltyReward[] };
+  /** Whether the studio sends "come back" reminders (clients switch them in Notifications). */
+  rebook?: { enabled: boolean };
 }
 
 /** A reward on the loyalty card: the Nth visit of every card gets `percent` off. */
