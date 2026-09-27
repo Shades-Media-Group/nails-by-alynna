@@ -85,7 +85,7 @@ export const WALLET_COPY: Record<Locale, WalletCopy> = {
     member: 'Member',
     next: 'Next discount',
     nextValue: ({ percent, visit, inVisits }) =>
-      inVisits === 1 ? `${percent}% off your next visit` : `${percent}% off your ${ordinal(visit, 'en')} visit`,
+      inVisits === 1 ? `${percent}% off your next visit` : `${percent}% off the ${ordinal(visit, 'en')} visit`,
     how: 'How it works',
     howText: ({ cycle, rewards }) =>
       [

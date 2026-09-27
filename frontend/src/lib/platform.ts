@@ -73,6 +73,16 @@ export function currentPlatform(): Platform {
   return cached;
 }
 
+export type WalletKind = 'apple' | 'google';
+
+/** The Wallets this device adds passes to: its own, or both on a computer. */
+export function walletsHere(): WalletKind[] {
+  const { os } = currentPlatform();
+  if (os === 'ios' || os === 'ipados') return ['apple'];
+  if (os === 'android') return ['google'];
+  return ['apple', 'google'];
+}
+
 const LANDING_SEEN = 'nba:landing-seen';
 
 /**

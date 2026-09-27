@@ -126,5 +126,21 @@
       "summary": "{{ordinal}}\u00a0visit:\u00a0−{{percent}}%",
       "off": "Off"
     }
+  },
+  "wallet": {
+    "title": "Your loyalty card in Wallet",
+    "text": "Your QR code and stamps, right in Wallet: no need to open the app at the desk.",
+    "preview": "Your card as it will look in Wallet",
+    "add": "Add to Wallet",
+    "addApple": "Add to Apple\u00a0Wallet",
+    "addGoogle": "Add to Google\u00a0Wallet",
+    "stamps": "Stamps",
+    "next": "Next discount",
+    "nextVisit": "{{percent}}%\u00a0off your next visit",
+    "soon": "Adding to Wallet is coming soon.",
+    "soonText": "Until then, show the QR code in the app at the desk.",
+    "soonApple": "Adding to Apple\u00a0Wallet is coming soon.",
+    "soonGoogle": "Adding to Google\u00a0Wallet is coming soon.",
+    "snapshot": "Wallet shows today's stamps; the app always has the latest count."
   }
 }

@@ -3,6 +3,8 @@ export const STORAGE_KEYS = {
   locale: 'nba:locale',
   consent: 'nba:consent',
   installDismissed: 'nba:install-dismissed',
+  /** The Home block for the loyalty card in Wallet: closed, or the card was added. */
+  walletBanner: 'nba:wallet-banner',
   splashSeen: 'nba:splash-seen',
   bookingDraft: 'nba:booking-draft',
   /** Prefix: `${pushPrompt}:${userId}` holds when to ask for notifications again (lib/pushPrompt.ts). */

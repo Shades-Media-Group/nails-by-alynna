@@ -53,6 +53,7 @@ export function saveConsent(choice: Record<OptionalCategory, boolean>): ConsentC
   // Withdrawn preferences: forget what that category stored.
   if (!choice.preferences) {
     storage.remove(STORAGE_KEYS.installDismissed);
+    storage.remove(STORAGE_KEYS.walletBanner);
     storage.remove(STORAGE_KEYS.bookingDraft);
   }
   emit();
