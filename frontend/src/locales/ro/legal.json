@@ -15,8 +15,7 @@
         "id": "who",
         "title": "Cine răspunde de date",
         "body": [
-          "Operatorul datelor tale este {{operator}}, care administrează salonul de unghii {{studio}} din {{city}}.",
-          "Pentru orice întrebare despre date, contactează-ne: {{contact}}."
+          "Operatorul datelor tale este {{operator}}, care administrează salonul de unghii {{studio}} din {{city}}."
         ]
       },
       {
@@ -98,8 +97,9 @@
           "Restricționare, opoziție, portabilitate și retragerea oricând a consimțământului."
         ],
         "after": [
-          "Pentru a-ți exercita un drept, scrie-ne: {{contact}}. Răspundem în cel mult o lună. Poți depune și o plângere la Centrul Național pentru Protecția Datelor cu Caracter Personal (CNPDCP), datepersonale.md."
-        ]
+          "Pentru a-ți exercita un drept, scrie-ne cu butonul de mai jos. Răspundem în cel mult o lună. Poți depune și o plângere la Centrul Național pentru Protecția Datelor cu Caracter Personal (CNPDCP), datepersonale.md."
+        ],
+        "action": "feedback"
       },
       {
         "id": "security",
