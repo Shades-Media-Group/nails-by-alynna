@@ -42,6 +42,7 @@ export type ErrorCode =
   | 'ONE_PER_CATEGORY'
   | 'CARD_NOT_FOUND'
   | 'PROMO_INVALID'
+  | 'WALLET_UNAVAILABLE'
   | 'PAYLOAD_TOO_LARGE'
   | 'DEMO_READ_ONLY'
   | 'RATE_LIMITED'
