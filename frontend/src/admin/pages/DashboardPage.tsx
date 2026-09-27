@@ -6,7 +6,7 @@ import { useAuth } from '@/app/auth';
 import { Alert } from '@/components/common/Alert';
 import { SectionHeading } from '@/components/layout/PageHeader';
 import { PromoBadge } from '@/components/promo/PromoBits';
-import { ButtonLink, EmptyState, Skeleton, toast } from '@/components/ui';
+import { ButtonLink, EmptyState, FitText, Skeleton, toast } from '@/components/ui';
 import { AddIcon, CalendarIcon, CallIcon, ChevronRightIcon, EventIcon, GroupIcon, QrCodeIcon, type IconComponent } from '@/components/ui/icons';
 import { useI18nText, useStudio } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
@@ -91,7 +91,8 @@ export default function DashboardPage() {
                 )}
               >
                 <item.icon fontSize="inherit" className={cx('text-2xl', !item.primary && 'text-rose-700')} />
-                <span className="text-sm font-semibold leading-tight">{item.label}</span>
+                {/* One line, shrinking a little in Russian ("Сканировать QR") rather than leaving "QR" alone. */}
+                <FitText className="self-stretch text-center text-sm font-semibold leading-tight">{item.label}</FitText>
               </Link>
             ))}
           </nav>
