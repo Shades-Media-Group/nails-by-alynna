@@ -28,11 +28,19 @@ interface AddToWalletSheetProps {
  * signs (blush field, stamps up top, the name, the next discount, the member QR code), then this
  * device's Wallet button. A Wallet the studio hasn't set up yet says so instead of a button.
  */
-export function AddToWalletSheet({ open, onClose, onAdded, card, name, studio }: AddToWalletSheetProps) {
+export function AddToWalletSheet({
+  open,
+  onClose,
+  onAdded,
+  card,
+  name,
+  studio,
+}: AddToWalletSheetProps) {
   const { t } = useTranslation(['loyalty', 'common']);
   const wallets = walletsHere();
   const status = useQuery({ ...walletQueries.status(), enabled: open });
-  const ready = (wallet: WalletKind) => open && wallets.includes(wallet) && status.data?.[wallet] === true;
+  const ready = (wallet: WalletKind) =>
+    open && wallets.includes(wallet) && status.data?.[wallet] === true;
   const links = {
     apple: useQuery({ ...walletQueries.link('apple'), enabled: ready('apple') }),
     google: useQuery({ ...walletQueries.link('google'), enabled: ready('google') }),
@@ -79,7 +87,9 @@ export function AddToWalletSheet({ open, onClose, onAdded, card, name, studio }:
                 >
                   {t(wallet === 'apple' ? 'wallet.addApple' : 'wallet.addGoogle')}
                 </Button>
-                {links[wallet].isError && !links[wallet].isFetching ? <Alert>{errorMessage(t, links[wallet].error)}</Alert> : null}
+                {links[wallet].isError && !links[wallet].isFetching ? (
+                  <Alert>{errorMessage(t, links[wallet].error)}</Alert>
+                ) : null}
               </div>
             ))}
             {waiting.length > 0 ? (
@@ -95,7 +105,9 @@ export function AddToWalletSheet({ open, onClose, onAdded, card, name, studio }:
                 </span>
               </p>
             ) : null}
-            {offered.length > 0 ? <p className="text-center text-xs text-ink-600">{t('wallet.snapshot')}</p> : null}
+            {offered.length > 0 ? (
+              <p className="text-center text-xs text-ink-600">{t('wallet.snapshot')}</p>
+            ) : null}
           </>
         )}
       </div>
@@ -103,49 +115,65 @@ export function AddToWalletSheet({ open, onClose, onAdded, card, name, studio }:
   );
 }
 
-/** The card as Wallet will show it (see backend/src/modules/wallet/apple.ts). */
+/**
+ * The card as Wallet will show it, laid out the way Wallet lays out a store card (see
+ * backend/src/modules/wallet/apple.ts): logo and studio name on the left of the header with the
+ * stamps on the right, the member's name as the large primary field, the next discount under it,
+ * and the QR code on a white plate at the foot. Same blush field, ink text and rose labels as
+ * the signed pass, the card's proportions and corner, and the soft lift of a pass in the Wallet.
+ */
 function PassPreview({ card, name, studio }: { card: LoyaltyCard; name: string; studio: string }) {
   const { t } = useTranslation('loyalty');
   const { locale } = useLocale();
   const { loyalty } = card;
   const next = loyalty.enabled ? loyalty.nextReward : null;
-  const label = 'caps text-rose-700';
+  const label =
+    'text-[0.6875rem] font-semibold uppercase leading-none tracking-[0.06em] text-rose-700';
 
   return (
-    <figure aria-label={t('wallet.preview')} className="rounded-2xl bg-blush-100 p-4 shadow-card">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <Logo variant="mark" className="w-11 shrink-0" />
-          <span className="truncate text-[0.9375rem] font-bold">{studio}</span>
+    <figure
+      aria-label={t('wallet.preview')}
+      className="mx-auto flex aspect-[1/1.3] w-full max-w-[20rem] flex-col rounded-[0.875rem] bg-blush-100 px-4 pb-4 pt-3.5 text-ink-900 shadow-[0_1px_0_rgb(255_255_255/0.6)_inset,0_18px_40px_-18px_rgb(143_20_70/0.45),0_2px_6px_-2px_rgb(37_39_38/0.18)]"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <Logo variant="mark" className="w-9 shrink-0" />
+          <span className="truncate text-[0.9375rem] font-semibold">{studio}</span>
         </div>
         {loyalty.enabled ? (
           <dl className="shrink-0 text-right">
             <dt className={label}>{t('wallet.stamps')}</dt>
-            <dd className="tabular text-h2 font-extrabold">
+            <dd className="tabular mt-1 text-[1.0625rem] font-medium leading-none">
               {loyalty.stamps}/{loyalty.cycle}
             </dd>
           </dl>
         ) : null}
       </div>
-      <dl className="mt-4 flex flex-col gap-3">
-        <div>
-          <dt className={label}>{t('qr.member')}</dt>
-          <dd className="text-h2 font-extrabold [overflow-wrap:anywhere]">{name}</dd>
-        </div>
-        {next ? (
-          <div>
-            <dt className={label}>{t('wallet.next')}</dt>
-            <dd className="font-semibold">
-              {next.inVisits === 1
-                ? t('wallet.nextVisit', { percent: next.percent })
-                : t('nextOn', { percent: next.percent, ordinal: ordinal(next.visit, locale) })}
-            </dd>
-          </div>
-        ) : null}
+
+      <dl className="mt-6">
+        <dt className={label}>{t('qr.member')}</dt>
+        <dd className="mt-1.5 text-[1.75rem] font-normal leading-tight tracking-[-0.01em] [overflow-wrap:anywhere]">
+          {name}
+        </dd>
       </dl>
-      <div className="mx-auto mt-4 w-fit rounded-xl bg-white px-3 pb-2 pt-3 text-center">
-        <QrCode value={card.card.url} label={t('qr.label')} className="size-28 rounded-none" />
-        <p className="tabular mt-1 text-xs font-semibold text-ink-700">{groupMemberCode(card.card.code)}</p>
+      {next ? (
+        <dl className="mt-4">
+          <dt className={label}>{t('wallet.next')}</dt>
+          <dd className="mt-1 text-[1.0625rem] font-medium leading-snug">
+            {next.inVisits === 1
+              ? t('wallet.nextVisit', { percent: next.percent })
+              : t('nextOn', { percent: next.percent, ordinal: ordinal(next.visit, locale) })}
+          </dd>
+        </dl>
+      ) : null}
+
+      <div className="mt-auto flex justify-center pt-4">
+        <div className="rounded-[0.625rem] bg-white px-3 pb-1.5 pt-3 text-center">
+          <QrCode value={card.card.url} label={t('qr.label')} className="size-28 rounded-none" />
+          <p className="tabular mt-1 text-[0.6875rem] font-medium tracking-[0.04em] text-ink-700">
+            {groupMemberCode(card.card.code)}
+          </p>
+        </div>
       </div>
     </figure>
   );

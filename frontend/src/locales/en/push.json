@@ -2,40 +2,40 @@
   "softAsk": {
     "title": "Get a notification when the master confirms",
     "titleBooked": "Get a reminder before your visit",
-    "textPhone": "On this phone, even with the app closed. Reminders and changes to your visit arrive the same\u00a0way.",
-    "textDevice": "On this device, even with the app closed. Reminders and changes to your visit arrive the same\u00a0way.",
+    "textPhone": "On this phone, even with the app closed. Reminders and changes to your visit arrive the same way.",
+    "textDevice": "On this device, even with the app closed. Reminders and changes to your visit arrive the same way.",
     "staffTitle": "Hear about new bookings right away",
     "staffText": "New booking requests arrive on this device and need a quick answer.",
     "action": "Turn on notifications"
   },
   "hint": {
     "install": "On iPhone and iPad, notifications only work in the app added to the Home Screen.",
-    "installLink": "How to add\u00a0it",
+    "installLink": "How to add it",
     "installHere": "Only in the app added to the Home Screen.",
     "blocked": "Notifications are blocked.",
     "blockedHere": "Blocked in this device's settings.",
     "unblockIos": "Turn them on in Settings → Notifications → {{app}}.",
     "unblockAndroidApp": "Tap and hold the app icon → App info → Notifications, and allow them.",
     "unblockAndroidBrowser": "Tap the icon next to the address → Notifications → Allow.",
-    "unblockDesktop": "Allow them with the icon next to the address\u00a0bar.",
-    "notHerePhone": "This phone isn't getting app notifications\u00a0yet.",
-    "notHereDevice": "This device isn't getting app notifications\u00a0yet.",
+    "unblockDesktop": "Allow them with the icon next to the address bar.",
+    "notHerePhone": "This phone isn't getting app notifications yet.",
+    "notHereDevice": "This device isn't getting app notifications yet.",
     "turnOn": "Turn on",
     "unsupported": "This browser can't show app notifications.",
     "preview": "App notifications work in the published app, not in this preview."
   },
   "prompt": {
-    "clientTitle": "Turn on notifications?",
-    "clientText": "We'll tell you on this phone, and by email:",
-    "clientTextDevice": "We'll tell you on this device, and by email:",
+    "clientTitle": "Don't miss the confirmation",
+    "clientText": "Only about your visits. No ads.",
+    "clientTextDevice": "Only about your visits. No ads.",
     "clientPoints": {
       "confirm": "when the master confirms or moves your visit",
       "changes": "when the studio moves or cancels your visit",
-      "remind": "before each visit, so you don't miss\u00a0it",
+      "remind": "before each visit, so you don't miss it",
       "loyalty": "when your loyalty card earns a discount"
     },
-    "staffTitle": "Don't miss a booking request",
-    "staffText": "New booking requests arrive here and need a quick answer. With notifications on, you see them even when the app is closed.",
+    "staffTitle": "Never miss a request",
+    "staffText": "New requests arrive at once, even with the app closed.",
     "staffPoints": {
       "requests": "new booking requests, the moment they arrive",
       "changes": "visits clients move or cancel"
@@ -44,7 +44,16 @@
     "installText": "Add the app to your Home Screen first: notifications arrive there, even when it's closed.",
     "installAction": "Show me how",
     "enable": "Turn on notifications",
-    "later": "Not now"
+    "later": "Not now",
+    "sample": {
+      "now": "now",
+      "confirmTitle": "Booking confirmed",
+      "confirmBody": "Alina is expecting you Monday at 13:45.",
+      "remindTitle": "Your visit is tomorrow",
+      "remindBody": "See you at 13:45!",
+      "staffTitle": "New request",
+      "staffBody": "Ana, tomorrow at 14:00 · Gel polish"
+    }
   },
   "result": {
     "onPhone": "Notifications are on for this phone.",
@@ -56,16 +65,16 @@
   },
   "banner": {
     "blockedTitle": "Notifications are blocked on this device",
-    "blockedText": "new booking requests won't reach\u00a0you.",
-    "fix": "How to fix\u00a0it"
+    "blockedText": "new booking requests won't reach you.",
+    "fix": "How to fix it"
   },
   "test": {
     "action": "Send a test notification",
-    "countdown": "Sending in\u00a0{{count}}\u00a0s",
+    "countdown": "Sending in {{count}} s",
     "countdownHint": "Lock the screen or close the app now to see it arrive.",
     "sending": "Sending…",
-    "sent_one": "Sent to\u00a0{{count}}\u00a0device.",
-    "sent_other": "Sent to\u00a0{{count}}\u00a0devices.",
+    "sent_one": "Sent to {{count}} device.",
+    "sent_other": "Sent to {{count}} devices.",
     "none": "No device got it. Turn notifications off and on again here.",
     "lost": "If the notification arrived, everything works. If not, check that notifications are allowed for this app in the device settings.",
     "device": {

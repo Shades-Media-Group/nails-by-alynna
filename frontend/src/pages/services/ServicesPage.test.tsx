@@ -131,28 +131,25 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('services → booking', () => {
-  it('asks for the nail shape on Continue and goes on only with one', async () => {
+  it('asks for the nail shape at the top and goes on only with one', async () => {
     const user = userEvent.setup();
+    Element.prototype.scrollIntoView = vi.fn();
     renderServices();
 
-    await user.click(await screen.findByRole('button', { name: 'Add Gel polish' }));
-    await user.click(screen.getByRole('button', { name: 'Continue' }));
-
-    const sheet = await screen.findByRole('dialog');
-    const shapes = within(sheet).getByRole('radiogroup', { name: 'Nail shape' });
+    const shapes = await screen.findByRole('radiogroup', { name: 'Nail shape' });
     expect(within(shapes).getAllByRole('radio')).toHaveLength(4);
+    await user.click(await screen.findByRole('button', { name: 'Add Gel polish' }));
 
     // Without a shape: a warning, focus on the shapes, and no booking yet.
-    await user.click(within(sheet).getByRole('button', { name: 'Continue' }));
-    expect(within(sheet).getByText('Please pick a nail shape to continue.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(screen.getByText('Please pick a nail shape to continue.')).toBeInTheDocument();
     expect(within(shapes).getByRole('radio', { name: 'Square' })).toHaveFocus();
+    expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.getByTestId('location')).toHaveTextContent('/en/services');
 
     await user.click(within(shapes).getByRole('radio', { name: 'Stiletto' }));
-    expect(
-      within(sheet).queryByText('Please pick a nail shape to continue.'),
-    ).not.toBeInTheDocument();
-    await user.click(within(sheet).getByRole('button', { name: 'Continue' }));
+    expect(screen.queryByText('Please pick a nail shape to continue.')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
     expect(screen.getByTestId('location')).toHaveTextContent('/en/book?services=s1&shape=stiletto');
   });
 });

@@ -169,8 +169,12 @@ describe('clients', () => {
     await wait(1_000);
     await until(() => expect(isOpen()).toBe(true));
     const dialog = within(sheet()!);
-    expect(dialog.getByRole('heading', { name: 'Turn on notifications?' })).toBeInTheDocument();
-    expect(dialog.getByText('when the master confirms or moves your visit')).toBeInTheDocument();
+    // Short: the benefit, a sample of the notification, one line against spam.
+    expect(
+      dialog.getByRole('heading', { name: "Don't miss the confirmation" }),
+    ).toBeInTheDocument();
+    expect(dialog.getByText('Booking confirmed')).toBeInTheDocument();
+    expect(dialog.getByText('Only about your visits. No ads.')).toBeInTheDocument();
 
     await user.click(dialog.getByRole('button', { name: 'Turn on notifications' }));
     // The permission prompt comes from this tap, with the key the page already has.
@@ -263,7 +267,7 @@ describe('staff', () => {
     await until(() => expect(isOpen()).toBe(true));
     const dialog = within(sheet()!);
     expect(
-      dialog.getByText(/New booking requests arrive here and need a quick answer/),
+      dialog.getByText(/New requests arrive at once, even with the app closed/),
     ).toBeInTheDocument();
     expect(screen.getByTestId('pending')).toHaveTextContent('waiting');
 

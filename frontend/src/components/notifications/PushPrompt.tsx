@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router';
 import { STAFF_ROLES, useAuth } from '@/app/auth';
 import { Button, Sheet } from '@/components/ui';
-import { CheckIcon } from '@/components/ui/icons';
+import { Logo } from '@/components/brand/Logo';
 import { useStudio } from '@/hooks/useStudio';
 import { splitLocale } from '@/i18n/routing';
 import { useLocale } from '@/i18n/useLocale';
@@ -70,6 +70,7 @@ function PromptHost({ user, audience }: { user: User; audience: PromptAudience }
   const { pathname } = useLocation();
   const { device, busy, turnOn, settings } = useTurnOnPush();
   const studio = useStudio().data;
+  const studioName = studio?.studio.name ?? 'Nails by Alynna';
   const staff = audience === 'staff';
   const data = settings.data;
   /** What would be asked now, whatever the moment (the rules alone). */
@@ -171,33 +172,28 @@ function PromptHost({ user, audience }: { user: User; audience: PromptAudience }
     : staff
       ? t('prompt.staffTitle')
       : t('prompt.clientTitle');
-  const points = install
-    ? []
+  // What they'd get, shown rather than listed: one notification as the phone would show it.
+  const sample = install
+    ? null
     : staff
-      ? [t('prompt.staffPoints.requests'), t('prompt.staffPoints.changes')]
-      : [
-          studio?.booking.requireApproval === false
-            ? t('prompt.clientPoints.changes')
-            : t('prompt.clientPoints.confirm'),
-          t('prompt.clientPoints.remind'),
-          // Loyalty messages only while the studio runs the stamp card.
-          ...(studio?.loyalty.enabled === false ? [] : [t('prompt.clientPoints.loyalty')]),
-        ];
+      ? { title: t('prompt.sample.staffTitle'), body: t('prompt.sample.staffBody') }
+      : studio?.booking.requireApproval === false
+        ? { title: t('prompt.sample.remindTitle'), body: t('prompt.sample.remindBody') }
+        : { title: t('prompt.sample.confirmTitle'), body: t('prompt.sample.confirmBody') };
+  const text = install
+    ? t('prompt.installText')
+    : staff
+      ? t('prompt.staffText')
+      : onPhone()
+        ? t('prompt.clientText')
+        : t('prompt.clientTextDevice');
 
   return (
     <Sheet
       open={shown !== null}
       onClose={notNow}
       title={title}
-      description={
-        install
-          ? t('prompt.installText')
-          : staff
-            ? t('prompt.staffText')
-            : onPhone()
-              ? t('prompt.clientText')
-              : t('prompt.clientTextDevice')
-      }
+      hideTitle
       footer={
         <div className="flex flex-col gap-2">
           {install ? (
@@ -215,21 +211,32 @@ function PromptHost({ user, audience }: { user: User; audience: PromptAudience }
         </div>
       }
     >
-      {points.length > 0 ? (
-        <ul className="flex flex-col gap-2.5">
-          {points.map((point) => (
-            <li key={point} className="flex items-start gap-3 text-[0.9375rem] text-ink-800">
-              <span
-                className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-pill bg-mint-100 text-sm text-mint-700"
-                aria-hidden="true"
-              >
-                <CheckIcon fontSize="inherit" />
+      <div className="flex flex-col items-center pt-1 text-center">
+        {sample ? (
+          <div
+            aria-hidden="true"
+            className="w-full max-w-sm rounded-[1.25rem] bg-ink-50 p-3 text-left shadow-[0_10px_30px_-18px_rgb(37_39_38/0.5)] animate-rise [animation-delay:180ms]"
+          >
+            <div className="flex items-center gap-2 text-xs text-ink-500">
+              <span className="inline-flex size-5 items-center justify-center overflow-hidden rounded-md bg-white">
+                <Logo variant="mark" className="w-4" />
               </span>
-              <span className="first-letter:uppercase">{point}</span>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+              <span className="font-semibold uppercase tracking-[0.04em] text-ink-600">
+                {studioName}
+              </span>
+              <span className="ml-auto">{t('prompt.sample.now')}</span>
+            </div>
+            <p className="mt-2 text-[0.9375rem] font-semibold leading-snug text-ink-900">
+              {sample.title}
+            </p>
+            <p className="text-[0.9375rem] leading-snug text-ink-700">{sample.body}</p>
+          </div>
+        ) : null}
+        <p className="mt-5 text-h2 font-extrabold" aria-hidden="true">
+          {title}
+        </p>
+        <p className="mt-1.5 max-w-xs text-ink-600">{text}</p>
+      </div>
     </Sheet>
   );
 }
