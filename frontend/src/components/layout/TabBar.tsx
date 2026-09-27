@@ -1,6 +1,6 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useLocation } from 'react-router';
+import { Link, useLocation, useNavigation } from 'react-router';
 import { cx } from '@/lib/cx';
 import { setNavDirection } from '@/lib/navDirection';
 import { useClientNav } from './nav';
@@ -18,12 +18,17 @@ interface Pill {
 export function TabBar() {
   const { t } = useTranslation('common');
   const items = useClientNav();
-  const { pathname } = useLocation();
+  const location = useLocation();
+  // While a tab's page is loading, the chip already sits on it: the tap answers at once.
+  const pending = useNavigation().location;
+  const pathname = (pending ?? location).pathname;
   const listRef = useRef<HTMLUListElement>(null);
   const [pill, setPill] = useState<Pill | null>(null);
   const [animate, setAnimate] = useState(false);
 
-  const activeIndex = items.findIndex((item) => pathname === item.to || pathname.startsWith(`${item.to}/`));
+  const activeIndex = items.findIndex(
+    (item) => pathname === item.to || pathname.startsWith(`${item.to}/`),
+  );
   // A new array arrives on every render; only its contents matter for measuring.
   const itemsKey = items.map((item) => `${item.to}:${item.label}`).join('|');
 
@@ -47,7 +52,9 @@ export function TabBar() {
       const icon = active.querySelector('svg')?.getBoundingClientRect().width ?? 22;
       const width = Math.round(16 + icon + 8 + (label?.scrollWidth ?? 0) + 16);
       const x = Math.round(padding + activeIndex * (closed + gap));
-      setPill((current) => (current && current.x === x && current.width === width ? current : { x, width }));
+      setPill((current) =>
+        current && current.x === x && current.width === width ? current : { x, width },
+      );
     };
     measure();
     // Labels change width when the web font arrives or the language switches.
@@ -56,6 +63,10 @@ export function TabBar() {
     void document.fonts?.ready.then(measure);
     return () => observer.disconnect();
   }, [activeIndex, itemsKey]);
+
+  // The four tabs' pages load in the background once the app is idle, so a tap never waits on
+  // the network.
+  useEffect(() => preloadTabPages(), []);
 
   // No slide on first paint: the chip appears in place, later changes animate.
   useLayoutEffect(() => {
@@ -70,13 +81,17 @@ export function TabBar() {
       aria-label={t('nav.main')}
       className="fixed inset-x-0 bottom-[calc(var(--safe-bottom)+0.75rem)] z-40 flex justify-center px-4 [view-transition-name:tabbar] lg:hidden"
     >
-      <ul ref={listRef} className="relative flex items-center gap-1 rounded-pill bg-ink-900 p-1.5 shadow-float">
+      <ul
+        ref={listRef}
+        className="relative flex items-center gap-1 rounded-pill bg-ink-900 p-1.5 shadow-float"
+      >
         {pill ? (
           <li
             aria-hidden="true"
             className={cx(
               'pointer-events-none absolute left-0 top-1.5 h-11 rounded-pill bg-blush-100',
-              animate && 'transition-[transform,width] duration-[380ms] ease-(--ease-out)',
+              animate &&
+                'transition-[transform,width] duration-300 ease-[cubic-bezier(0.34,1.3,0.64,1)]',
             )}
             style={{ transform: `translateX(${pill.x}px)`, width: pill.width }}
           />
@@ -93,7 +108,7 @@ export function TabBar() {
                 aria-label={item.label}
                 aria-current={isActive ? 'page' : undefined}
                 className={cx(
-                  'press flex h-11 min-w-11 items-center justify-center rounded-pill text-[1.35rem] transition-[padding,color] duration-[380ms] ease-(--ease-out)',
+                  'press flex h-11 min-w-11 items-center justify-center rounded-pill text-[1.35rem] transition-[padding,color] duration-300 ease-(--ease-out)',
                   isActive ? 'px-4 text-ink-900' : 'text-white/65 hover:text-white',
                 )}
               >
@@ -102,7 +117,7 @@ export function TabBar() {
                   data-tab-label=""
                   aria-hidden="true"
                   className={cx(
-                    'overflow-hidden whitespace-nowrap text-sm font-semibold transition-[max-width,margin,opacity] duration-[380ms] ease-(--ease-out)',
+                    'overflow-hidden whitespace-nowrap text-sm font-semibold transition-[max-width,margin,opacity] duration-300 ease-(--ease-out)',
                     isActive ? 'ml-2 max-w-32 opacity-100' : 'ml-0 max-w-0 opacity-0',
                   )}
                 >
@@ -115,4 +130,20 @@ export function TabBar() {
       </ul>
     </nav>
   );
+}
+
+let preloaded = false;
+function preloadTabPages(): void {
+  if (preloaded) return;
+  preloaded = true;
+  const load = () => {
+    void import('@/pages/home/HomePage');
+    void import('@/pages/services/ServicesPage');
+    void import('@/pages/appointments/AppointmentsPage');
+    void import('@/pages/profile/ProfilePage');
+  };
+  // Safari has no requestIdleCallback.
+  if (typeof window.requestIdleCallback === 'function')
+    window.requestIdleCallback(load, { timeout: 2000 });
+  else setTimeout(load, 800);
 }

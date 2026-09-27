@@ -479,24 +479,35 @@
 
 /*
  * Switching tabs (the tab bar and top links navigate with view transitions): the page you leave
- * glides out toward the tab you came from while the new one fades in, and the bars stay put.
- * Browsers without view transitions simply switch.
+ * slides out toward the tab you came from while the new one slides in from the other side, like
+ * a native tab switch, and the bars stay put. Browsers without view transitions simply switch.
  */
-@keyframes nav-leave-left {
-  to { opacity: 0; transform: translateX(-8%); }
+@keyframes nav-out-left {
+  to { opacity: 0; transform: translateX(-28%); }
 }
-@keyframes nav-leave-right {
-  to { opacity: 0; transform: translateX(8%); }
+@keyframes nav-out-right {
+  to { opacity: 0; transform: translateX(28%); }
+}
+@keyframes nav-in-right {
+  from { opacity: 0; transform: translateX(28%); }
+}
+@keyframes nav-in-left {
+  from { opacity: 0; transform: translateX(-28%); }
+}
+::view-transition-group(root) {
+  animation-duration: 340ms;
 }
 ::view-transition-old(root) {
-  animation: nav-leave-left 260ms var(--ease-out) both;
-}
-html[data-nav-dir='back']::view-transition-old(root) {
-  animation-name: nav-leave-right;
+  animation: nav-out-left 300ms cubic-bezier(0.4, 0, 1, 1) both;
 }
 ::view-transition-new(root) {
-  animation-duration: 260ms;
-  animation-timing-function: var(--ease-out);
+  animation: nav-in-right 340ms var(--ease-out) both;
+}
+html[data-nav-dir='back']::view-transition-old(root) {
+  animation-name: nav-out-right;
+}
+html[data-nav-dir='back']::view-transition-new(root) {
+  animation-name: nav-in-left;
 }
 ::view-transition-old(tabbar),
 ::view-transition-old(topnav) {
