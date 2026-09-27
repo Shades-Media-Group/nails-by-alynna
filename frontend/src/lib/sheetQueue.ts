@@ -12,6 +12,8 @@ import { useEffect, useSyncExternalStore } from 'react';
 export const SHEET_ORDER = {
   /** The notifications ask (PushPrompt) goes before any other sheet. */
   notifications: 0,
+  /** Good news for a client: a visit confirmed, a new stamp. */
+  celebration: 5,
 } as const;
 
 interface Entry {

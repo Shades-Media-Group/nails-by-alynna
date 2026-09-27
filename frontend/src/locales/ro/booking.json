@@ -140,6 +140,10 @@
     "confirmed": "Vizita ta este confirmată",
     "moved": "Vizita ta are o oră nouă",
     "with": "cu {{name}}",
-    "view": "Vezi"
+    "view": "Vezi",
+    "confirmedTitle": "Programarea e confirmată!",
+    "confirmedText": "{{who}} te așteaptă {{when}}.",
+    "openVisit": "Vezi programarea",
+    "done": "Gata"
   }
 }
