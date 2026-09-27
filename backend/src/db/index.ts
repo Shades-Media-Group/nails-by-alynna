@@ -19,6 +19,7 @@ import type {
   StaffDoc,
   TimeOffDoc,
   UserDoc,
+  WalletPassDoc,
 } from './types';
 
 export interface Collections {
@@ -39,6 +40,7 @@ export interface Collections {
   pushSubscriptions: Collection<PushSubscriptionDoc>;
   notificationLog: Collection<NotificationLogDoc>;
   promoCodes: Collection<PromoCodeDoc>;
+  walletPasses: Collection<WalletPassDoc>;
   feedback: Collection<FeedbackDoc>;
 }
 
@@ -61,6 +63,7 @@ export function collections(db: Database): Collections {
     pushSubscriptions: db.collection<PushSubscriptionDoc>('push_subscriptions'),
     notificationLog: db.collection<NotificationLogDoc>('notification_log'),
     promoCodes: db.collection<PromoCodeDoc>('promo_codes'),
+    walletPasses: db.collection<WalletPassDoc>('wallet_passes'),
     feedback: db.collection<FeedbackDoc>('feedback'),
   };
 }

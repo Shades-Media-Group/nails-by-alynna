@@ -6,6 +6,7 @@ import { useAuth } from '@/app/auth';
 import { NextVisitCard } from '@/components/appointments/NextVisitCard';
 import { FeedbackPrompt } from '@/components/feedback/FeedbackPrompt';
 import { LoyaltyTile } from '@/components/loyalty/LoyaltyBits';
+import { WalletBanner } from '@/components/loyalty/WalletBanner';
 import { Logo } from '@/components/brand/Logo';
 import { NailArt } from '@/components/brand/NailArt';
 import { RealisticNailArt } from '@/components/brand/nails/RealisticNailArt';
@@ -207,6 +208,8 @@ export default function HomePage() {
               ) : null}
             </div>
           </section>
+
+          <WalletBanner className="stagger" style={order(6)} />
         </div>
       </div>
 

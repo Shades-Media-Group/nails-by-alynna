@@ -128,5 +128,21 @@
       "summary": "{{ordinal}}\u00a0vizită:\u00a0−{{percent}}%",
       "off": "Oprit"
     }
+  },
+  "wallet": {
+    "title": "Cardul de fidelitate în Wallet",
+    "text": "Codul QR și ștampilele, direct în Wallet: la recepție nu mai cauți aplicația.",
+    "preview": "Cardul tău, așa cum va arăta în Wallet",
+    "add": "Adaugă în Wallet",
+    "addApple": "Adaugă în Apple\u00a0Wallet",
+    "addGoogle": "Adaugă în Google\u00a0Wallet",
+    "stamps": "Ștampile",
+    "next": "Următoarea reducere",
+    "nextVisit": "−{{percent}}%\u00a0la următoarea vizită",
+    "soon": "Adăugarea în Wallet vine în curând.",
+    "soonText": "Până atunci, arată codul QR din aplicație la recepție.",
+    "soonApple": "Adăugarea în Apple\u00a0Wallet vine în curând.",
+    "soonGoogle": "Adăugarea în Google\u00a0Wallet vine în curând.",
+    "snapshot": "Wallet arată ștampilele de azi; numărul la zi e mereu în aplicație."
   }
 }

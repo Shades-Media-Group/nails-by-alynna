@@ -532,6 +532,24 @@ export interface RemovedPromo {
   at: Date;
 }
 
+// ── Wallet passes ────────────────────────────────────────────────────────────────
+
+/**
+ * A client's loyalty card as an Apple Wallet / Google Wallet pass (modules/wallet), one per
+ * client: `_id` is the client's id. It keeps what updating passes already in Wallet will need.
+ */
+export interface WalletPassDoc {
+  _id: ObjectId;
+  /** Apple's serialNumber and the end of Google's object id: the same card every time it's added. */
+  serialNumber: string;
+  /** Apple's devices will present it to the pass web service (not built yet). */
+  authenticationToken: string;
+  createdAt: Date;
+  /** When a pass file (Apple) or a save link (Google) was last made. */
+  appleIssuedAt: Date | null;
+  googleIssuedAt: Date | null;
+}
+
 // ── Feedback ─────────────────────────────────────────────────────────────────────
 
 export const FEEDBACK_RATINGS = [1, 2, 3, 4, 5] as const;
