@@ -5,6 +5,8 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '@/app/auth';
 import { Logo } from '@/components/brand/Logo';
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
+import { PushBlockedBanner } from '@/components/notifications/PushBlockedBanner';
+import { PushPrompt } from '@/components/notifications/PushPrompt';
 import { Avatar, ListGroup, ListRow, Sheet } from '@/components/ui';
 import {
   AddIcon,
@@ -216,13 +218,17 @@ export function AdminLayout() {
 
       {/* A chime and a banner when a client books while the app is open. */}
       <BookingAlerts />
-      {/* Each time the app opens with requests waiting: the list, to answer them at once. */}
+      {/* Booking requests need a quick answer: notifications are asked for on every open. */}
+      <PushPrompt audience="staff" />
+      {/* Each time the app opens with requests waiting: the list, to answer them at once
+          (after the notifications ask, when both would show: lib/sheetQueue.ts). */}
       <PendingRequestsSheet />
       <main
         key={pathname}
         className="animate-page pb-[calc(var(--safe-bottom)+6rem)] lg:pb-12 lg:pl-64"
       >
         <div className="mx-auto w-full max-w-6xl lg:px-8">
+          <PushBlockedBanner className="mx-4 mt-3 lg:mx-0 lg:mt-6" />
           <Outlet />
         </div>
       </main>

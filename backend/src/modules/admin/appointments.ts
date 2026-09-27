@@ -20,6 +20,7 @@ import {
   personNameSchema,
   phoneSchema,
 } from '../../lib/validation';
+import { pendingFilter, requestScope } from '../appointments/requests';
 import { getSettings } from '../settings';
 import {
   breakBetween,
@@ -47,17 +48,6 @@ const STATUS = z.enum(['pending', 'confirmed', 'completed', 'cancelled', 'no_sho
 
 /** Requests a staff member gets at once: far more than a studio ever has waiting. */
 const PENDING_LIMIT = 200;
-
-/**
- * Whose requests a staff member answers: the owner every one, and so does staff without a
- * master profile (the desk); a master only those booked with them. The profile is found through
- * `staff.userId`, as for promo codes.
- */
-async function requestScope(deps: AppDeps, user: UserDoc): Promise<{ staffId: ObjectId } | null> {
-  if (user.role === 'administrator') return null;
-  const profile = await deps.col.staff.findOne({ userId: user._id, isActive: true }, { projection: { _id: 1 } });
-  return profile ? { staffId: profile._id } : null;
-}
 
 /** Counts per client used for the "no-shows" / "visits" badges on staff views. */
 export async function clientBadges(deps: AppDeps, clientIds: ObjectId[]) {
@@ -146,7 +136,7 @@ export function adminAppointmentRoutes(deps: AppDeps) {
    */
   app.get('/pending', async (c) => {
     const scope = await requestScope(deps, c.get('user'));
-    const filter = { status: 'pending' as const, end: { $gt: deps.now() }, ...scope };
+    const filter = pendingFilter(deps, scope);
     const docs = await deps.col.appointments.find(filter).sort({ createdAt: 1 }).limit(PENDING_LIMIT).toArray();
     const total = docs.length < PENDING_LIMIT ? docs.length : await deps.col.appointments.countDocuments(filter);
     return c.json({ appointments: await respond(docs), total, scope: scope ? 'own' : 'all' });
@@ -263,6 +253,8 @@ export function adminAppointmentRoutes(deps: AppDeps) {
     /** The client changed her mind about the shape; null clears it. */
     nailShape: nailShapeSchema.nullable().optional(),
     force: z.boolean().default(false),
+    /** The status the screen showed: the change is refused if the booking moved on since. */
+    from: STATUS.optional(),
   });
 
   app.patch('/:id', async (c) => {
@@ -271,6 +263,11 @@ export function adminAppointmentRoutes(deps: AppDeps) {
     const input = await parseJson(c, patchSchema);
     const doc = await deps.col.appointments.findOne({ _id: id });
     if (!doc) throw notFound('Appointment');
+    // A list open for a while can be stale: a request the client cancelled meanwhile must not
+    // come back confirmed from its old row.
+    if (input.from && input.from !== doc.status) {
+      throw new AppError(409, 'CONFLICT', 'Appointment changed meanwhile; reload and retry');
+    }
     const now = deps.now();
     const set: Partial<AppointmentDoc> = { updatedAt: now };
     let promoChange: PromoStatusChange | null = null;

@@ -60,7 +60,7 @@ export async function notifyLoyaltyNext(
       email: () =>
         loyaltyNextEmail({ to: user.email, name: user.name, locale: user.locale, appUrl: deps.config.appUrl, percent: opts.percent, card: opts.card }),
       push: {
-        payload: { ...copy, url: `${localeSegment(user.locale)}/loyalty`, tag: 'loyalty' },
+        payload: { ...copy, url: `${localeSegment(user.locale)}/loyalty`, tag: 'loyalty', lang: user.locale, timestamp: deps.now().getTime() },
         options: { ttlSec: 3 * 86_400, urgency: 'normal' },
       },
     });

@@ -15,8 +15,7 @@
         "id": "who",
         "title": "Who is responsible",
         "body": [
-          "Your data is controlled by {{operator}}, which runs the {{studio}} nail studio in {{city}}.",
-          "For any privacy question, contact {{contact}}."
+          "Your data is controlled by {{operator}}, which runs the {{studio}} nail studio in {{city}}."
         ]
       },
       {
@@ -98,8 +97,9 @@
           "Restriction, objection, portability, and withdrawing consent at any time."
         ],
         "after": [
-          "To use a right, write to {{contact}}. We answer within one month. You may also complain to the National Center for Personal Data Protection (CNPDCP), datepersonale.md."
-        ]
+          "To use a right, write to us with the button below. We answer within one month. You may also complain to the National Center for Personal Data Protection (CNPDCP), datepersonale.md."
+        ],
+        "action": "feedback"
       },
       {
         "id": "security",

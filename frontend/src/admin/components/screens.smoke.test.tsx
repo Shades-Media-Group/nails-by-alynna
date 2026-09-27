@@ -662,6 +662,7 @@ describe('booking actions', () => {
     await user.click(within(sheet).getByRole('button', { name: 'Yes, cancel' }));
 
     await waitFor(() => expect(posts).toHaveLength(1));
-    expect(posts[0]).toEqual({ path: '/api/admin/appointments/a1', body: { status: 'cancelled', cancelReason: 'Client called' } });
+    // `from`: the status on screen, so a booking that moved on meanwhile isn't changed blindly.
+    expect(posts[0]).toEqual({ path: '/api/admin/appointments/a1', body: { status: 'cancelled', cancelReason: 'Client called', from: 'confirmed' } });
   });
 });

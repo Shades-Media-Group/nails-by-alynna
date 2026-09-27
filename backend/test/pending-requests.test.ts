@@ -165,6 +165,24 @@ describe('pending requests', () => {
     });
   });
 
+  it("won't confirm from a stale list a request the client cancelled meanwhile", async () => {
+    ctx.setNow(MONDAY_9);
+    expect((await owner.post('/api/auth/refresh')).status).toBe(200);
+    const { client } = await registerClient(ctx, { name: 'Ana', surname: 'Late' });
+    const day = await client.get(`/api/availability/slots?serviceIds=${gelId}&date=2026-06-10`);
+    const booked = await client.post('/api/appointments', { serviceIds: [gelId], start: day.body.slots[0].start });
+    expect(booked.body.appointment.status).toBe('pending');
+    const id = booked.body.appointment.id as string;
+    expect((await client.post(`/api/appointments/${id}/cancel`, {})).status).toBe(200);
+
+    // The owner's list still showed it as a request.
+    const stale = await owner.patch(`/api/admin/appointments/${id}`, { status: 'confirmed', from: 'pending' });
+    expect(stale.status).toBe(409);
+    expect(stale.body.error.code).toBe('CONFLICT');
+    const doc = await ctx.deps.col.appointments.findOne({ _id: new ObjectId(id) });
+    expect(doc?.status).toBe('cancelled');
+  });
+
   it('is for staff only', async () => {
     const { client } = await registerClient(ctx);
     expect((await client.get('/api/admin/appointments/pending')).status).toBe(403);
