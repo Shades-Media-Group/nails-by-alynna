@@ -7,7 +7,13 @@
   "next": "Următoarea vizită: −{{percent}}%",
   "nextOn": "−{{percent}}% la {{ordinal}} vizită",
   "stampAria": "Vizita {{visit}} din {{cycle}}",
-  "stamped": "ștampilată",
+  "stamped": {
+    "title_one": "Ai o ștampilă nouă!",
+    "title_few": "Ai {{count}} ștampile noi!",
+    "title_other": "Ai {{count}} de ștampile noi!",
+    "card": "Vezi cardul",
+    "done": "Gata"
+  },
   "discount": "−{{percent}}%",
   "qr": {
     "title": "Arată codul la recepție",

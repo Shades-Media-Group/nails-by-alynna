@@ -7,7 +7,12 @@
   "next": "Next visit: {{percent}}% off",
   "nextOn": "{{percent}}% off the {{ordinal}} visit",
   "stampAria": "Visit {{visit}} of {{cycle}}",
-  "stamped": "stamped",
+  "stamped": {
+    "title_one": "A new stamp!",
+    "title_other": "{{count}} new stamps!",
+    "card": "See the card",
+    "done": "Done"
+  },
   "discount": "−{{percent}}%",
   "qr": {
     "title": "Show this at the desk",

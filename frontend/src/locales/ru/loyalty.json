@@ -7,7 +7,14 @@
   "next": "Следующий визит: −{{percent}}%",
   "nextOn": "−{{percent}}% на {{ordinal}} визит",
   "stampAria": "Визит {{visit}} из {{cycle}}",
-  "stamped": "отмечен",
+  "stamped": {
+    "title_one": "Новый штамп!",
+    "title_few": "{{count}} новых штампа!",
+    "title_many": "{{count}} новых штампов!",
+    "title_other": "{{count}} новых штампа!",
+    "card": "Открыть карту",
+    "done": "Готово"
+  },
   "discount": "−{{percent}}%",
   "qr": {
     "title": "Покажите код на ресепшене",
