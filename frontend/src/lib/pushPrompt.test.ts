@@ -65,7 +65,7 @@ describe('clients: when the sheet asks', () => {
     expect(promptFor(client('off'))).toBe('enable');
   });
 
-  it('backs off after "Not now": 3 days, then 7, and the third "Not now" ends it', () => {
+  it('backs off after "Not now": 3 days, then 7, then 30, and the fourth "Not now" ends it', () => {
     const once = afterNotNow(NEW_SCHEDULE, NOW);
     expect(once).toMatchObject({ dismissals: 1, nextAt: NOW + 3 * DAY_MS, done: false });
     expect(promptFor(client('off', once, NOW + 3 * DAY_MS - 1))).toBeNull();
@@ -77,9 +77,14 @@ describe('clients: when the sheet asks', () => {
     expect(promptFor(client('off', twice, NOW + 10 * DAY_MS))).toBe('enable');
 
     const thrice = afterNotNow(twice, NOW + 10 * DAY_MS);
-    expect(thrice.dismissals).toBe(MAX_DISMISSALS);
-    expect(thrice.done).toBe(true);
-    expect(promptFor(client('off', thrice, NOW + 400 * DAY_MS))).toBeNull();
+    expect(thrice).toMatchObject({ dismissals: 3, nextAt: NOW + 40 * DAY_MS, done: false });
+    expect(promptFor(client('off', thrice, NOW + 40 * DAY_MS - 1))).toBeNull();
+    expect(promptFor(client('off', thrice, NOW + 40 * DAY_MS))).toBe('enable');
+
+    const fourth = afterNotNow(thrice, NOW + 40 * DAY_MS);
+    expect(fourth.dismissals).toBe(MAX_DISMISSALS);
+    expect(fourth.done).toBe(true);
+    expect(promptFor(client('off', fourth, NOW + 400 * DAY_MS))).toBeNull();
   });
 
   it('never asks while notifications are on here, blocked, or can not work in this browser', () => {

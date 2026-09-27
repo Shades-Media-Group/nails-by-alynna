@@ -37,8 +37,8 @@ export const STAFF_DELAY_MS = 1_500;
 export const REOPEN_AFTER_MS = 30_000;
 /** Days until the next ask after each "Not now", in order. */
 export const REASK_AFTER_DAYS = [3, 7, 30] as const;
-/** The third "Not now" ends it (so the 30-day step only applies if this is raised). */
-export const MAX_DISMISSALS = 3;
+/** Four asks in all (the first, then after 3, 7 and 30 days): the fourth "Not now" ends it. */
+export const MAX_DISMISSALS = 4;
 /** Client pages where the sheet may appear (the booking flow and settings never). */
 export const CLIENT_PROMPT_PAGES = ['/home', '/bookings', '/loyalty', '/profile'];
 
@@ -81,7 +81,7 @@ export function saveSchedule(userId: string, schedule: PromptSchedule): void {
   storage.setJson(scheduleKey(userId), schedule);
 }
 
-/** "Not now": the next ask moves out (3 days, then 7), and the third ends it. */
+/** "Not now": the next ask moves out (3 days, then 7, then 30), and the fourth ends it. */
 export function afterNotNow(schedule: PromptSchedule, now: number): PromptSchedule {
   const dismissals = schedule.dismissals + 1;
   const days = REASK_AFTER_DAYS[Math.min(dismissals, REASK_AFTER_DAYS.length) - 1]!;

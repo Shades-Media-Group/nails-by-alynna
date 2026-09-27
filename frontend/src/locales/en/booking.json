@@ -137,6 +137,10 @@
     "confirmed": "Your visit is confirmed",
     "moved": "Your visit has a new time",
     "with": "with {{name}}",
-    "view": "View"
+    "view": "View",
+    "confirmedTitle": "You're booked!",
+    "confirmedText": "{{who}} is expecting you {{when}}.",
+    "openVisit": "View booking",
+    "done": "Done"
   }
 }
