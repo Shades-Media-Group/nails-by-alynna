@@ -176,6 +176,10 @@
       "title": "Loyalty rewards",
       "text": "New stamps and rewards on your loyalty card."
     },
+    "rebook": {
+      "title": "Reminders to come back",
+      "text": "A note a few weeks after a visit, if you haven't booked the next one yet."
+    },
     "marketing": {
       "title": "News and offers",
       "text": "Occasional news and offers from the studio. Only if you want them; turn them off any time.",
