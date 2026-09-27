@@ -2,9 +2,9 @@
   "softAsk": {
     "title": "Primește o notificare când maestrul confirmă",
     "titleBooked": "Primește un memento înainte de vizită",
-    "textPhone": "Pe acest telefon, chiar și cu aplicația închisă. Mementourile și schimbările vizitei vin la fel.",
-    "textDevice": "Pe acest dispozitiv, chiar și cu aplicația închisă. Mementourile și schimbările vizitei vin la fel.",
-    "staffTitle": "Află imediat de programările noi",
+    "textPhone": "Pe acest telefon, chiar și cu aplicația închisă. Mementourile și schimbările vizitei vin la\u00a0fel.",
+    "textDevice": "Pe acest dispozitiv, chiar și cu aplicația închisă. Mementourile și schimbările vizitei vin la\u00a0fel.",
+    "staffTitle": "Află imediat de programările\u00a0noi",
     "staffText": "Cererile noi de programare ajung pe acest dispozitiv și au nevoie de un răspuns rapid.",
     "action": "Activează notificările"
   },
@@ -52,7 +52,7 @@
     "dismissed": "Nicio problemă. Le poți porni oricând din Profil → Notificări.",
     "notReady": "Notificările se pregătesc încă pe acest dispozitiv. Încearcă din nou peste câteva clipe.",
     "saveFailed": "Notificările sunt pornite, dar alegerile nu s-au salvat. Verifică-le în Profil → Notificări.",
-    "subscribeFailed": "Notificările nu au putut fi pornite acum pe acest dispozitiv. Verifică conexiunea și încearcă din nou."
+    "subscribeFailed": "Notificările nu au putut fi pornite acum pe acest dispozitiv. Verifică conexiunea și încearcă din\u00a0nou."
   },
   "banner": {
     "blockedTitle": "Notificările sunt blocate pe acest dispozitiv",
@@ -61,12 +61,12 @@
   },
   "test": {
     "action": "Trimite o notificare de test",
-    "countdown": "Se trimite în {{count}} s",
+    "countdown": "Se trimite în\u00a0{{count}}\u00a0s",
     "countdownHint": "Blochează ecranul sau închide aplicația acum, ca s-o vezi cum sosește.",
     "sending": "Se trimite…",
-    "sent_one": "Trimisă pe {{count}} dispozitiv.",
-    "sent_few": "Trimisă pe {{count}} dispozitive.",
-    "sent_other": "Trimisă pe {{count}} de dispozitive.",
+    "sent_one": "Trimisă pe\u00a0{{count}}\u00a0dispozitiv.",
+    "sent_few": "Trimisă pe\u00a0{{count}}\u00a0dispozitive.",
+    "sent_other": "Trimisă pe\u00a0{{count}}\u00a0de\u00a0dispozitive.",
     "none": "Niciun dispozitiv n-a primit-o. Oprește și pornește din nou notificările aici.",
     "lost": "Dacă notificarea a sosit, totul funcționează. Dacă nu, verifică dacă notificările sunt permise pentru aplicație în setările dispozitivului.",
     "device": {
