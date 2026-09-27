@@ -565,7 +565,8 @@ function Preferences({
         </Group>
       ) : null}
 
-      {rebookOn && !staff ? (
+      {/* (An API from before these reminders sends no such preference.) */}
+      {rebookOn && !staff && prefs.rebook ? (
         <Group title={t('notifications.rebook.title')} text={t('notifications.rebook.text')}>
           {channels('rebook')}
         </Group>

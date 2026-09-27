@@ -54,6 +54,7 @@ const prefs = (
   bookingUpdates: channels(push.bookingUpdates ?? true),
   staffBookings: channels(push.staffBookings ?? true),
   loyalty: channels(push.loyalty ?? true),
+  rebook: channels(push.rebook ?? true),
   marketing: { email: false, push: push.marketing ?? false, consentAt: null },
 });
 

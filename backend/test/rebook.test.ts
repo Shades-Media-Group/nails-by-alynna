@@ -172,18 +172,19 @@ describe('come-back reminders', () => {
     expect(mail!.html).toContain('href="http://localhost:5180/profile/notifications"');
     expect(mail!.text).toContain(`Programează-te: http://localhost:5180${link}`);
     expect(mail!.text).toContain('Le poți opri oricând');
-    expect(pushesTo(c)).toEqual([
-      {
-        endpoint: c.endpoint,
-        payload: {
-          title: 'E timpul pentru o manichiură nouă?',
-          body: `Bună, Ana! Ultima ta vizită: Acoperire cu lac gel, cu Alina. Când ești gata pentru următoarea, te programezi într-un minut.`,
-          url: link,
-          tag: 'rebook',
-        },
-        options: { ttlSec: 3 * 86_400, urgency: 'normal', topic: 'rebook' },
-      },
-    ]);
+    expect(pushesTo(c)).toHaveLength(1);
+    const [push] = pushesTo(c);
+    expect(push!.payload).toMatchObject({
+      title: 'E timpul pentru o manichiură nouă?',
+      body: `Bună, Ana! Ultima ta vizită: Acoperire cu lac gel, cu Alina. Când ești gata pentru următoarea, te programezi într-un minut.`,
+      url: link,
+      tag: 'rebook',
+      lang: 'ro',
+      timestamp: at(28).getTime(),
+    });
+    // The declarative copy (shown by Safari if the service worker can't) opens the same page.
+    expect(push!.payload).toHaveProperty('notification.navigate', `http://localhost:5180${link}`);
+    expect(push!.options).toEqual({ ttlSec: 3 * 86_400, urgency: 'normal', topic: 'rebook' });
     expect(await logsOf(c)).toMatchObject([
       { _id: `rebook:${c.user.id}:${last._id.toHexString()}:1`, status: 'sent', channels: { email: 'sent', push: 'sent' } },
     ]);

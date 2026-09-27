@@ -158,11 +158,18 @@ interface Message {
   bookUrl: string;
 }
 
-function rebookPush(message: Message): PushPayload {
+function rebookPush(message: Message, locale: Locale, now: Date): PushPayload {
   const link = new URL(message.bookUrl);
   const loyalty = message.loyalty ? ` ${message.loyalty.label}: ${message.loyalty.text}.` : '';
-  // One on the device at a time: a later reminder replaces the one before.
-  return { title: message.title, body: `${message.body}${loyalty}`, url: `${link.pathname}${link.search}`, tag: 'rebook' };
+  return {
+    title: message.title,
+    body: `${message.body}${loyalty}`,
+    url: `${link.pathname}${link.search}`,
+    // One on the device at a time: a later reminder replaces the one before.
+    tag: 'rebook',
+    lang: locale,
+    timestamp: now.getTime(),
+  };
 }
 
 const PUSH_OPTIONS = { ttlSec: 3 * 86_400, urgency: 'normal', topic: 'rebook' } as const;
@@ -312,7 +319,7 @@ export async function sendRebookReminders(deps: AppDeps, now: Date, summary: Tic
               replyTo: settings.email || undefined,
             })
         : undefined,
-      push: rebook.channels.push ? { payload: rebookPush(message), options: PUSH_OPTIONS } : undefined,
+      push: rebook.channels.push ? { payload: rebookPush(message, locale, now), options: PUSH_OPTIONS } : undefined,
     });
     if (outcome === 'duplicate') summary.duplicates++;
     else summary[outcome]++;
@@ -441,6 +448,7 @@ export async function sendRebookTest(deps: AppDeps, owner: UserDoc): Promise<Reb
       email = { to: owner.email, sent: false };
     }
   }
-  const push = rebook.channels.push && pushAvailable(deps) ? await sendPushToUser(deps, owner._id, rebookPush(message), PUSH_OPTIONS) : null;
+  const push =
+    rebook.channels.push && pushAvailable(deps) ? await sendPushToUser(deps, owner._id, rebookPush(message, locale, now), PUSH_OPTIONS) : null;
   return { email, push: push ? { sent: push.sent, devices: push.devices } : null };
 }
