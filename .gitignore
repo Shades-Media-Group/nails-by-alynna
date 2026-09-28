@@ -56,3 +56,6 @@ frontend/public/favicon.ico
 
 # ── Local deploy credentials (host.md FTP etc.) ────────────────
 .env.deploy
+
+# Agent worktrees (local only)
+.claude/worktrees/

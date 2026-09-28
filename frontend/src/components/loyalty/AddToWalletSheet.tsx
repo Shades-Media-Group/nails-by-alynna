@@ -127,8 +127,7 @@ function PassPreview({ card, name, studio }: { card: LoyaltyCard; name: string; 
   const { locale } = useLocale();
   const { loyalty } = card;
   const next = loyalty.enabled ? loyalty.nextReward : null;
-  const label =
-    'text-[0.6875rem] font-semibold uppercase leading-none tracking-[0.06em] text-rose-700';
+  const label = 'text-[0.8125rem] leading-none text-ink-600';
 
   return (
     <figure
@@ -170,7 +169,7 @@ function PassPreview({ card, name, studio }: { card: LoyaltyCard; name: string; 
       <div className="mt-auto flex justify-center pt-4">
         <div className="rounded-[0.625rem] bg-white px-3 pb-1.5 pt-3 text-center">
           <QrCode value={card.card.url} label={t('qr.label')} className="size-28 rounded-none" />
-          <p className="tabular mt-1 text-[0.6875rem] font-medium tracking-[0.04em] text-ink-700">
+          <p className="tabular mt-1 text-xs font-medium text-ink-700">
             {groupMemberCode(card.card.code)}
           </p>
         </div>
