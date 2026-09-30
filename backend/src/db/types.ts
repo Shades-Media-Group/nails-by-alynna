@@ -212,6 +212,12 @@ export interface StaffDoc {
   /** Working-days mode: minutes one booking takes (a longer visit takes as long as it needs). Missing = 120. */
   sessionMin?: number;
   /**
+   * Working-days mode: days open by themselves from `weekly` (start times one session apart), as
+   * far ahead as clients can book; `until` = the last day opened so far (availability/autoOpen.ts).
+   * Missing or null = the master opens each day.
+   */
+  autoOpen?: { until: string } | null;
+  /**
    * Calendar sync: the secret of this master's private iCalendar feed of their bookings, which
    * Apple Calendar, Google Calendar or Outlook subscribe to (modules/calendar/feed.ts). Missing or
    * null = off; a new token cuts off every copy of the old link.
@@ -241,7 +247,10 @@ export interface WorkDayDoc {
   date: string;
   /** HH:mm, in order, each at least a session (StaffDoc.sessionMin) after the one before. */
   times: string[];
-  createdBy: ObjectId;
+  /** Opened by itself from the master's usual week, and not changed since (availability/autoOpen.ts). */
+  auto?: boolean;
+  /** Who opened it; null when it opened by itself. */
+  createdBy: ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -173,6 +173,8 @@ export interface StaffInput {
   /** Missing from an older API: weekly hours, 2-hour sessions. */
   scheduleMode?: ScheduleMode;
   sessionMin?: number;
+  /** Working days: days open by themselves from `weekly`, start times one session apart. */
+  autoOpen?: boolean;
   isActive: boolean;
   isBookable: boolean;
 }
@@ -520,7 +522,7 @@ export const adminApi = {
   deleteTimeOff: (id: string) => api.delete<{ ok: true }>(`/admin/team/time-off/${id}`),
   /** The master profile of the signed-in staff member (404 when they are not a master). */
   myStaff: () => api.get<{ staff: AdminStaff }>('/admin/team/me').then((r) => r.staff),
-  updateMyStaff: (input: { weekly?: WeeklyHours; bufferMin?: number; scheduleMode?: ScheduleMode; sessionMin?: number }) =>
+  updateMyStaff: (input: { weekly?: WeeklyHours; bufferMin?: number; scheduleMode?: ScheduleMode; sessionMin?: number; autoOpen?: boolean }) =>
     api.patch<{ staff: AdminStaff; outsideHours: OutsideHoursBooking[] }>('/admin/team/me', input),
   /** Owner only: every booking photo, with filters, and how much room they take. */
   photos: (params: PhotosParams) =>

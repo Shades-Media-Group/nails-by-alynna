@@ -1,4 +1,5 @@
 import type { ObjectId } from 'bson';
+import { openDaysForAll } from '../availability/autoOpen';
 import type { AppDeps } from '../../context';
 import { ACTIVE_STATUSES, REMINDER_LEADS, type AppointmentDoc, type NotificationLogDoc, type ReminderLead, type UserDoc } from '../../db/types';
 import { appointmentReminderEmail, feedbackRequestEmail } from '../../lib/emails';
@@ -47,6 +48,8 @@ interface Plan {
 export async function runDueNotifications(deps: AppDeps, now: Date = deps.now()): Promise<TickSummary> {
   const started = Date.now();
   const summary: TickSummary = { checked: 0, sent: 0, failed: 0, skipped: 0, duplicates: 0, durationMs: 0 };
+  // Working days that open by themselves: a new day at the end of the booking horizon, once a day.
+  await openDaysForAll(deps);
   await retryBookingMessages(deps, now, summary);
   // Photos sent for a booking that was never made.
   await removeUnattachedPhotos(deps, now).catch((error: unknown) => console.error('[photos] cleanup failed', error));

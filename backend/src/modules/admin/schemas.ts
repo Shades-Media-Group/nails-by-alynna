@@ -108,6 +108,8 @@ const staffFields = {
   isBookable: z.boolean(),
   isActive: z.boolean(),
   userId: objectIdSchema.nullable(),
+  /** Working-days mode: days open by themselves from the usual week (see StaffDoc.autoOpen). */
+  autoOpen: z.boolean(),
 };
 export const staffInputSchema = z.object({
   ...staffFields,
@@ -119,5 +121,6 @@ export const staffInputSchema = z.object({
   isBookable: staffFields.isBookable.default(true),
   isActive: staffFields.isActive.default(true),
   userId: staffFields.userId.default(null),
+  autoOpen: staffFields.autoOpen.default(false),
 });
 export const staffPatchSchema = z.object(staffFields).partial();

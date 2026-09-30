@@ -20,6 +20,7 @@ import { requireRole } from '../../middleware/auth';
 import { appleConnectError, connectAppleCalendar, startGoogleConnect } from '../calendar/connect';
 import { feedLinks, newFeedToken } from '../calendar/feed';
 import { directCalendarStatus, disconnectCalendar, syncConnection } from '../calendar/sync';
+import { reopenDaysFromWeek } from '../availability/autoOpen';
 import { opensDays, sessionMinOf } from '../availability/service';
 import { channelsFor, resolvePrefs } from '../notifications/prefs';
 import { getSettings } from '../settings';
@@ -42,6 +43,7 @@ function toStaff(s: StaffDoc) {
     bufferMin: s.bufferMin ?? 0,
     scheduleMode: s.scheduleMode ?? 'weekly',
     sessionMin: sessionMinOf(s),
+    autoOpen: Boolean(s.autoOpen),
     isActive: s.isActive,
     isBookable: s.isBookable,
     order: s.order,
@@ -158,6 +160,32 @@ export function adminTeamRoutes(deps: AppDeps) {
   const app = new Hono<AppEnv>();
   const owner = requireRole('administrator');
 
+  /** The "open days by themselves" switch, as stored: on = nothing opened yet (from today). */
+  const autoOpenValue = async (on: boolean) => {
+    if (!on) return null;
+    const settings = await getSettings(deps);
+    return { until: addDays(todayIn(settings.timezone, deps.now()), -1) };
+  };
+
+  /**
+   * Saves a master's changes. With days opening by themselves, a new usual week or session length
+   * (or the switch turned on) opens the days again from it; days changed by hand or booked stay.
+   */
+  const saveStaff = async (id: ObjectId, input: z.infer<typeof staffPatchSchema>) => {
+    const { autoOpen, ...fields } = input;
+    const before = await deps.col.staff.findOne({ _id: id });
+    if (!before) return null;
+    const turnedOn = autoOpen === true && !before.autoOpen;
+    const set: Partial<StaffDoc> = { ...fields, updatedAt: deps.now() };
+    if (autoOpen === false) set.autoOpen = null;
+    if (turnedOn) set.autoOpen = await autoOpenValue(true);
+    const updated = await deps.col.staff.findOneAndUpdate({ _id: id }, { $set: set }, { returnDocument: 'after' });
+    const weekChanged =
+      fields.weekly !== undefined || fields.sessionMin !== undefined || (fields.scheduleMode === 'days' && before.scheduleMode !== 'days');
+    if (updated?.autoOpen && (turnedOn || weekChanged)) await reopenDaysFromWeek(deps, updated);
+    return updated;
+  };
+
   // ── Masters ─────────────────────────────────────────────────────────────────
   app.get('/staff', async (c) => {
     const staff = await deps.col.staff.find().sort({ order: 1, _id: 1 }).toArray();
@@ -212,8 +240,10 @@ export function adminTeamRoutes(deps: AppDeps) {
     await checkLinkedUser(input.userId, null);
     const now = deps.now();
     const last = await deps.col.staff.find().sort({ order: -1 }).limit(1).next();
-    const doc: StaffDoc = { _id: new ObjectId(), ...input, order: (last?.order ?? 0) + 1, createdAt: now, updatedAt: now };
+    const { autoOpen, ...fields } = input;
+    const doc: StaffDoc = { _id: new ObjectId(), ...fields, autoOpen: await autoOpenValue(autoOpen), order: (last?.order ?? 0) + 1, createdAt: now, updatedAt: now };
     await deps.col.staff.insertOne(doc);
+    if (doc.autoOpen) await reopenDaysFromWeek(deps, doc);
     await audit(deps, { actorId: c.get('user')._id, action: 'staff.create', targetType: 'staff', targetId: doc._id });
     return c.json({ staff: toStaff(doc) }, 201);
   });
@@ -222,11 +252,7 @@ export function adminTeamRoutes(deps: AppDeps) {
     const id = paramId(c);
     const input = await parseJson(c, staffPatchSchema);
     await checkLinkedUser(input.userId, id);
-    const updated = await deps.col.staff.findOneAndUpdate(
-      { _id: id },
-      { $set: { ...input, updatedAt: deps.now() } },
-      { returnDocument: 'after' },
-    );
+    const updated = await saveStaff(id, input);
     if (!updated) throw notFound('Master');
     await audit(deps, { actorId: c.get('user')._id, action: 'staff.update', targetType: 'staff', targetId: id });
     return c.json({ staff: toStaff(updated) });
@@ -241,17 +267,13 @@ export function adminTeamRoutes(deps: AppDeps) {
 
   app.get('/me', async (c) => c.json({ staff: toStaff(await ownProfile(c)) }));
 
-  const ownWeekSchema = staffPatchSchema.pick({ weekly: true, bufferMin: true, scheduleMode: true, sessionMin: true });
+  const ownWeekSchema = staffPatchSchema.pick({ weekly: true, bufferMin: true, scheduleMode: true, sessionMin: true, autoOpen: true });
 
   app.patch('/me', async (c) => {
     const actor = c.get('user');
     const profile = await ownProfile(c);
     const input = await parseJson(c, ownWeekSchema);
-    const updated = await deps.col.staff.findOneAndUpdate(
-      { _id: profile._id },
-      { $set: { ...input, updatedAt: deps.now() } },
-      { returnDocument: 'after' },
-    );
+    const updated = await saveStaff(profile._id, input);
     if (!updated) throw notFound('Master');
     await audit(deps, { actorId: actor._id, action: 'staff.update_own', targetType: 'staff', targetId: profile._id });
     const settings = await getSettings(deps);
@@ -399,7 +421,8 @@ export function adminTeamRoutes(deps: AppDeps) {
       await deps.col.workDays.updateOne(
         { staffId: staff._id, date },
         {
-          $set: { times: input.times, updatedAt: now },
+          // Changed by hand: no longer opened again from the usual week.
+          $set: { times: input.times, auto: false, updatedAt: now },
           $setOnInsert: { _id: new ObjectId(), staffId: staff._id, date, createdBy: actor._id, createdAt: now },
         },
         { upsert: true },

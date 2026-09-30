@@ -28,6 +28,7 @@ function initialForm(member: AdminStaff | null): StaffInput {
       weekly: DEFAULT_WEEK,
       scheduleMode: 'weekly',
       sessionMin: DEFAULT_SESSION_MIN,
+      autoOpen: false,
       isActive: true,
       isBookable: true,
     };
@@ -41,6 +42,7 @@ function initialForm(member: AdminStaff | null): StaffInput {
     weekly: Array.from({ length: 7 }, (_, day) => member.weekly[day] ?? []),
     scheduleMode: member.scheduleMode ?? 'weekly',
     sessionMin: member.sessionMin ?? DEFAULT_SESSION_MIN,
+    autoOpen: member.autoOpen ?? false,
     isActive: member.isActive,
     isBookable: member.isBookable,
   };
@@ -262,8 +264,20 @@ export function StaffEditor({ member, onClose }: { member: AdminStaff | null; on
                 <p className="pl-1 text-sm text-ink-600">{t('bookingMode.sessionHint')}</p>
               </div>
             ) : null}
+            {byDays ? (
+              <Switch
+                checked={Boolean(form.autoOpen)}
+                onChange={(on) => set('autoOpen', on)}
+                label={t('bookingMode.autoOpen')}
+                description={
+                  form.autoOpen
+                    ? t('bookingMode.autoOpenOn', { session: formatDuration(t, form.sessionMin ?? DEFAULT_SESSION_MIN) })
+                    : t('bookingMode.autoOpenOff')
+                }
+              />
+            ) : null}
           </div>
-          {byDays ? null : <HoursEditor value={form.weekly} onChange={(weekly) => set('weekly', weekly)} />}
+          {!byDays || form.autoOpen ? <HoursEditor value={form.weekly} onChange={(weekly) => set('weekly', weekly)} /> : null}
           {server.weekly ? <p className="text-sm text-red-600">{server.weekly}</p> : null}
         </section>
 

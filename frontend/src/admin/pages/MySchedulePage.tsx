@@ -62,7 +62,9 @@ export default function MySchedulePage() {
         ) : (
           <>
             <BookingMode staff={me.data} />
-            {byDays ? <WorkDaysPanel staff={me.data} /> : <WeekForm key={me.data.id} staff={me.data} />}
+            {byDays ? <WorkDaysPanel staff={me.data} /> : null}
+            {/* Weekly hours; with working days opening by themselves, the week they open from. */}
+            {!byDays || me.data.autoOpen ? <WeekForm key={`${me.data.id}:${byDays}`} staff={me.data} forDays={byDays} /> : null}
             <MyTimeOff staff={me.data} />
             <CalendarSync />
           </>
@@ -86,7 +88,7 @@ function BookingMode({ staff }: { staff: AdminStaff }) {
   const [outside, setOutside] = useState<OutsideHoursBooking[] | null>(null);
 
   const save = useMutation({
-    mutationFn: (patch: { scheduleMode?: ScheduleMode; sessionMin?: number }) => adminApi.updateMyStaff(patch),
+    mutationFn: (patch: { scheduleMode?: ScheduleMode; sessionMin?: number; autoOpen?: boolean }) => adminApi.updateMyStaff(patch),
     onSuccess: ({ staff: updated, outsideHours }, patch) => {
       queryClient.setQueryData(adminQueries.myStaff().queryKey, updated);
       for (const queryKey of [['admin', 'staff'], ['admin', 'work-days'], ['admin', 'stats'], ['staff'], ['availability-days'], ['availability-slots']]) {
@@ -124,6 +126,17 @@ function BookingMode({ staff }: { staff: AdminStaff }) {
             <p className="pl-1 text-sm text-ink-600">{t('bookingMode.sessionHint')}</p>
           </div>
         ) : null}
+        {mode === 'days' ? (
+          <div className="border-t border-ink-100 pt-4">
+            <Switch
+              checked={Boolean(staff.autoOpen)}
+              disabled={save.isPending}
+              onChange={(on) => save.mutate({ autoOpen: on })}
+              label={t('bookingMode.autoOpen')}
+              description={staff.autoOpen ? t('bookingMode.autoOpenOn', { session: formatDuration(t, sessionMin) }) : t('bookingMode.autoOpenOff')}
+            />
+          </div>
+        ) : null}
         {save.isError ? <Alert>{errorMessage(t, save.error)}</Alert> : null}
       </div>
       {outside && outside.length > 0 ? (
@@ -144,7 +157,8 @@ function BookingMode({ staff }: { staff: AdminStaff }) {
   );
 }
 
-function WeekForm({ staff }: { staff: AdminStaff }) {
+/** Weekly hours and time between clients; `forDays`: the usual week working days open from. */
+function WeekForm({ staff, forDays = false }: { staff: AdminStaff; forDays?: boolean }) {
   const { t } = useTranslation(['admin', 'common']);
   const { lp, locale } = useLocale();
   const { timeZone } = useStudioToday();
@@ -160,11 +174,11 @@ function WeekForm({ staff }: { staff: AdminStaff }) {
     mutationFn: () => adminApi.updateMyStaff({ weekly, bufferMin: Number(buffer) }),
     onSuccess: ({ staff: updated, outsideHours }) => {
       queryClient.setQueryData(adminQueries.myStaff().queryKey, updated);
-      for (const queryKey of [['admin', 'staff'], ['staff'], ['availability-days'], ['availability-slots']]) {
+      for (const queryKey of [['admin', 'staff'], ['admin', 'work-days'], ['staff'], ['availability-days'], ['availability-slots']]) {
         void queryClient.invalidateQueries({ queryKey });
       }
-      setOutside(outsideHours);
-      toast.success(t('mySchedule.saved'));
+      setOutside(forDays ? null : outsideHours);
+      toast.success(forDays ? t('mySchedule.weekForDaysSaved') : t('mySchedule.saved'));
     },
   });
 
@@ -176,12 +190,15 @@ function WeekForm({ staff }: { staff: AdminStaff }) {
   return (
     <form className="flex flex-col gap-8" onSubmit={submit} noValidate>
       <section aria-labelledby="hours-title">
-        <SectionHeading id="hours-title" title={t('mySchedule.hoursTitle')} />
-        <p className="-mt-1 mb-3 text-sm text-ink-600">{t('mySchedule.hoursText')}</p>
+        <SectionHeading id="hours-title" title={forDays ? t('mySchedule.weekForDaysTitle') : t('mySchedule.hoursTitle')} />
+        <p className="-mt-1 mb-3 text-sm text-ink-600">
+          {forDays ? t('mySchedule.weekForDaysText', { session: formatDuration(t, staff.sessionMin ?? DEFAULT_SESSION_MIN) }) : t('mySchedule.hoursText')}
+        </p>
         <HoursEditor value={weekly} onChange={setWeekly} />
       </section>
 
-      <section aria-labelledby="buffer-title">
+      {/* Working days have no time between clients: each takes a whole session. */}
+      <section aria-labelledby="buffer-title" className={forDays ? 'hidden' : undefined}>
         <SectionHeading id="buffer-title" title={t('mySchedule.bufferTitle')} />
         <p className="-mt-1 mb-3 text-sm text-ink-600">{t('mySchedule.bufferText')}</p>
         {/* Bare numbers fit six choices on a phone; the unit is in the text above and the label. */}

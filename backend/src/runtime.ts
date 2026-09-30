@@ -4,6 +4,7 @@ import { collections, createDatabase, ensureIndexes, SCHEMA_VERSION, type Databa
 import { createMailer } from './lib/mailer';
 import { createPasswordHasher } from './lib/password';
 import { loyaltyEmailOnce } from './modules/notifications';
+import { convertWeeklyMastersOnce } from './modules/availability/autoOpen';
 import { switchToApprovalOnce } from './modules/settings';
 import { syncDefaults } from './seed/defaults';
 
@@ -39,6 +40,8 @@ export async function migrate(deps: AppDeps): Promise<void> {
   // The default price list and contact details (no-op when already at the current version).
   await syncDefaults(deps, (message) => console.info(`[defaults] ${message}`));
   await switchToApprovalOnce(deps);
+  // Masters on weekly hours move to working days that open by themselves from that week.
+  await convertWeeklyMastersOnce(deps, (message) => console.info(`[work-days] ${message}`));
   await loyaltyEmailOnce(deps);
 }
 
