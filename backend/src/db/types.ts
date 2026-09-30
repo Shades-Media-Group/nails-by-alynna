@@ -246,6 +246,69 @@ export interface WorkDayDoc {
   updatedAt: Date;
 }
 
+export const CALENDAR_PROVIDERS = ['google', 'apple'] as const;
+export type CalendarProvider = (typeof CALENDAR_PROVIDERS)[number];
+
+/**
+ * A master's own calendar connected directly (modules/calendar/sync.ts): each booking is written
+ * into it the moment it changes, instead of waiting for a subscribed feed to be fetched again.
+ * One per master and provider; `_id` is `provider:staffId`.
+ */
+export interface CalendarConnectionDoc {
+  _id: string;
+  staffId: ObjectId;
+  provider: CalendarProvider;
+  /** 'needs_reconnect': the account stopped letting the studio in (access removed, password changed). */
+  status: 'active' | 'needs_reconnect';
+  /** Google: the account's email. Apple: the Apple ID. */
+  account: string;
+  /** Google: the account's stable id, so connecting the same account again keeps its calendar. */
+  accountId: string | null;
+  /** Sealed (lib/secret-box.ts): Google's refresh token, or the Apple app-specific password. */
+  secret: string;
+  /** The dedicated calendar: Google's calendar id, or the iCloud calendar's URL. */
+  calendarId: string;
+  /** iCloud: where the account keeps its calendars (to make ours again if it was deleted there). */
+  homeUrl: string | null;
+  connectedBy: ObjectId;
+  connectedAt: Date;
+  lastSyncAt: Date | null;
+  lastError: string | null;
+  /** When every booking was last compared with what the calendar has (hourly). */
+  reconciledAt: Date | null;
+  /** One server writes to a calendar at a time: it holds it until then. */
+  leaseUntil: Date | null;
+  leaseToken: string | null;
+  updatedAt: Date;
+}
+
+/**
+ * One booking in one connected calendar: what was last written there, and whether something
+ * still has to be. `_id` is `connectionId:appointmentId`.
+ */
+export interface CalendarSyncDoc {
+  _id: string;
+  connectionId: string;
+  staffId: ObjectId;
+  appointmentId: ObjectId;
+  /** 'pending': to write (or remove) now; 'failed': tried, again at `retryAt`; 'synced': done. */
+  status: 'pending' | 'failed' | 'synced';
+  /** The booking's event is in the calendar (a cancelled booking's event is then removed). */
+  remote: boolean;
+  /** The booking's `updatedAt` as last written. */
+  syncedVersion: Date | null;
+  /** Counts changes: a write only marks the row done if no change came in meanwhile. */
+  version: number;
+  attempts: number;
+  retryAt: Date | null;
+  error: string | null;
+  /** When the visit starts (events of long-past visits are left alone). */
+  start: Date;
+  updatedAt: Date;
+  /** Removed a while after the visit. */
+  expiresAt: Date;
+}
+
 export interface TimeOffDoc {
   _id: ObjectId;
   /** null = the whole studio is closed. */

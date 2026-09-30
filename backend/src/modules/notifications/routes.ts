@@ -9,6 +9,7 @@ import { pushAvailable, removePushSubscription, savePushSubscription, sendPushTo
 import { enforceRateLimits } from '../../lib/rate-limit';
 import { parseJson } from '../../lib/validation';
 import { requireAuth } from '../../middleware/auth';
+import { runCalendarSyncExclusive } from '../calendar/sync';
 import { testPush } from './content';
 import { canEmail } from './deliver';
 import { applyPrefsPatch, prefsPatchSchema, publicPrefs, resolvePrefs } from './prefs';
@@ -151,6 +152,8 @@ export function notificationRoutes(deps: AppDeps) {
     if (!secret || !key || !timingSafeEqualStr(key, secret)) {
       return c.json({ error: { code: 'NOT_FOUND', message: 'Not found' } }, 404);
     }
+    // Connected calendars catch up too, after the answer (they don't count in the summary).
+    deps.defer(runCalendarSyncExclusive(deps));
     const summary = await runNotificationsExclusive(deps);
     return c.json({ ok: true, ...summary });
   });

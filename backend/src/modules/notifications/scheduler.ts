@@ -10,6 +10,7 @@ import { MAX_ATTEMPTS, STALE_SENDING_MS, canNotify, deliver } from './deliver';
 import { resolvePrefs } from './prefs';
 import { sendRebookReminders } from './rebook';
 import { removeUnattachedPhotos } from '../photos/service';
+import { runCalendarSyncExclusive } from '../calendar/sync';
 
 export interface TickSummary {
   /**
@@ -341,10 +342,16 @@ export function runNotificationsExclusive(deps: AppDeps): Promise<TickSummary> {
   return run;
 }
 
-/** Checks for everything due (reminders, feedback requests, come-back reminders) every NOTIFICATIONS_INTERVAL_SEC (0 = off). Returns a stop function. */
+/**
+ * Checks for everything due (reminders, feedback requests, come-back reminders) every
+ * NOTIFICATIONS_INTERVAL_SEC (0 = off), and retries what masters' connected calendars still
+ * need (calendar/sync.ts; apart, so a slow calendar never holds up a reminder). Returns a stop
+ * function.
+ */
 export function startNotificationScheduler(deps: AppDeps, intervalSec = deps.config.notificationsIntervalSec): () => void {
   if (intervalSec <= 0) return () => undefined;
   const tick = () => {
+    void runCalendarSyncExclusive(deps);
     runNotificationsExclusive(deps)
       .then((s) => {
         if (s.sent + s.failed > 0) console.info(`[notify] reminders, feedback requests and come-back reminders: ${s.sent} sent, ${s.failed} failed, ${s.skipped} skipped`);

@@ -47,7 +47,7 @@ function areaOf(action: string): Area {
   if (kind === 'appointment') return 'appointments';
   if (kind === 'client' || kind === 'loyalty' || kind === 'feedback') return 'clients';
   if (kind === 'service' || kind === 'category' || kind === 'promo') return 'catalog';
-  if (kind === 'staff' || kind === 'time_off' || kind === 'work_days' || kind === 'calendar_feed' || kind === 'photo') return 'team';
+  if (kind === 'staff' || kind === 'time_off' || kind === 'work_days' || kind === 'calendar_feed' || kind === 'calendar_sync' || kind === 'photo') return 'team';
   if (kind === 'settings') return 'settings';
   if (action === 'user.role_change' || action === 'user.status_change') return 'users';
   return 'auth';

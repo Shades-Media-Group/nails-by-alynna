@@ -26,6 +26,7 @@ import {
   toClientAppointment,
 } from './service';
 import { calendarLinks } from '../calendar/service';
+import { syncBookingToCalendars } from '../calendar/sync';
 import { notifyBookingChange, notifyStaffOfBooking } from '../notifications';
 import { attachPhotos, photosByAppointment, photosToAttach } from '../photos/service';
 import { loyaltyTags } from '../loyalty/service';
@@ -183,6 +184,8 @@ export function appointmentRoutes(deps: AppDeps) {
     const event = doc.status === 'pending' ? 'requested' : 'booked';
     deps.defer(notifyBookingChange(deps, doc._id, event));
     deps.defer(notifyStaffOfBooking(deps, doc._id, event));
+    // And it shows in the master's connected calendar at once.
+    deps.defer(syncBookingToCalendars(deps, doc._id));
     const [staff, loyalty, calendar, photos] = await Promise.all([
       staffSummaries(deps, [doc.staffId]),
       loyaltyTags(deps, [doc], settings),
@@ -224,6 +227,7 @@ export function appointmentRoutes(deps: AppDeps) {
     if (res.promo) await givePromoUseBack(deps, res.promo.promoId, id);
     await audit(deps, { actorId: user._id, action: 'appointment.cancel', targetType: 'appointment', targetId: id });
     deps.defer(notifyStaffOfBooking(deps, id, 'cancelled'));
+    deps.defer(syncBookingToCalendars(deps, id));
     const staff = await staffSummaries(deps, [res.staffId]);
     return c.json({ appointment: toClientAppointment(res, staff, settings, now) });
   });
@@ -246,6 +250,7 @@ export function appointmentRoutes(deps: AppDeps) {
     });
     await audit(deps, { actorId: user._id, action: 'appointment.reschedule', targetType: 'appointment', targetId: id });
     deps.defer(notifyStaffOfBooking(deps, id, 'rescheduled'));
+    deps.defer(syncBookingToCalendars(deps, id));
     const [staff, loyalty, calendar] = await Promise.all([
       staffSummaries(deps, [updated.staffId]),
       loyaltyTags(deps, [updated], settings),

@@ -33,6 +33,11 @@ console.info(`  database       PostgreSQL ${describeDatabase(config.database.url
 console.info(`  proxy secret   ${config.proxySecret ? 'set' : 'MISSING (required behind the Worker)'}`);
 console.info(`  Google sign-in ${config.google ? `on (redirect ${config.google.redirectUri})` : 'off'}`);
 console.info(
+  `  calendar sync  Google ${config.google ? 'on' : 'off'}, iCloud on; credentials sealed with ${
+    values.CALENDAR_SYNC_KEY ? 'CALENDAR_SYNC_KEY' : 'a key from JWT_SECRET (set CALENDAR_SYNC_KEY to rotate JWT_SECRET freely)'
+  }`,
+);
+console.info(
   `  email          ${
     config.mail
       ? config.mail.provider === 'smtp'

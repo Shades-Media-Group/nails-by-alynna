@@ -34,6 +34,7 @@ import { loyaltyStatus, loyaltyTags, stampOnCompletion } from '../loyalty/servic
 import { notifyBookingChange, notifyLoyaltyNext } from '../notifications';
 import { findPromo, promoError, promoOnStatusChange, type PromoStatusChange } from '../promo/service';
 import { attachPhotos, photosByAppointment, photosToAttach } from '../photos/service';
+import { syncBookingToCalendars } from '../calendar/sync';
 
 export { placeholderEmail };
 
@@ -248,6 +249,7 @@ export function adminAppointmentRoutes(deps: AppDeps) {
     });
     // Booked at the desk or by phone: the client gets the details (as their preferences allow).
     deps.defer(notifyBookingChange(deps, doc._id, 'booked'));
+    deps.defer(syncBookingToCalendars(deps, doc._id));
     const [appointment] = await respond([doc]);
     return c.json({ appointment }, 201);
   });
@@ -339,6 +341,8 @@ export function adminAppointmentRoutes(deps: AppDeps) {
       throw new AppError(409, 'CONFLICT', 'Appointment changed meanwhile; reload and retry');
     }
     await promoChange?.saved();
+    // Status, the client's note: the master's connected calendar follows.
+    deps.defer(syncBookingToCalendars(deps, id));
     if (set.status) {
       await audit(deps, {
         actorId: actor._id,
@@ -377,6 +381,8 @@ export function adminAppointmentRoutes(deps: AppDeps) {
     });
     await audit(deps, { actorId: actor._id, action: 'appointment.reschedule_staff', targetType: 'appointment', targetId: id });
     deps.defer(notifyBookingChange(deps, id, 'rescheduled'));
+    // Moved in time or to another master: out of the first one's calendar, into the new one's.
+    deps.defer(syncBookingToCalendars(deps, id));
     const [appointment] = await respond([updated]);
     return c.json({ appointment });
   });

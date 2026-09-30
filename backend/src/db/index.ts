@@ -3,6 +3,8 @@ import { Database, type Collection } from './pg';
 import type {
   AppointmentDoc,
   AuditLogDoc,
+  CalendarConnectionDoc,
+  CalendarSyncDoc,
   CategoryDoc,
   FeedbackDoc,
   MetaDoc,
@@ -46,6 +48,8 @@ export interface Collections {
   promoCodes: Collection<PromoCodeDoc>;
   walletPasses: Collection<WalletPassDoc>;
   feedback: Collection<FeedbackDoc>;
+  calendarConnections: Collection<CalendarConnectionDoc>;
+  calendarSync: Collection<CalendarSyncDoc>;
 }
 
 export function collections(db: Database): Collections {
@@ -71,6 +75,8 @@ export function collections(db: Database): Collections {
     promoCodes: db.collection<PromoCodeDoc>('promo_codes'),
     walletPasses: db.collection<WalletPassDoc>('wallet_passes'),
     feedback: db.collection<FeedbackDoc>('feedback'),
+    calendarConnections: db.collection<CalendarConnectionDoc>('calendar_connections'),
+    calendarSync: db.collection<CalendarSyncDoc>('calendar_sync'),
   };
 }
 
@@ -84,7 +90,7 @@ export async function ensurePhotoBlobs(db: Database): Promise<void> {
 }
 
 /** Bump when indexes change; the runtime re-applies them once per version. */
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 
 export async function ensureIndexes(db: Database): Promise<void> {
   const c = collections(db);
@@ -170,6 +176,16 @@ export async function ensureIndexes(db: Database): Promise<void> {
       { key: { createdAt: -1 }, name: 'created' },
       // The client's own (data export, account deletion).
       { key: { userId: 1 }, name: 'user' },
+    ]),
+    // Masters' connected calendars (modules/calendar/sync.ts).
+    c.calendarConnections.createIndexes([{ key: { staffId: 1 }, name: 'staff' }]),
+    c.calendarSync.createIndexes([
+      // What is due for one calendar, and the calendars that have something due.
+      { key: { status: 1, retryAt: 1 }, name: 'due' },
+      { key: { connectionId: 1, start: 1 }, name: 'connection_start' },
+      // A changed booking: the calendars it was written to (also a master's before a reassignment).
+      { key: { appointmentId: 1 }, name: 'appointment' },
+      { key: { expiresAt: 1 }, expireAfterSeconds: 0, name: 'ttl' },
     ]),
     // Keep one year of audit history (the TTL index also serves newest-first sorting).
     c.auditLogs.createIndexes([{ key: { at: 1 }, expireAfterSeconds: 365 * 24 * 3600, name: 'ttl' }]),

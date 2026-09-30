@@ -4,6 +4,7 @@ import { z } from 'zod';
 import type { AppDeps, AppEnv } from '../../context';
 import {
   ACTIVE_STATUSES,
+  type CalendarProvider,
   type StaffDoc,
   type TimeOffDoc,
   type UserDoc,
@@ -12,10 +13,13 @@ import {
 } from '../../db/types';
 import { audit } from '../../lib/audit';
 import { AppError, notFound } from '../../lib/errors';
+import { enforceRateLimits } from '../../lib/rate-limit';
 import { addDays, dayRange, timeToMinutes, toZonedParts, todayIn, zonedTimeToUtc } from '../../lib/time';
-import { dateSchema, objectIdSchema, paramId, parseJson, parseQuery, timeSchema } from '../../lib/validation';
+import { dateSchema, emailSchema, objectIdSchema, paramId, parseJson, parseQuery, timeSchema } from '../../lib/validation';
 import { requireRole } from '../../middleware/auth';
+import { appleConnectError, connectAppleCalendar, startGoogleConnect } from '../calendar/connect';
 import { feedLinks, newFeedToken } from '../calendar/feed';
+import { directCalendarStatus, disconnectCalendar, syncConnection } from '../calendar/sync';
 import { opensDays, sessionMinOf } from '../availability/service';
 import { channelsFor, resolvePrefs } from '../notifications/prefs';
 import { getSettings } from '../settings';
@@ -254,10 +258,14 @@ export function adminTeamRoutes(deps: AppDeps) {
     return c.json({ staff: toStaff(updated), outsideHours: await bookingsOutsideHours(deps, updated, settings.timezone) });
   });
 
-  // ── Calendar sync: the master's private feed for Apple Calendar, Google Calendar, Outlook ──
-  const feedResponse = async (staff: StaffDoc) => ({ feed: feedLinks(deps, staff, (await getSettings(deps)).name) });
+  // ── Calendar sync: Google Calendar and iCloud connected directly (instant), and the private
+  // feed Apple Calendar, Google Calendar and Outlook subscribe to (they refresh it themselves) ──
+  const calendarResponse = async (staff: StaffDoc) => ({
+    feed: feedLinks(deps, staff, (await getSettings(deps)).name),
+    ...(await directCalendarStatus(deps, staff._id)),
+  });
 
-  app.get('/me/calendar', async (c) => c.json(await feedResponse(await ownProfile(c))));
+  app.get('/me/calendar', async (c) => c.json(await calendarResponse(await ownProfile(c))));
 
   /** Turns sync on, or gives a new link: calendars subscribed to the old one stop getting updates. */
   app.post('/me/calendar', async (c) => {
@@ -271,7 +279,7 @@ export function adminTeamRoutes(deps: AppDeps) {
       targetType: 'staff',
       targetId: profile._id,
     });
-    return c.json(await feedResponse({ ...profile, calendarFeed }), 201);
+    return c.json(await calendarResponse({ ...profile, calendarFeed }), 201);
   });
 
   /** Turns sync off: the link stops working, and subscribed calendars keep only what they had. */
@@ -280,7 +288,66 @@ export function adminTeamRoutes(deps: AppDeps) {
     const profile = await ownProfile(c);
     await deps.col.staff.updateOne({ _id: profile._id }, { $set: { calendarFeed: null, updatedAt: deps.now() } });
     await audit(deps, { actorId: actor._id, action: 'calendar_feed.delete', targetType: 'staff', targetId: profile._id });
-    return c.json({ feed: null });
+    return c.json(await calendarResponse({ ...profile, calendarFeed: null }));
+  });
+
+  /**
+   * Google Calendar: the address of Google's consent screen. The app goes there; Google comes
+   * back to /api/auth/google/callback, which connects the calendar and opens My schedule again.
+   */
+  app.post('/me/calendar/google', async (c) => {
+    const actor = c.get('user');
+    const profile = await ownProfile(c);
+    await enforceRateLimits(deps, [{ key: `calendar:google:user:${actor._id.toHexString()}`, limit: 20, windowSec: 3600 }]);
+    return c.json({ url: await startGoogleConnect(deps, c, actor, profile) });
+  });
+
+  const appleSchema = z.object({
+    appleId: emailSchema,
+    /** Apple shows it in groups of four; spaces are not part of it. */
+    password: z
+      .string()
+      .trim()
+      .min(1, 'required')
+      .max(64, 'too_long')
+      .transform((v) => v.replace(/\s+/g, '')),
+  });
+
+  /** Apple Calendar (iCloud): checked with Apple at once, so a wrong password is said right away. */
+  app.post('/me/calendar/apple', async (c) => {
+    const actor = c.get('user');
+    const profile = await ownProfile(c);
+    // Each try reaches Apple with the password: few, so this can't be used to guess one.
+    await enforceRateLimits(deps, [{ key: `calendar:apple:user:${actor._id.toHexString()}`, limit: 10, windowSec: 3600 }]);
+    const input = await parseJson(c, appleSchema);
+    try {
+      await connectAppleCalendar(deps, actor, profile, { appleId: input.appleId, password: input.password });
+    } catch (error) {
+      throw appleConnectError(error);
+    }
+    return c.json(await calendarResponse(profile), 201);
+  });
+
+  /** Disconnects: the saved sign-in is wiped, and the studio's calendar is deleted in the account. */
+  const disconnect = (provider: CalendarProvider) => async (c: Context<AppEnv>) => {
+    const actor = c.get('user');
+    const profile = await ownProfile(c);
+    if (await disconnectCalendar(deps, profile._id, provider)) {
+      await audit(deps, { actorId: actor._id, action: `calendar_sync.${provider}_disconnect`, targetType: 'staff', targetId: profile._id });
+    }
+    return c.json(await calendarResponse(profile));
+  };
+  app.delete('/me/calendar/google', disconnect('google'));
+  app.delete('/me/calendar/apple', disconnect('apple'));
+
+  /** Sync now: every booking written again to the connected calendars, in the background. */
+  app.post('/me/calendar/sync', async (c) => {
+    const actor = c.get('user');
+    const profile = await ownProfile(c);
+    await enforceRateLimits(deps, [{ key: `calendar:sync:user:${actor._id.toHexString()}`, limit: 30, windowSec: 3600 }]);
+    const connections = await deps.col.calendarConnections.find({ staffId: profile._id, status: 'active' }, { projection: { _id: 1 } }).toArray();
+    for (const conn of connections) deps.defer(syncConnection(deps, conn._id, { force: true }));
+    return c.json(await calendarResponse(profile));
   });
 
   // ── Working days: a master in working-days mode opens the days clients can book ──
