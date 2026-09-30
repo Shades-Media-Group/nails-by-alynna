@@ -47,6 +47,18 @@ export interface User {
   createdAt: string;
 }
 
+/** A point on the map, in degrees (as Google Maps shows it). */
+export interface GeoPoint {
+  lat: number;
+  lng: number;
+}
+
+/** The client's history at a glance: visits done, and when the first one was. */
+export interface VisitSummary {
+  visits: number;
+  firstVisitAt: string | null;
+}
+
 export interface PublicConfig {
   auth: { google: boolean; demo: Role[] };
   studio: {
@@ -56,6 +68,8 @@ export interface PublicConfig {
     address: string;
     city: string;
     mapsUrl: string;
+    /** The studio's pin, for directions in Google Maps, Apple Maps, Waze and Yandex Go. */
+    location: GeoPoint;
     phone: string;
     whatsapp: string;
     viber: string;
@@ -155,6 +169,10 @@ export interface StaffMember {
   color: SwatchColor;
   serviceIds: string[] | null;
   weekly: Array<Array<{ start: string; end: string }>>;
+  /** 'days': bookable only on the days the master opens (`days`); `weekly` doesn't apply. Missing = weekly. */
+  scheduleMode?: 'weekly' | 'days';
+  /** Working-days mode: the days open in the next two weeks. */
+  days?: Array<{ date: string; start: string; end: string }>;
 }
 
 export interface Slot {
@@ -203,6 +221,20 @@ export interface Appointment {
   promoRemoved?: RemovedPromo | null;
   /** Signed "Add to calendar" (.ics) link, for visits still to come. */
   calendarUrl?: string | null;
+  /** Photos of the nails the client wants (on a booking's own page; lists leave them out). */
+  photos?: BookingPhoto[];
+  createdAt: string;
+}
+
+/** A photo a client added to a booking; its addresses open with the session cookie. */
+export interface BookingPhoto {
+  id: string;
+  url: string;
+  thumbUrl: string;
+  width: number;
+  height: number;
+  /** Bytes of the photo and its thumbnail. */
+  size: number;
   createdAt: string;
 }
 

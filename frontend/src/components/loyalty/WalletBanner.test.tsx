@@ -51,7 +51,7 @@ function respond(url: URL): Response {
     case '/api/config':
       return json({
         auth: { google: false, demo: [] },
-        studio: { name: 'Nails by Alynna', timezone: 'Europe/Chisinau', currency: 'MDL', tagline: text(''), about: text(''), address: '', city: 'Chișinău', mapsUrl: '' },
+        studio: { name: 'Nails by Alynna', timezone: 'Europe/Chisinau', currency: 'MDL', tagline: text(''), about: text(''), address: '', city: 'Chișinău', mapsUrl: '', location: { lat: 47.063205, lng: 28.844794 } },
         booking: { requireApproval: false, cancellationWindowHours: 12, leadTimeMin: 120, horizonDays: 60, maxActiveBookings: 3, policy: text(''), mastersCount: 1 },
         loyalty: { enabled: true, cycle: 8, rewards: [{ visit: 4, percent: 15 }] },
       });

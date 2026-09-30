@@ -10,6 +10,11 @@ import { channelsFor, resolvePrefs, type NotificationCategory } from './prefs';
 /** Tries per notification when the provider had a temporary problem (then it stays failed). */
 export const MAX_ATTEMPTS = 3;
 const RETRY_AFTER_MS = 5 * 60_000;
+/**
+ * A send still marked as going out after this long was cut off (the server restarted mid-send):
+ * it may be tried again. Every provider call gives up long before (10–30 s).
+ */
+export const STALE_SENDING_MS = 2 * 60_000;
 
 export interface DeliveryRequest {
   /** Identity of this notification: the same key is never delivered twice. */
@@ -34,7 +39,10 @@ export function canEmail(user: Pick<UserDoc, 'isDemo' | 'isActive' | 'deletedAt'
   return canNotify(user) && !isPlaceholderEmail(user.email);
 }
 
-/** Claims the key (first run wins; a failed one is retried once its time has come). */
+/**
+ * Claims the key (first run wins). A failed one is tried again once its time has come, and one
+ * left "sending" by a server that stopped mid-send is taken over.
+ */
 async function claim(deps: AppDeps, req: DeliveryRequest, now: Date): Promise<boolean> {
   try {
     await deps.col.notificationLog.insertOne({
@@ -54,7 +62,14 @@ async function claim(deps: AppDeps, req: DeliveryRequest, now: Date): Promise<bo
   } catch (error) {
     if (!isDuplicateKey(error)) throw error;
     const retried = await deps.col.notificationLog.findOneAndUpdate(
-      { _id: req.key, status: 'failed', retryAt: { $lte: now }, attempts: { $lt: MAX_ATTEMPTS } },
+      {
+        _id: req.key,
+        attempts: { $lt: MAX_ATTEMPTS },
+        $or: [
+          { status: 'failed', retryAt: { $lte: now } },
+          { status: 'sending', updatedAt: { $lte: new Date(now.getTime() - STALE_SENDING_MS) } },
+        ],
+      },
       { $set: { status: 'sending', updatedAt: now, retryAt: null }, $inc: { attempts: 1 } },
     );
     return retried !== null;
@@ -64,6 +79,8 @@ async function claim(deps: AppDeps, req: DeliveryRequest, now: Date): Promise<bo
 /**
  * Sends one notification by email and/or push, as the user's preferences allow, at most once
  * per key (even with several servers and the cron running together), and records the outcome.
+ * Both go out at the same moment: the phone never waits for the email (which queues behind the
+ * others at the mail provider).
  */
 export async function deliver(deps: AppDeps, req: DeliveryRequest): Promise<DeliveryOutcome> {
   if (!canNotify(req.user)) return 'skipped';
@@ -80,7 +97,8 @@ export async function deliver(deps: AppDeps, req: DeliveryRequest): Promise<Deli
   const errors: string[] = [];
   let transient = false;
 
-  if (useEmail && req.email) {
+  const sendEmail = async () => {
+    if (!useEmail || !req.email) return;
     try {
       await deps.mailer.send(await req.email());
       channels.email = 'sent';
@@ -89,8 +107,9 @@ export async function deliver(deps: AppDeps, req: DeliveryRequest): Promise<Deli
       errors.push((error as Error).message);
       if (!(error instanceof MailError) || error.transient) transient = true;
     }
-  }
-  if (usePush && req.push) {
+  };
+  const sendPush = async () => {
+    if (!usePush || !req.push) return;
     try {
       const result = await sendPushToUser(deps, req.user._id, req.push.payload, req.push.options);
       channels.push = result.sent > 0 ? 'sent' : result.devices === 0 ? 'no_device' : 'failed';
@@ -100,7 +119,8 @@ export async function deliver(deps: AppDeps, req: DeliveryRequest): Promise<Deli
       errors.push((error as Error).message);
     }
     if (channels.push === 'failed') transient = true;
-  }
+  };
+  await Promise.all([sendPush(), sendEmail()]);
 
   const delivered = channels.email === 'sent' || channels.push === 'sent';
   const failed = !delivered && (channels.email === 'failed' || channels.push === 'failed');

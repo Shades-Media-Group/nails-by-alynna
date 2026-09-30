@@ -12,6 +12,7 @@ import { dashboardRoutes } from './dashboard';
 import { adminSettingsRoutes } from './settings';
 import { adminTeamRoutes } from './team';
 import { adminAuditRoutes, adminUserRoutes } from './users';
+import { adminPhotoRoutes } from '../photos/routes';
 
 /**
  * /api/admin — staff area. `admin` runs the day (bookings, clients, time off);
@@ -36,6 +37,8 @@ export function adminRoutes(deps: AppDeps) {
   for (const path of ['/users', '/users/*', '/audit', '/audit/*']) app.use(path, ownerOnly);
   app.route('/users', adminUserRoutes(deps));
   app.route('/audit', adminAuditRoutes(deps));
+  // Booking photos: how much room they take, find and delete (owner only).
+  app.route('/photos', adminPhotoRoutes(deps));
 
   return app;
 }

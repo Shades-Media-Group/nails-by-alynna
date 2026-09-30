@@ -16,7 +16,14 @@
     "shortcutStudio": "The studio",
     "shortcutContact": "Write to us",
     "popular": "Popular",
-    "allServices": "All services",
+    "gettingThere": "Getting here",
+    "history": {
+      "title": "Your visits",
+      "all": "All visits",
+      "empty": "Your visits will show here after the first\u00a0one.",
+      "stats_one": "{{count}}\u00a0visit · with us since {{since}}",
+      "stats_other": "{{count}}\u00a0visits · with us since {{since}}"
+    },
     "openToday": "Open today until\u00a0{{time}}",
     "closedToday": "Closed today",
     "pending": "The studio will confirm your request soon."
@@ -106,14 +113,45 @@
     "moreServices": "+{{count}}\u00a0more",
     "demoDone": "Demo account: nothing was sent. This is what you see after booking."
   },
+  "photos": {
+    "title": "Photos of the nails you like",
+    "optional": "optional",
+    "text_one": "Up to {{count}} photo, so your master sees what you want. We make it small before\u00a0sending.",
+    "text_other": "Up to {{count}} photos, so your master sees what you want. We make them small before\u00a0sending.",
+    "alt": "Photo {{n}} of the nails you like",
+    "working": "Getting the photo ready…",
+    "failedShort": "Not sent",
+    "remove": "Remove photo {{n}}",
+    "add": "Add a photo",
+    "addMore": "Add another",
+    "formatError": "This photo couldn't be read. Try a JPG or a screenshot\u00a0instead.",
+    "uploadError": "A photo couldn't be sent. Remove it and try again, or book without\u00a0it.",
+    "waiting": "Sending photos…",
+    "open": "Open photo {{n}}",
+    "previous": "Previous photo",
+    "next": "Next photo",
+    "clientsTitle": "Photos from the client",
+    "yoursTitle": "Your photos"
+  },
   "calendar": {
     "title": "Nails by Alynna: {{services}}",
     "description": "Booking {{code}}. Manage it in the app: {{url}}",
     "sheetTitle": "Add to calendar",
     "sheetText": "Pick the calendar you use. A reminder an hour before is included.",
-    "apple": "iPhone or Mac calendar",
-    "google": "Google Calendar",
-    "other": "Outlook or another\u00a0app"
+    "choices": {
+      "device": "Calendar",
+      "googleApp": "Google Calendar",
+      "googleWeb": "Google Calendar",
+      "outlook": "Outlook",
+      "file": "Another calendar app"
+    },
+    "hints": {
+      "device": "Your phone's own calendar",
+      "googleApp": "Opens the app, already signed\u00a0in",
+      "googleWeb": "Opens Google Calendar in a new tab",
+      "outlook": "Outlook.com, in a new tab",
+      "file": "Samsung Calendar, Apple Calendar and others: opens the event\u00a0file"
+    }
   },
   "studio": {
     "openNow": "Open now · until\u00a0{{time}}",

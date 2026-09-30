@@ -203,9 +203,45 @@ export interface StaffDoc {
    * client of a shift, or before a lunch break).
    */
   bufferMin?: number;
+  /**
+   * How clients can book this master. 'weekly' (or missing): any day inside `weekly`. 'days':
+   * only the days the master opens one by one (WorkDayDoc), at the start times they set, each
+   * booking taking a session of `sessionMin`; `weekly` and `bufferMin` then don't apply.
+   */
+  scheduleMode?: ScheduleMode;
+  /** Working-days mode: minutes one booking takes (a longer visit takes as long as it needs). Missing = 120. */
+  sessionMin?: number;
+  /**
+   * Calendar sync: the secret of this master's private iCalendar feed of their bookings, which
+   * Apple Calendar, Google Calendar or Outlook subscribe to (modules/calendar/feed.ts). Missing or
+   * null = off; a new token cuts off every copy of the old link.
+   */
+  calendarFeed?: { token: string; createdAt: Date } | null;
   isActive: boolean;
   isBookable: boolean;
   order: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export const SCHEDULE_MODES = ['weekly', 'days'] as const;
+export type ScheduleMode = (typeof SCHEDULE_MODES)[number];
+
+/** A session when a master takes one client, in working-days mode, unless they choose otherwise. */
+export const DEFAULT_SESSION_MIN = 120;
+
+/**
+ * A day a master in working-days mode opened for booking: one booking can start at each of
+ * `times`, so the day takes as many clients as it has times. One per master and date.
+ */
+export interface WorkDayDoc {
+  _id: ObjectId;
+  staffId: ObjectId;
+  /** YYYY-MM-DD, studio time. */
+  date: string;
+  /** HH:mm, in order, each at least a session (StaffDoc.sessionMin) after the one before. */
+  times: string[];
+  createdBy: ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -281,6 +317,12 @@ export interface LoyaltyReward {
   percent: number;
 }
 
+/** A point on the map, in degrees (WGS 84, as Google Maps shows it). */
+export interface GeoPoint {
+  lat: number;
+  lng: number;
+}
+
 export interface StudioSettings {
   name: string;
   /** Registered business name and IDNO (fiscal code), shown in Terms and Privacy. */
@@ -291,6 +333,8 @@ export interface StudioSettings {
   address: string;
   city: string;
   mapsUrl: string;
+  /** The studio's pin, for "Getting there" in Google Maps, Apple Maps, Waze and Yandex Go. */
+  location: GeoPoint;
   phone: string;
   whatsapp: string;
   viber: string;
@@ -548,6 +592,29 @@ export interface WalletPassDoc {
   /** When a pass file (Apple) or a save link (Google) was last made. */
   appleIssuedAt: Date | null;
   googleIssuedAt: Date | null;
+}
+
+// ── Booking photos ───────────────────────────────────────────────────────────────
+
+/**
+ * A photo a client added to a booking to show the nails they want (modules/photos), made small
+ * on their phone before upload (WebP, at most 1600 px). The bytes live in the photo_blobs table
+ * (image and thumbnail); this is what is known about them. A photo not on a booking a day after
+ * it was uploaded (the booking was never made) is removed.
+ */
+export interface PhotoDoc {
+  _id: ObjectId;
+  /** The client who uploaded it. */
+  userId: ObjectId;
+  /** The booking it belongs to; null until the booking is made. */
+  appointmentId: ObjectId | null;
+  /** Bytes of the photo and of its thumbnail; `size` is both, what the storage counts. */
+  bytes: number;
+  thumbBytes: number;
+  size: number;
+  width: number;
+  height: number;
+  createdAt: Date;
 }
 
 // ── Feedback ─────────────────────────────────────────────────────────────────────

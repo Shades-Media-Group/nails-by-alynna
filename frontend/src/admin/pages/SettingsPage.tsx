@@ -8,7 +8,9 @@ import { useLocale } from '@/i18n/useLocale';
 import { errorMessage, fieldErrors } from '@/lib/errors';
 import { formatDuration } from '@/lib/format';
 import { isEmail } from '@/lib/validation';
-import type { I18nText } from '@/types/api';
+import { LocationIcon } from '@/components/ui/icons';
+import { formatCoordinates, parseCoordinates } from '@/lib/directions';
+import type { GeoPoint, I18nText } from '@/types/api';
 import { adminApi, adminQueries, type StudioSettings } from '../api';
 import { AdminHeader } from '../components/AdminHeader';
 import { I18nFields } from '../components/I18nFields';
@@ -27,7 +29,8 @@ type Field =
   | { kind: 'i18n'; key: I18nKey; maxLength: number; multiline?: boolean; required?: boolean }
   | { kind: 'switch'; key: 'requireApproval' }
   | { kind: 'number'; key: NumberKey; options: number[] }
-  | { kind: 'choice'; key: ChoiceKey; options: string[] };
+  | { kind: 'choice'; key: ChoiceKey; options: string[] }
+  | { kind: 'location'; key: 'location' };
 
 interface SectionDef {
   id: string;
@@ -43,6 +46,7 @@ const SECTIONS: SectionDef[] = [
       { kind: 'text', key: 'legalId', maxLength: 13, placeholder: '1000600000000' },
       { kind: 'text', key: 'address', maxLength: 160 },
       { kind: 'text', key: 'city', maxLength: 60 },
+      { kind: 'location', key: 'location' },
       { kind: 'text', key: 'mapsUrl', maxLength: 500, type: 'url', placeholder: 'https://maps.app.goo.gl/…' },
     ],
   },
@@ -96,6 +100,7 @@ function issueOf(field: Field, value: unknown): string | null {
     if (field.key === 'email' && text && !isEmail(text)) return 'invalid_email';
   }
   if (field.kind === 'i18n' && field.required && !(value as I18nText).ro.trim()) return 'required';
+  if (field.kind === 'location' && !parseCoordinates(String(value ?? ''))) return 'invalid_location';
   return null;
 }
 
@@ -109,6 +114,8 @@ function prepared(field: Field, value: unknown): unknown {
     const text = value as I18nText;
     return field.required || text.ro.trim() ? fillFromRo(text) : { ro: '', ru: text.ru.trim(), en: text.en.trim() };
   }
+  // The pin is edited as the text Google Maps copies ("47.063205, 28.844794").
+  if (field.kind === 'location') return parseCoordinates(String(value ?? '')) ?? value;
   return value;
 }
 
@@ -152,7 +159,10 @@ function Section({ section, settings, canEdit }: { section: SectionDef; settings
   const { t } = useTranslation(['admin', 'common']);
   const { locale } = useLocale();
   const queryClient = useQueryClient();
-  const initial = () => Object.fromEntries(section.fields.map((f) => [f.key, settings[f.key]])) as Partial<StudioSettings>;
+  const initial = () =>
+    Object.fromEntries(
+      section.fields.map((f) => [f.key, f.kind === 'location' ? formatCoordinates(settings.location) : settings[f.key]]),
+    ) as Partial<StudioSettings>;
   const [form, setForm] = useState<Partial<StudioSettings>>(initial);
   const [touched, setTouched] = useState(false);
   const set = (key: keyof StudioSettings, value: unknown) => setForm((f) => ({ ...f, [key]: value }));
@@ -184,7 +194,7 @@ function Section({ section, settings, canEdit }: { section: SectionDef; settings
   const message = (key: string): string | undefined => {
     const code = touched ? issues[key] : undefined;
     if (code) return t(`settings.issues.${code}`, { defaultValue: t(`common:validation.${code}`, { defaultValue: t('common:validation.invalid') }) });
-    return server[key] ?? server[`${key}.ro`];
+    return server[key] ?? server[`${key}.ro`] ?? server[`${key}.lat`] ?? server[`${key}.lng`];
   };
 
   const submit = (event: FormEvent) => {
@@ -212,6 +222,7 @@ function Section({ section, settings, canEdit }: { section: SectionDef; settings
     }
     if (field.kind === 'switch') return value ? t('common.yes') : t('common.no');
     if (field.kind === 'number') return formatNumber(field.key, value as number);
+    if (field.kind === 'location') return formatCoordinates(value as GeoPoint);
     const text = String(value ?? '');
     return text ? `${field.kind === 'text' && field.prefix ? field.prefix : ''}${text}` : t('settings.notSet');
   };
@@ -254,6 +265,38 @@ function Section({ section, settings, canEdit }: { section: SectionDef; settings
                   error={message(field.key)}
                   hint={hint(field.key)}
                 />
+              );
+            }
+            if (field.kind === 'location') {
+              const text = String(form.location ?? '');
+              const pin = parseCoordinates(text);
+              return (
+                <div key={field.key} className="flex flex-col gap-1.5">
+                  <TextField
+                    label={label(field.key)}
+                    autoComplete="off"
+                    spellCheck={false}
+                    inputMode="decimal"
+                    maxLength={200}
+                    required
+                    placeholder="47.063205, 28.844794"
+                    value={text}
+                    onChange={(e) => set(field.key, e.target.value)}
+                    error={message(field.key)}
+                    hint={hint(field.key)}
+                  />
+                  {pin ? (
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${pin.lat},${pin.lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex w-fit items-center gap-1 rounded-pill pl-1 text-sm font-semibold text-rose-700 underline-offset-4 hover:underline"
+                    >
+                      <LocationIcon fontSize="inherit" className="text-base" />
+                      {t('settings.checkPin')}
+                    </a>
+                  ) : null}
+                </div>
               );
             }
             if (field.kind === 'i18n') {

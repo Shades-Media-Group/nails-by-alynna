@@ -24,6 +24,7 @@ import NewAppointmentPage from '../pages/NewAppointmentPage';
 import PromoCodesPage from '../pages/PromoCodesPage';
 import SettingsPage from '../pages/SettingsPage';
 import TeamPage from '../pages/TeamPage';
+import PhotosPage from '../pages/PhotosPage';
 import UsersPage from '../pages/UsersPage';
 
 /*
@@ -128,6 +129,7 @@ const settings = {
   address: 'Str. Exemplu 1',
   city: 'Chișinău',
   mapsUrl: '',
+  location: { lat: 47.063205, lng: 28.844794 },
   phone: '+37368230429',
   whatsapp: '',
   viber: '',
@@ -285,6 +287,26 @@ function respond(path: string): unknown {
       page: 1,
       pages: 1,
       scope: 'all',
+    };
+  }
+  if (path === '/api/admin/photos') {
+    const photo = (id: string, size: number, appointment: boolean) => ({
+      id,
+      url: `/api/photos/${id}`,
+      thumbUrl: `/api/photos/${id}/thumb`,
+      width: 1600,
+      height: 1200,
+      size,
+      createdAt: '2026-09-24T10:00:00.000Z',
+      client: { id: 'c1', name: 'Maria Popescu' },
+      appointment: appointment ? { id: 'a1', code: 'A7K2Q9', start: '2026-09-25T11:00:00.000Z', status: 'confirmed' } : null,
+    });
+    return {
+      photos: [photo('ph1', 190_000, true), photo('ph2', 420_000, false)],
+      total: 2,
+      page: 1,
+      pages: 1,
+      storage: { bytes: 452 * 1024 * 1024, count: 2310, alertBytes: 400 * 1024 * 1024, quotaBytes: 1024 * 1024 * 1024 },
     };
   }
   if (path === '/api/admin/audit') {
@@ -462,6 +484,24 @@ describe('staff screens', () => {
     renderScreen(<UsersPage />, '/en/admin/users', '/en/admin/users');
     expect(await screen.findByText('2 accounts')).toBeInTheDocument();
     expect(screen.getAllByText('Owner').length).toBeGreaterThan(0);
+    expect(leakedKeys()).toEqual([]);
+  });
+
+  it('Photos: room taken, filters, and deleting the chosen ones', async () => {
+    const user = userEvent.setup();
+    renderScreen(<PhotosPage />, '/en/admin/photos', '/en/admin/photos');
+    expect(await screen.findByRole('heading', { name: /^452\sMB of 1\sGB used$/ })).toBeInTheDocument();
+    // Past the 400 MB alert: said on the page.
+    expect(screen.getByText(/Photos take more than 400\sMB/)).toBeInTheDocument();
+    expect(screen.getByText('Booking A7K2Q9')).toBeInTheDocument();
+    expect(screen.getByText('Not on a booking yet')).toBeInTheDocument();
+    expect(screen.getByLabelText('Size')).toBeInTheDocument();
+
+    await user.click(screen.getAllByRole('checkbox', { name: /Select the photo from Maria Popescu/ })[1]!);
+    await user.click(screen.getByRole('button', { name: 'Delete 1' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Delete this photo?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
+    await waitFor(() => expect(posts).toContainEqual({ path: '/api/admin/photos/delete', body: { ids: ['ph2'] } }));
     expect(leakedKeys()).toEqual([]);
   });
 

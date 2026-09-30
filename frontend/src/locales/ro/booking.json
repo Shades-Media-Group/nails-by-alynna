@@ -16,7 +16,15 @@
     "shortcutStudio": "Despre salon",
     "shortcutContact": "Scrie-ne",
     "popular": "Populare",
-    "allServices": "Toate serviciile",
+    "gettingThere": "Cum ajungi la noi",
+    "history": {
+      "title": "Vizitele tale",
+      "all": "Toate vizitele",
+      "empty": "Vizitele tale vor apărea aici după prima\u00a0vizită.",
+      "stats_one": "{{count}}\u00a0vizită · cu noi din {{since}}",
+      "stats_few": "{{count}}\u00a0vizite · cu noi din {{since}}",
+      "stats_other": "{{count}}\u00a0de\u00a0vizite · cu noi din {{since}}"
+    },
     "openToday": "Deschis azi până\u00a0la\u00a0{{time}}",
     "closedToday": "Închis azi",
     "pending": "Salonul îți va confirma cererea în curând."
@@ -108,14 +116,46 @@
     "moreServices": "+încă\u00a0{{count}}",
     "demoDone": "Cont demo: nu s-a trimis nimic. Așa arată după ce trimiți o programare."
   },
+  "photos": {
+    "title": "Fotografii cu unghiile care îți plac",
+    "optional": "opțional",
+    "text_one": "Cel mult {{count}} fotografie, ca maestrul să vadă ce vrei. O micșorăm înainte de\u00a0trimitere.",
+    "text_few": "Cel mult {{count}} fotografii, ca maestrul să vadă ce vrei. Le micșorăm înainte de\u00a0trimitere.",
+    "text_other": "Cel mult {{count}} de fotografii, ca maestrul să vadă ce vrei. Le micșorăm înainte de\u00a0trimitere.",
+    "alt": "Fotografia {{n}} cu unghiile care îți plac",
+    "working": "Pregătim fotografia…",
+    "failedShort": "Netrimisă",
+    "remove": "Scoate fotografia {{n}}",
+    "add": "Adaugă o fotografie",
+    "addMore": "Încă una",
+    "formatError": "Fotografia nu a putut fi citită. Încearcă un JPG sau o captură de\u00a0ecran.",
+    "uploadError": "O fotografie nu a putut fi trimisă. Scoate-o și încearcă din nou sau programează-te fără\u00a0ea.",
+    "waiting": "Trimitem fotografiile…",
+    "open": "Deschide fotografia {{n}}",
+    "previous": "Fotografia anterioară",
+    "next": "Fotografia următoare",
+    "clientsTitle": "Fotografii de la clientă",
+    "yoursTitle": "Fotografiile tale"
+  },
   "calendar": {
     "title": "Nails by Alynna: {{services}}",
     "description": "Programarea {{code}}. O gestionezi în aplicație: {{url}}",
     "sheetTitle": "Adaugă în calendar",
     "sheetText": "Alege calendarul pe care îl folosești. Include un memento cu o oră înainte.",
-    "apple": "Calendarul de pe iPhone sau\u00a0Mac",
-    "google": "Google Calendar",
-    "other": "Outlook sau altă aplicație"
+    "choices": {
+      "device": "Calendar",
+      "googleApp": "Google Calendar",
+      "googleWeb": "Google Calendar",
+      "outlook": "Outlook",
+      "file": "Altă aplicație de calendar"
+    },
+    "hints": {
+      "device": "Calendarul telefonului tău",
+      "googleApp": "Deschide aplicația, în care ești deja\u00a0conectată",
+      "googleWeb": "Deschide Google Calendar într-o filă nouă",
+      "outlook": "Outlook.com, într-o filă nouă",
+      "file": "Samsung Calendar, Apple Calendar și altele: deschide fișierul\u00a0programării"
+    }
   },
   "studio": {
     "openNow": "Deschis acum · până\u00a0la\u00a0{{time}}",

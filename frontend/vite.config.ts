@@ -84,8 +84,10 @@ function brandPlugin(): Plugin {
     async closeBundle() {
       if (!headersFile) return;
       const headers = await readFile(headersFile, 'utf8');
-      if (!headers.includes("script-src 'self';")) throw new Error(`${headersFile}: no "script-src 'self';" to add the splash gate hash to`);
-      await writeFile(headersFile, headers.replace("script-src 'self';", `script-src 'self' ${SPLASH_GATE_CSP};`));
+      // After 'self' (and 'wasm-unsafe-eval', which the photo encoder needs to compile).
+      const scriptSrc = /script-src 'self'( 'wasm-unsafe-eval')?;/;
+      if (!scriptSrc.test(headers)) throw new Error(`${headersFile}: no "script-src 'self';" to add the splash gate hash to`);
+      await writeFile(headersFile, headers.replace(scriptSrc, (directive) => `${directive.slice(0, -1)} ${SPLASH_GATE_CSP};`));
     },
   };
 }
@@ -213,6 +215,8 @@ export default defineConfig(({ mode }) => {
         '@mui/material/SvgIcon': `${src}/components/ui/icons/SvgIcon.tsx`,
       },
     },
+    // The photo encoder finds its .wasm next to itself (import.meta.url): pre-bundling would move it.
+    optimizeDeps: { exclude: ['@jsquash/webp'] },
     server: {
       port: 5180,
       strictPort: true,
@@ -253,6 +257,7 @@ export default defineConfig(({ mode }) => {
         workbox: {
           // Web Push: push / notificationclick handlers (public/push-sw.js; production builds only).
           importScripts: ['push-sw.js'],
+          // The photo encoder (.wasm) loads only when a client adds a photo, so it is not precached.
           globPatterns: ['**/*.{js,css,html,svg,png,webp,ico,woff2,webmanifest}'],
           // Admin code, launch screens and the version probe stay out of the install.
           globIgnores: [

@@ -30,6 +30,7 @@ const settings = {
   address: '',
   city: 'Chișinău',
   mapsUrl: '',
+  location: { lat: 47.063205, lng: 28.844794 },
   phone: '+37368230429',
   whatsapp: '',
   viber: '',

@@ -186,6 +186,116 @@ describe("the staff app's icon", () => {
   });
 });
 
+describe('a new request reaches the master\'s phone at once', () => {
+  const keys = { p256dh: 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM', auth: 'tBHItJI5svbpez7KI4CCXg' };
+  const subscribeMaster = async () =>
+    expect((await master.client.post('/api/notifications/push/subscribe', { endpoint: 'https://web.push.apple.com/master-iphone', keys })).status).toBe(200);
+  const afterEach = async () => {
+    setPushTransport(ctx.deps, null);
+    await ctx.deps.col.pushSubscriptions.deleteMany({});
+  };
+
+  it('without waiting for the emails, however slow the mail provider is', async () => {
+    const pushedAt: string[] = [];
+    setPushTransport(ctx.deps, {
+      async send(target) {
+        pushedAt.push(target.endpoint);
+        return 201;
+      },
+    });
+    const mailer = ctx.deps.mailer;
+    let release: () => void = () => undefined;
+    try {
+      await subscribeMaster();
+      const { client } = await registerClient(ctx, { name: 'Ana', surname: 'Rusu' });
+      await ctx.flush();
+      // From here the mail provider hangs until we let it go.
+      const held = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      ctx.deps.mailer = { enabled: true, send: async (message) => (await held, mailer.send(message)) };
+      const [slot] = await freeSlots(client);
+      expect((await client.post('/api/appointments', { serviceIds: [gelId], start: slot!.start })).status).toBe(201);
+      // The emails are still stuck, the phone already has it.
+      await expect.poll(() => pushedAt.filter((e) => e.endsWith('master-iphone')).length, { timeout: 2_000 }).toBe(1);
+    } finally {
+      release();
+      await ctx.flush();
+      ctx.deps.mailer = mailer;
+      await afterEach();
+    }
+  });
+
+  it('tries again at once when the push service is busy, and again later from the scheduler if it still fails', async () => {
+    let answers = [503, 503, 503];
+    const delivered: string[] = [];
+    setPushTransport(ctx.deps, {
+      async send(target) {
+        const status = answers.shift() ?? 201;
+        if (status === 201) delivered.push(target.endpoint);
+        return status;
+      },
+    });
+    try {
+      await subscribeMaster();
+      await master.client.patch('/api/notifications/prefs', { staffBookings: { email: false } });
+      const { appointment } = await clientWithBooking();
+      await ctx.flush();
+      // Three tries, all refused for now: recorded as failed, to be sent again.
+      const key = { kind: 'staff_booking', appointmentId: new ObjectId(appointment.id), status: 'failed' } as const;
+      expect(await ctx.deps.col.notificationLog.countDocuments(key)).toBe(1);
+      expect(delivered).toEqual([]);
+
+      // Five minutes on, the scheduler sends it again; this time the service takes it.
+      ctx.advance(6 * 60_000);
+      const { runDueNotifications } = await import('../src/modules/notifications/scheduler');
+      await runDueNotifications(ctx.deps);
+      expect(delivered).toEqual(['https://web.push.apple.com/master-iphone']);
+      expect(await ctx.deps.col.notificationLog.countDocuments(key)).toBe(0);
+
+      // A busy answer followed by a yes is one notification, sent within the same moment.
+      answers = [429];
+      await clientWithBooking();
+      await ctx.flush();
+      expect(delivered).toHaveLength(2);
+    } finally {
+      await master.client.patch('/api/notifications/prefs', { staffBookings: { email: true } });
+      await afterEach();
+    }
+  });
+
+  it('takes over a send cut off by a restart', async () => {
+    const delivered: string[] = [];
+    setPushTransport(ctx.deps, {
+      async send(target) {
+        delivered.push(target.endpoint);
+        return 201;
+      },
+    });
+    try {
+      await subscribeMaster();
+      const { appointment } = await clientWithBooking();
+      await ctx.flush();
+      const log = await ctx.deps.col.notificationLog.findOne({ kind: 'staff_booking', appointmentId: new ObjectId(appointment.id) });
+      expect(log?.status).toBe('sent');
+      delivered.length = 0;
+      // As if the server stopped right after claiming it.
+      await ctx.deps.col.notificationLog.updateMany(
+        { kind: 'staff_booking', appointmentId: new ObjectId(appointment.id) },
+        { $set: { status: 'sending', updatedAt: ctx.now() } },
+      );
+      const { runDueNotifications } = await import('../src/modules/notifications/scheduler');
+      await runDueNotifications(ctx.deps);
+      expect(delivered).toEqual([]); // still within its two minutes
+      ctx.advance(3 * 60_000);
+      await runDueNotifications(ctx.deps);
+      expect(delivered).toContain('https://web.push.apple.com/master-iphone');
+    } finally {
+      await afterEach();
+    }
+  });
+});
+
 describe('bookings wait for confirmation by default', () => {
   const reset = async (requireApproval: boolean, customized: string[]) => {
     await ctx.deps.col.meta.deleteOne({ _id: 'requireApprovalDefault' });

@@ -5,9 +5,11 @@ import { appointmentReminderEmail, feedbackRequestEmail } from '../../lib/emails
 import { HOUR, MINUTE } from '../../lib/time';
 import { getSettings } from '../settings';
 import { appLink, feedbackPush, reminderPush, visitInfo } from './content';
-import { MAX_ATTEMPTS, canNotify, deliver } from './deliver';
+import { notifyBookingChange, notifyStaffOfBooking, type BookingChange, type StaffBookingEvent } from './booking';
+import { MAX_ATTEMPTS, STALE_SENDING_MS, canNotify, deliver } from './deliver';
 import { resolvePrefs } from './prefs';
 import { sendRebookReminders } from './rebook';
+import { removeUnattachedPhotos } from '../photos/service';
 
 export interface TickSummary {
   /**
@@ -44,10 +46,55 @@ interface Plan {
 export async function runDueNotifications(deps: AppDeps, now: Date = deps.now()): Promise<TickSummary> {
   const started = Date.now();
   const summary: TickSummary = { checked: 0, sent: 0, failed: 0, skipped: 0, duplicates: 0, durationMs: 0 };
+  await retryBookingMessages(deps, now, summary);
+  // Photos sent for a booking that was never made.
+  await removeUnattachedPhotos(deps, now).catch((error: unknown) => console.error('[photos] cleanup failed', error));
   await sendReminders(deps, now, summary);
   await sendFeedbackRequests(deps, now, summary);
   await sendRebookReminders(deps, now, summary);
   return finish(summary, started);
+}
+
+const BOOKING_CHANGES: readonly string[] = ['requested', 'booked', 'confirmed', 'rescheduled', 'cancelled'];
+const STAFF_EVENTS: readonly string[] = ['requested', 'booked', 'rescheduled', 'cancelled'];
+
+/**
+ * Messages about a booking go out the moment it changes (a new request reaches the master's
+ * phone at once). One that failed for a passing reason, or was cut off by a restart, is sent
+ * again here once its time has come; the key says which visit and which change it was.
+ */
+async function retryBookingMessages(deps: AppDeps, now: Date, summary: TickSummary): Promise<void> {
+  const due = await deps.col.notificationLog
+    .find(
+      {
+        kind: { $in: ['staff_booking', 'booking_update'] },
+        attempts: { $lt: MAX_ATTEMPTS },
+        $or: [
+          { status: 'failed', retryAt: { $lte: now } },
+          { status: 'sending', updatedAt: { $lte: new Date(now.getTime() - STALE_SENDING_MS) } },
+        ],
+      },
+      { projection: { _id: 1 }, limit: 50 },
+    )
+    .toArray();
+  const retries = new Set<string>();
+  for (const { _id: key } of due) {
+    const [scope, id, change] = key.split(':');
+    if (scope === 'staff' && id && change && STAFF_EVENTS.includes(change)) retries.add(`staff:${id}:${change}`);
+    if (scope === 'booking' && id && change && BOOKING_CHANGES.includes(change)) retries.add(`booking:${id}:${change}`);
+  }
+  for (const retry of retries) {
+    const [scope, id, change] = retry.split(':') as [string, string, string];
+    summary.checked++;
+    if (scope === 'staff') {
+      const reached = await notifyStaffOfBooking(deps, id, change as StaffBookingEvent);
+      if (reached > 0) summary.sent += reached;
+    } else {
+      const outcome = await notifyBookingChange(deps, id, change as BookingChange);
+      if (outcome === 'duplicate') summary.duplicates++;
+      else summary[outcome]++;
+    }
+  }
 }
 
 /**

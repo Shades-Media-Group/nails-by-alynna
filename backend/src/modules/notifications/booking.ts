@@ -141,40 +141,41 @@ export async function notifyStaffOfBooking(
           ? appointment.start
           : appointment.createdAt;
 
-    let reached = 0;
-    for (const user of recipients.values()) {
-      const locale = user.locale;
-      const visit = visitInfo(appointment, { appUrl: deps.config.appUrl, locale, settings, master: master?.name ?? null, hasAccount: true });
-      const openUrl = appLink(deps.config.appUrl, locale, `/admin/appointments/${hex}`);
-      // The staff app's icon shows the requests waiting for this person, also while it's closed.
-      const badge = await pendingRequestCount(deps, user);
-      const outcome = await deliver(deps, {
-        key: `staff:${hex}:${event}:${moment.getTime()}:${user._id.toHexString()}`,
-        kind: 'staff_booking',
-        category: 'staffBookings',
-        user,
-        appointmentId: id,
-        email: () =>
-          staffBookingEmail({
-            to: user.email,
-            name: user.name,
-            locale,
-            timeZone: settings.timezone,
-            now,
-            event,
-            visit,
-            client,
-            openUrl,
-            settingsUrl: appLink(deps.config.appUrl, locale, '/profile/notifications'),
-          }),
-        push: {
-          payload: { ...staffBookingPush(visit, client.name, event, openUrl, locale, settings.timezone, now), badge },
-          options: { ttlSec: 86_400, urgency: 'high', topic: `s${hex}` },
-        },
-      });
-      if (outcome === 'sent') reached++;
-    }
-    return reached;
+    // Everyone at once: the owner's email never holds up the master's phone.
+    const outcomes = await Promise.all(
+      [...recipients.values()].map(async (user) => {
+        const locale = user.locale;
+        const visit = visitInfo(appointment, { appUrl: deps.config.appUrl, locale, settings, master: master?.name ?? null, hasAccount: true });
+        const openUrl = appLink(deps.config.appUrl, locale, `/admin/appointments/${hex}`);
+        // The staff app's icon shows the requests waiting for this person, also while it's closed.
+        const badge = await pendingRequestCount(deps, user);
+        return deliver(deps, {
+          key: `staff:${hex}:${event}:${moment.getTime()}:${user._id.toHexString()}`,
+          kind: 'staff_booking',
+          category: 'staffBookings',
+          user,
+          appointmentId: id,
+          email: () =>
+            staffBookingEmail({
+              to: user.email,
+              name: user.name,
+              locale,
+              timeZone: settings.timezone,
+              now,
+              event,
+              visit,
+              client,
+              openUrl,
+              settingsUrl: appLink(deps.config.appUrl, locale, '/profile/notifications'),
+            }),
+          push: {
+            payload: { ...staffBookingPush(visit, client.name, event, openUrl, locale, settings.timezone, now), badge },
+            options: { ttlSec: 86_400, urgency: 'high', topic: `s${hex}` },
+          },
+        });
+      }),
+    );
+    return outcomes.filter((outcome) => outcome === 'sent').length;
   } catch (error) {
     console.error(`[notify] staff ${event} notification failed`, error);
     return 0;

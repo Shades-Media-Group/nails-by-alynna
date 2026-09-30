@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AddToCalendarSheet } from '@/components/appointments/AddToCalendar';
+import { AddToCalendar } from '@/components/appointments/AddToCalendar';
 import { ClockItArt } from '@/components/brand/nails/ClockItArt';
 import { Alert } from '@/components/common/Alert';
 import { ServiceLines } from '@/components/appointments/ServiceLines';
@@ -50,7 +49,6 @@ export function DoneStep({
   const { t } = useTranslation(['booking', 'common']);
   const { lp, locale } = useLocale();
   const { timeZone } = useStudio();
-  const [calendarOpen, setCalendarOpen] = useState(false);
   const pending = appointment.status === 'pending';
   const title = rescheduled
     ? t('flow.doneRescheduledTitle')
@@ -115,14 +113,13 @@ export function DoneStep({
       <div className="mt-6 flex w-full max-w-sm flex-col gap-2">
         {demo ? null : (
           <>
-            <Button
-              variant="primary"
-              icon={CalendarAddIcon}
-              fullWidth
-              onClick={() => setCalendarOpen(true)}
-            >
-              {t('flow.addToCalendar')}
-            </Button>
+            <AddToCalendar appointment={appointment}>
+              {(open) => (
+                <Button variant="primary" icon={CalendarAddIcon} fullWidth onClick={open}>
+                  {t('flow.addToCalendar')}
+                </Button>
+              )}
+            </AddToCalendar>
             <ButtonLink
               to={lp(`/bookings/${appointment.id}`)}
               replace
@@ -142,11 +139,6 @@ export function DoneStep({
       {demo ? null : (
         <PushSoftAsk placement="booking" booked={!pending} className="mt-6 w-full max-w-sm" />
       )}
-      <AddToCalendarSheet
-        appointment={appointment}
-        open={calendarOpen}
-        onClose={() => setCalendarOpen(false)}
-      />
     </div>
   );
 }

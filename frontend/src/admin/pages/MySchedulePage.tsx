@@ -4,37 +4,51 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { Alert } from '@/components/common/Alert';
 import { SectionHeading } from '@/components/layout/PageHeader';
-import { Button, EmptyState, SegmentedControl, Skeleton, toast } from '@/components/ui';
+import { Button, EmptyState, SegmentedControl, Select, Skeleton, Switch, toast } from '@/components/ui';
 import { AddIcon, EventBusyIcon, ScheduleIcon } from '@/components/ui/icons';
 import { useLocale } from '@/i18n/useLocale';
 import { errorMessage } from '@/lib/errors';
-import { addDays, formatDateTime } from '@/lib/format';
+import { addDays, formatDateTime, formatDuration } from '@/lib/format';
 import { isApiError } from '@/services/api/client';
-import { adminApi, adminQueries, type AdminStaff, type OutsideHoursBooking, type TimeOff, type WeeklyHours } from '../api';
+import {
+  adminApi,
+  adminQueries,
+  type AdminStaff,
+  type OutsideHoursBooking,
+  type ScheduleMode,
+  type TimeOff,
+  type WeeklyHours,
+} from '../api';
 import { AdminHeader } from '../components/AdminHeader';
+import { CalendarSync } from '../components/CalendarSync';
 import { ConfirmSheet } from '../components/ConfirmSheet';
 import { HoursEditor } from '../components/HoursEditor';
 import { useStudioToday } from '../components/hooks';
 import { TimeOffEditor } from '../components/TimeOffEditor';
 import { TimeOffRow } from '../components/TimeOffRow';
 import { dayIssue, sameValue } from '../components/utils';
+import { DEFAULT_SESSION_MIN, SESSIONS } from '../components/sessions';
+import { WorkDaysPanel } from '../components/WorkDays';
 
 const BUFFERS = ['0', '5', '10', '15', '20', '30'] as const;
 type Buffer = (typeof BUFFERS)[number];
 const asBuffer = (minutes: number | undefined): Buffer => BUFFERS.find((b) => Number(b) === (minutes ?? 0)) ?? '0';
 
 /**
- * A master's own week, as in Fresha or Booksy: working hours (a lunch break is two stretches),
- * a break kept free after every client, and time off. Clients can book them only inside it.
+ * A master's own schedule. By default a week, as in Fresha or Booksy: working hours (a lunch
+ * break is two stretches) and a break kept free after every client. Or, switched to working
+ * days, only the days they open one by one, each in sessions with a number of clients. Time
+ * off applies either way.
  */
 export default function MySchedulePage() {
   const { t } = useTranslation(['admin', 'common']);
   const me = useQuery(adminQueries.myStaff());
+  const byDays = me.data?.scheduleMode === 'days';
 
   return (
     <div className="pb-8">
-      <AdminHeader title={t('mySchedule.title')} subtitle={t('mySchedule.subtitle')} />
-      <div className="gutter-x flex flex-col gap-8 lg:px-0">
+      <AdminHeader title={t('mySchedule.title')} subtitle={byDays ? t('mySchedule.subtitleDays') : t('mySchedule.subtitle')} />
+      <div className="gutter-x mt-6 flex flex-col gap-8 lg:px-0">
         {me.isPending ? (
           <Skeleton rounded="xl" className="h-96" />
         ) : me.isError ? (
@@ -47,12 +61,86 @@ export default function MySchedulePage() {
           )
         ) : (
           <>
-            <WeekForm key={me.data.id} staff={me.data} />
+            <BookingMode staff={me.data} />
+            {byDays ? <WorkDaysPanel staff={me.data} /> : <WeekForm key={me.data.id} staff={me.data} />}
             <MyTimeOff staff={me.data} />
+            <CalendarSync />
           </>
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * The switch between weekly hours and working days, and the session length of working days.
+ * Each change applies at once: the page below it changes with the mode.
+ */
+function BookingMode({ staff }: { staff: AdminStaff }) {
+  const { t } = useTranslation(['admin', 'common']);
+  const { lp, locale } = useLocale();
+  const { timeZone } = useStudioToday();
+  const queryClient = useQueryClient();
+  const mode: ScheduleMode = staff.scheduleMode ?? 'weekly';
+  const sessionMin = staff.sessionMin ?? DEFAULT_SESSION_MIN;
+  const [outside, setOutside] = useState<OutsideHoursBooking[] | null>(null);
+
+  const save = useMutation({
+    mutationFn: (patch: { scheduleMode?: ScheduleMode; sessionMin?: number }) => adminApi.updateMyStaff(patch),
+    onSuccess: ({ staff: updated, outsideHours }, patch) => {
+      queryClient.setQueryData(adminQueries.myStaff().queryKey, updated);
+      for (const queryKey of [['admin', 'staff'], ['admin', 'work-days'], ['admin', 'stats'], ['staff'], ['availability-days'], ['availability-slots']]) {
+        void queryClient.invalidateQueries({ queryKey });
+      }
+      if (patch.scheduleMode) setOutside(outsideHours);
+      toast.success(
+        patch.scheduleMode === 'days' ? t('bookingMode.nowDays') : patch.scheduleMode === 'weekly' ? t('bookingMode.nowWeekly') : t('common.saved'),
+      );
+    },
+  });
+
+  return (
+    <section aria-labelledby="booking-mode-title">
+      <SectionHeading id="booking-mode-title" title={t('bookingMode.title')} />
+      <div className="flex flex-col gap-4 rounded-2xl bg-white p-4 ring-1 ring-inset ring-ink-100 sm:p-5">
+        <Switch
+          checked={mode === 'days'}
+          disabled={save.isPending}
+          onChange={(on) => save.mutate({ scheduleMode: on ? 'days' : 'weekly' })}
+          label={t('bookingMode.days')}
+          description={mode === 'days' ? t('bookingMode.daysOn') : t('bookingMode.daysOff')}
+        />
+        {mode === 'days' ? (
+          <div className="flex flex-col gap-1.5 border-t border-ink-100 pt-4">
+            <Select
+              label={t('bookingMode.session')}
+              value={String(sessionMin)}
+              disabled={save.isPending}
+              onChange={(e) => save.mutate({ sessionMin: Number(e.target.value) })}
+              options={[...new Set([...SESSIONS, sessionMin])]
+                .sort((a, b) => a - b)
+                .map((minutes) => ({ value: String(minutes), label: formatDuration(t, minutes) }))}
+            />
+            <p className="pl-1 text-sm text-ink-600">{t('bookingMode.sessionHint')}</p>
+          </div>
+        ) : null}
+        {save.isError ? <Alert>{errorMessage(t, save.error)}</Alert> : null}
+      </div>
+      {outside && outside.length > 0 ? (
+        <Alert tone="warning" className="mt-3">
+          <p className="font-semibold">{t(mode === 'days' ? 'bookingMode.outsideDays' : 'mySchedule.outside', { count: outside.length })}</p>
+          <ul className="mt-1.5 flex flex-col gap-1">
+            {outside.slice(0, 6).map((booking) => (
+              <li key={booking.id}>
+                <Link to={lp(`/admin/appointments/${booking.id}`)} className="font-semibold underline underline-offset-4">
+                  <span className="first-letter:uppercase">{formatDateTime(booking.start, locale, timeZone)}</span> · {booking.clientName}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Alert>
+      ) : null}
+    </section>
   );
 }
 

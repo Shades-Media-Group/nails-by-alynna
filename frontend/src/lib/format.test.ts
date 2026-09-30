@@ -4,7 +4,7 @@ import en from '@/locales/en/common.json';
 import ro from '@/locales/ro/common.json';
 import ru from '@/locales/ru/common.json';
 import type { Locale } from '@/i18n/config';
-import { formatDateTime, formatDayLong, formatDayShort, formatDuration, formatPhone, formatPrice } from './format';
+import { formatDateTime, formatDayLong, formatDayShort, formatDuration, formatPhone, formatPrice, monthYearSince } from './format';
 import { NBSP } from './typography';
 
 /** Shows no-break spaces as "⍽", so a failing test says where they are. */
@@ -45,5 +45,16 @@ describe('what the formatters return never breaks inside a value', () => {
   it('keeps a phone number on one line', () => {
     expect(shown(formatPhone('+37368230429'))).toBe('+373⍽68⍽230⍽429');
     expect(formatPhone('+40 721 000 000')).toBe('+40 721 000 000');
+  });
+});
+
+describe('"since" on the visit history', () => {
+  it('names the month as it reads after "since", and keeps it with its year', () => {
+    // 1 March 00:30 in Chișinău is still February in UTC: the studio's calendar decides.
+    const first = '2026-02-28T22:30:00Z';
+    expect(shown(monthYearSince(first, 'en', TZ))).toBe('March⍽2026');
+    expect(shown(monthYearSince(first, 'ro', TZ))).toBe('martie⍽2026');
+    // "с марта", not the nominative "с март".
+    expect(shown(monthYearSince(first, 'ru', TZ))).toBe('марта⍽2026');
   });
 });

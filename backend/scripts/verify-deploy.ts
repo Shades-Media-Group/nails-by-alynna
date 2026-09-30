@@ -35,16 +35,62 @@ function assert(condition: unknown, message: string): asserts condition {
 
 console.info(`Verifying ${base}${expectedVersion ? ` (expecting version ${expectedVersion})` : ''}`);
 
-await check('API health and database', async () => {
-  const res = await fetch(`${base}/api/health`);
-  const body = (await res.json()) as {
-    status?: string;
-    version?: string;
-    checks?: { database?: { status?: string; latencyMs?: number } };
+interface Health {
+  status?: string;
+  version?: string;
+  checks?: {
+    database?: {
+      status?: string;
+      latencyMs?: number;
+      schema?: { version: number | null; notifications: number | null; current: boolean } | null;
+    };
   };
+}
+
+/**
+ * /api/health once the API has settled: it restarts on the first request after an upload and
+ * migrates the database in the background just after, so this asks again for up to 90 s until
+ * it is this build with its tables in place.
+ */
+async function settledHealth(): Promise<{ status: number; body: Health }> {
+  const deadline = Date.now() + 90_000;
+  for (;;) {
+    let status = 0;
+    let body: Health = {};
+    try {
+      const res = await fetch(`${base}/api/health?t=${Date.now()}`);
+      status = res.status;
+      body = (await res.json()) as Health;
+    } catch {
+      // Not answering yet (restarting); asked again below.
+    }
+    const settled = status === 200 && (!expectedVersion || body.version === expectedVersion) && body.checks?.database?.schema?.current === true;
+    if (settled || Date.now() > deadline) return { status, body };
+    await new Promise((resolve) => setTimeout(resolve, 3_000));
+  }
+}
+
+const health = await settledHealth();
+
+await check('API health and database', async () => {
+  const { status, body } = health;
   const db = body.checks?.database;
-  assert(res.status === 200 && body.status === 'ok' && db?.status === 'ok', `status ${res.status}, body ${JSON.stringify(body).slice(0, 240)}`);
+  assert(status === 200 && body.status === 'ok' && db?.status === 'ok', `status ${status}, body ${JSON.stringify(body).slice(0, 240)}`);
   return `api ${body.version}, database ${db?.latencyMs} ms`;
+});
+
+if (expectedVersion) {
+  await check('API runs this build', async () => {
+    const { version } = health.body;
+    assert(version === expectedVersion, `serving ${version}, expected ${expectedVersion} (did the app restart?)`);
+  });
+}
+
+await check("Database migrated to this build's schema", async () => {
+  const schema = health.body.checks?.database?.schema;
+  assert(schema, 'the API does not report its schema (an older build?)');
+  assert(schema.current, `schema v${schema.version}, notifications v${schema.notifications}: not migrated (see "database not ready" in the app log)`);
+  return `schema v${schema.version}, notifications v${schema.notifications}`;
 });
 
 await check('Combined /health for uptime monitors', async () => {

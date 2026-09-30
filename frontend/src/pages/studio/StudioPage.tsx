@@ -3,15 +3,17 @@ import { useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NailArt } from '@/components/brand/NailArt';
 import { ContactSheet } from '@/components/common/ContactSheet';
+import { GetDirections } from '@/components/common/Directions';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Avatar, Button, ButtonAnchor, ButtonLink, ListGroup, ListRow, Skeleton } from '@/components/ui';
+import { Avatar, Button, ButtonLink, ListGroup, ListRow, Skeleton } from '@/components/ui';
 import { ChatIcon, DirectionsIcon, EventIcon, LocationIcon, PrivacyIcon, ShieldIcon } from '@/components/ui/icons';
 import { useI18nText, useStudio } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
 import { LOCALE_TAGS } from '@/i18n/config';
 import { contactLinks } from '@/lib/contact';
 import { cx } from '@/lib/cx';
-import { studioHours, weekdayIn, WEEKDAYS } from '@/lib/hours';
+import { addDays } from '@/lib/format';
+import { dateIn, studioHours, weekdayIn, WEEKDAYS } from '@/lib/hours';
 import { queries } from '@/services/queries';
 
 const order = (i: number) => ({ '--i': i }) as CSSProperties;
@@ -30,13 +32,15 @@ export default function StudioPage() {
   const staff = useQuery(queries.staff());
   const [contactOpen, setContactOpen] = useState(false);
   // Read the clock once per visit to the page (not during every render).
-  const [now] = useState(() => ({ weekday: weekdayIn(timeZone), time: clockIn(timeZone) }));
+  const [now] = useState(() => ({ weekday: weekdayIn(timeZone), date: dateIn(timeZone), time: clockIn(timeZone) }));
+  /** The date of a weekday in the seven days from today (masters who open days one by one have hours by date). */
+  const dateOf = (weekday: number) => addDays(now.date, (weekday - now.weekday + 7) % 7);
 
   const studio = config?.studio;
   const name = studio?.name || t('common:brand.name');
   const address = [studio?.address, studio?.city].filter(Boolean).join(', ');
   const masters = staff.data ?? [];
-  const today = staff.data ? studioHours(masters, now.weekday) : null;
+  const today = staff.data ? studioHours(masters, now.weekday, now.date) : null;
   const status = !staff.data
     ? null
     : today && now.time >= today.open && now.time < today.close
@@ -82,11 +86,13 @@ export default function StudioPage() {
               <ButtonLink to={lp('/book')} size="sm" icon={EventIcon}>
                 {t('studio.book')}
               </ButtonLink>
-              {studio?.mapsUrl ? (
-                <ButtonAnchor size="sm" variant="outline" className="bg-white" icon={DirectionsIcon} href={studio.mapsUrl} target="_blank" rel="noopener noreferrer">
-                  {t('common:contact.directions')}
-                </ButtonAnchor>
-              ) : null}
+              <GetDirections>
+                {(open) => (
+                  <Button size="sm" variant="outline" className="bg-white" icon={DirectionsIcon} onClick={open}>
+                    {t('common:contact.directions')}
+                  </Button>
+                )}
+              </GetDirections>
               <Button size="sm" variant="outline" className="bg-white" icon={ChatIcon} onClick={() => setContactOpen(true)}>
                 {t('studio.contact')}
               </Button>
@@ -102,7 +108,7 @@ export default function StudioPage() {
             ) : (
               <dl className="mt-3 flex flex-col">
                 {WEEKDAYS.map((day) => {
-                  const hours = studioHours(masters, day);
+                  const hours = studioHours(masters, day, dateOf(day));
                   const isToday = day === now.weekday;
                   return (
                     <div

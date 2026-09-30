@@ -3,16 +3,19 @@ import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { toast } from '@/components/ui';
+import { newBuildOnServer } from '@/lib/appUpdate';
 
-const CHECK_EVERY_MS = 30 * 60_000;
+/** How often an open app asks whether a new build is out (/version.json: a few hundred bytes, never cached). */
+const CHECK_EVERY_MS = 60_000;
 /** Screens where a reload could lose what the user is typing. */
 const BUSY_PATHS = /\/(book|login|signup|forgot-password|reset-password|profile|admin\/(services|team|settings|appointments\/new))/;
 
 /**
  * Keeps the app current after every deploy, without signing anyone out (the session lives in
- * cookies, a reload keeps it). A new version is looked for on launch, every 30 minutes and
- * whenever the app comes back to the foreground; when one is ready it offers "Update".
- * If ignored, it applies itself the next time the app is hidden (unless a form is open).
+ * cookies, a reload keeps it). While the app is on screen it asks every minute (and on launch,
+ * on coming back to the foreground, on focus and when the connection returns) whether a new build
+ * is out; the new version downloads at once and "Update" shows as soon as it is ready. If
+ * ignored, it applies itself the next time the app is hidden (unless a form is open).
  */
 export function UpdatePrompt() {
   const [ready, setReady] = useState(false);
@@ -39,13 +42,22 @@ function ServiceWorkerWatch({ onReady }: { onReady: (update: () => void) => void
   } = useRegisterSW({
     onRegisteredSW(_url, registration) {
       if (!registration) return;
-      const check = () => {
-        if (!navigator.onLine) return;
-        void registration.update().catch(() => undefined);
+      const fetchUpdate = () => void registration.update().catch(() => undefined);
+      // The cheap question first; the service worker is fetched again only when the answer is yes.
+      const check = async () => {
+        if (!navigator.onLine || document.visibilityState !== 'visible') return;
+        // Already downloading or downloaded: "Update" shows (or is showing) on its own.
+        if (registration.installing || registration.waiting) return;
+        if (await newBuildOnServer()) fetchUpdate();
       };
-      window.setInterval(check, CHECK_EVERY_MS);
+      void check();
+      window.setInterval(() => void check(), CHECK_EVERY_MS);
+      window.addEventListener('focus', () => void check());
+      window.addEventListener('online', () => void check());
       document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') check();
+        // Back on screen: ask the service worker directly too (it also catches a changed worker
+        // alone, with the same version.json).
+        if (document.visibilityState === 'visible' && navigator.onLine) fetchUpdate();
       });
     },
   });

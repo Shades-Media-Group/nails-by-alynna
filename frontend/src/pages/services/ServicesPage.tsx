@@ -1,10 +1,13 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
+import { useAuth } from '@/app/auth';
 import { CategoryChips } from '@/components/booking/CategoryChips';
 import { NailShapePicker } from '@/components/booking/NailShapePicker';
+import { PhotoPicker } from '@/components/booking/PhotoPicker';
 import { SelectionBar } from '@/components/booking/SelectionBar';
 import { ServiceList } from '@/components/booking/ServiceList';
+import { useBookingPhotos } from '@/components/booking/useBookingPhotos';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useCatalog, useStudio } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
@@ -15,7 +18,8 @@ import type { NailShape, Service } from '@/types/api';
 /**
  * Browse the menu and pick one or more services; the summary bar starts the booking. Every
  * service ends with the nails filed to a shape, so the shape is asked at the top (as on the
- * booking's first step), and Continue won't go on without one.
+ * booking's first step), and Continue won't go on without one. Photos of the nails the client
+ * wants can be added here too; they go on with the booking (useBookingPhotos).
  */
 export default function ServicesPage() {
   const { t } = useTranslation(['booking', 'common']);
@@ -27,6 +31,8 @@ export default function ServicesPage() {
   const [shape, setShape] = useState<NailShape | null>(null);
   const [shapeAsked, setShapeAsked] = useState(false);
   const picker = useRef<HTMLElement>(null);
+  const { user } = useAuth();
+  const photos = useBookingPhotos(user?.id ?? null);
 
   const toggle = (service: Service) => setSelected((ids) => toggleService(ids, service, catalog));
 
@@ -63,6 +69,8 @@ export default function ServicesPage() {
           }}
           invalid={shapeAsked && !shape}
         />
+        {/* The demo account books nothing, so it sends no photos either (as on the booking). */}
+        {user?.isDemo ? null : <PhotoPicker className="mt-8" photos={photos.photos} onAdd={photos.add} onRemove={photos.remove} />}
       </div>
       {catalog.categories.length > 0 ? (
         <CategoryChips

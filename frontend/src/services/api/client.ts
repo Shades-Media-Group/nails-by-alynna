@@ -106,6 +106,7 @@ export async function apiRequest<T>(method: string, path: string, body?: unknown
 export const api = {
   get: <T>(path: string, options?: RequestOptions) => apiRequest<T>('GET', path, undefined, options),
   post: <T>(path: string, body?: unknown, options?: RequestOptions) => apiRequest<T>('POST', path, body, options),
+  put: <T>(path: string, body?: unknown, options?: RequestOptions) => apiRequest<T>('PUT', path, body, options),
   patch: <T>(path: string, body?: unknown, options?: RequestOptions) => apiRequest<T>('PATCH', path, body, options),
   delete: <T>(path: string, body?: unknown, options?: RequestOptions) => apiRequest<T>('DELETE', path, body, options),
 };

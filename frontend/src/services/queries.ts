@@ -40,4 +40,6 @@ export const queries = {
   appointments: (scope: 'upcoming' | 'past') =>
     queryOptions({ queryKey: ['appointments', scope], queryFn: () => appointmentsApi.list(scope), ...LIVE }),
   appointment: (id: string) => queryOptions({ queryKey: ['appointment', id], queryFn: () => appointmentsApi.get(id), ...LIVE }),
+  /** Under ['appointments'], so booking, moving or cancelling refreshes it with the lists. */
+  visitSummary: () => queryOptions({ queryKey: ['appointments', 'summary'], queryFn: appointmentsApi.summary, ...LIVE }),
 };

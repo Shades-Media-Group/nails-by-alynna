@@ -3,6 +3,7 @@ import { createApp } from '../src/app';
 import { loadConfig } from '../src/config';
 import { Database, migrateNotifications } from '../src/db';
 import type { MailMessage } from '../src/lib/mailer';
+import { setPushRetryDelays } from '../src/lib/push';
 import { createDatabase, createDeps, migrate } from '../src/runtime';
 import { runSeed } from '../src/seed/run';
 
@@ -31,6 +32,8 @@ export async function createTestContext(env: Record<string, string> = {}) {
     },
     now: () => now,
   });
+  // A push the service didn't take is tried again at once (no waiting in tests).
+  setPushRetryDelays(deps, [0, 0]);
   deps.mailer = {
     enabled: true,
     async send(message) {

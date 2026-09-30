@@ -100,9 +100,14 @@ export function isLanDevOrigin(origin: string, appUrl: string): boolean {
   return url.protocol === 'http:' && url.port === port && privateHost.test(url.hostname);
 }
 
-export const jsonBodyLimit = bodyLimit({
-  maxSize: 64 * 1024,
-  onError: () => {
-    throw new AppError(413, 'PAYLOAD_TOO_LARGE', 'Request body too large');
-  },
-});
+const tooLarge = () => {
+  throw new AppError(413, 'PAYLOAD_TOO_LARGE', 'Request body too large');
+};
+const smallBody = bodyLimit({ maxSize: 64 * 1024, onError: tooLarge });
+/** A booking photo and its thumbnail, as base64 JSON (modules/photos/routes.ts PHOTO_BODY_LIMIT). */
+const photoBody = bodyLimit({ maxSize: 1_300_000, onError: tooLarge });
+
+/** 64 KB for every JSON body, except a photo upload (POST /api/photos). */
+export const jsonBodyLimit = createMiddleware<AppEnv>((c, next) =>
+  c.req.method === 'POST' && c.req.path === '/api/photos' ? photoBody(c, next) : smallBody(c, next),
+);

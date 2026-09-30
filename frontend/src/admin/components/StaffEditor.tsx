@@ -2,21 +2,34 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert } from '@/components/common/Alert';
-import { Avatar, Badge, Button, Checkbox, Sheet, Skeleton, Switch, TextField, toast } from '@/components/ui';
+import { Avatar, Badge, Button, Checkbox, Select, Sheet, Skeleton, Switch, TextField, toast } from '@/components/ui';
 import { useLocale } from '@/i18n/useLocale';
 import { cx } from '@/lib/cx';
 import { errorMessage, fieldErrors } from '@/lib/errors';
+import { formatDuration } from '@/lib/format';
 import { SWATCH, SWATCH_ORDER } from '@/lib/swatch';
 import { adminApi, adminQueries, type AdminStaff, type StaffInput, type WeeklyHours } from '../api';
 import { HoursEditor } from './HoursEditor';
 import { I18nFields } from './I18nFields';
 import { dayIssue, emptyText, fillFromRo, sameValue } from './utils';
+import { DEFAULT_SESSION_MIN, SESSIONS } from './sessions';
 
 const DEFAULT_WEEK: WeeklyHours = [0, 1, 2, 3, 4, 5, 6].map((day) => (day < 5 ? [{ start: '10:00', end: '19:00' }] : []));
 
 function initialForm(member: AdminStaff | null): StaffInput {
   if (!member) {
-    return { name: '', title: emptyText(), color: 'blush', userId: null, serviceIds: null, weekly: DEFAULT_WEEK, isActive: true, isBookable: true };
+    return {
+      name: '',
+      title: emptyText(),
+      color: 'blush',
+      userId: null,
+      serviceIds: null,
+      weekly: DEFAULT_WEEK,
+      scheduleMode: 'weekly',
+      sessionMin: DEFAULT_SESSION_MIN,
+      isActive: true,
+      isBookable: true,
+    };
   }
   return {
     name: member.name,
@@ -25,6 +38,8 @@ function initialForm(member: AdminStaff | null): StaffInput {
     userId: member.userId,
     serviceIds: member.serviceIds,
     weekly: Array.from({ length: 7 }, (_, day) => member.weekly[day] ?? []),
+    scheduleMode: member.scheduleMode ?? 'weekly',
+    sessionMin: member.sessionMin ?? DEFAULT_SESSION_MIN,
     isActive: member.isActive,
     isBookable: member.isBookable,
   };
@@ -59,7 +74,7 @@ export function StaffEditor({ member, onClose }: { member: AdminStaff | null; on
       return Object.keys(changed).length ? adminApi.updateStaff(member.id, changed) : Promise.resolve(member);
     },
     onSuccess: () => {
-      for (const queryKey of [['admin', 'staff'], ['staff'], ['config'], ['admin', 'stats'], ['availability-days'], ['availability-slots']]) {
+      for (const queryKey of [['admin', 'staff'], ['admin', 'work-days'], ['staff'], ['config'], ['admin', 'stats'], ['availability-days'], ['availability-slots']]) {
         void queryClient.invalidateQueries({ queryKey });
       }
       toast.success(member ? t('common.saved') : t('team.added'));
@@ -69,7 +84,8 @@ export function StaffEditor({ member, onClose }: { member: AdminStaff | null; on
 
   const server = fieldErrors(t, save.error);
   const nameError = touched && !form.name.trim() ? t('common:validation.required') : server.name;
-  const hoursInvalid = form.weekly.some((day) => dayIssue(day) !== null);
+  const byDays = form.scheduleMode === 'days';
+  const hoursInvalid = !byDays && form.weekly.some((day) => dayIssue(day) !== null);
   const servicesError = touched && form.serviceIds?.length === 0 ? t('team.pickServices') : undefined;
 
   const submit = (event: FormEvent) => {
@@ -196,9 +212,30 @@ export function StaffEditor({ member, onClose }: { member: AdminStaff | null; on
             <h3 id="staff-hours" className="text-h3 font-extrabold">
               {t('team.hours')}
             </h3>
-            <p className="mt-0.5 text-sm text-ink-600">{t('team.hoursHint')}</p>
+            <p className="mt-0.5 text-sm text-ink-600">{byDays ? t('team.daysHint') : t('team.hoursHint')}</p>
           </div>
-          <HoursEditor value={form.weekly} onChange={(weekly) => set('weekly', weekly)} />
+          <div className="flex flex-col gap-4 rounded-2xl bg-ink-50 p-4">
+            <Switch
+              checked={byDays}
+              onChange={(on) => set('scheduleMode', on ? 'days' : 'weekly')}
+              label={t('bookingMode.days')}
+              description={byDays ? t('bookingMode.daysOn') : t('bookingMode.daysOff')}
+            />
+            {byDays ? (
+              <div className="flex flex-col gap-1.5">
+                <Select
+                  label={t('bookingMode.session')}
+                  value={String(form.sessionMin ?? DEFAULT_SESSION_MIN)}
+                  onChange={(e) => set('sessionMin', Number(e.target.value))}
+                  options={[...new Set([...SESSIONS, form.sessionMin ?? DEFAULT_SESSION_MIN])]
+                    .sort((a, b) => a - b)
+                    .map((minutes) => ({ value: String(minutes), label: formatDuration(t, minutes) }))}
+                />
+                <p className="pl-1 text-sm text-ink-600">{t('bookingMode.sessionHint')}</p>
+              </div>
+            ) : null}
+          </div>
+          {byDays ? null : <HoursEditor value={form.weekly} onChange={(weekly) => set('weekly', weekly)} />}
           {server.weekly ? <p className="text-sm text-red-600">{server.weekly}</p> : null}
         </section>
 

@@ -27,6 +27,7 @@ import {
   SettingsIcon,
   SpaIcon,
   type IconComponent,
+  PhotoLibraryIcon,
 } from '@/components/ui/icons';
 import { useLocale } from '@/i18n/useLocale';
 import { cx } from '@/lib/cx';
@@ -127,6 +128,13 @@ export function AdminLayout() {
         label: t('nav.users'),
         icon: AdminIcon,
         tone: 'lilac',
+        ownerOnly: true,
+      },
+      {
+        to: lp('/admin/photos'),
+        label: t('nav.photos'),
+        icon: PhotoLibraryIcon,
+        tone: 'blush',
         ownerOnly: true,
       },
       {

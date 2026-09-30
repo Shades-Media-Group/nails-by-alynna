@@ -4,6 +4,7 @@ import type { AppDeps, AppEnv } from '../../context';
 import { ACTIVE_STATUSES } from '../../db/types';
 import { addDays, dayRange, isoWeekday, timeToMinutes, todayIn } from '../../lib/time';
 import { dateSchema, parseQuery } from '../../lib/validation';
+import { opensDays, sessionMinOf } from '../availability/service';
 import { getSettings } from '../settings';
 import { staffSummaries, toStaffAppointment } from '../appointments/service';
 
@@ -48,15 +49,28 @@ export function dashboardRoutes(deps: AppDeps) {
         deps.col.staff.find({ isActive: true, isBookable: true }).toArray(),
       ]);
 
-    const staffMap = await staffSummaries(deps, todayDocs.map((d) => d.staffId));
+    const [staffMap, openDays] = await Promise.all([
+      staffSummaries(deps, todayDocs.map((d) => d.staffId)),
+      deps.col.workDays.find({ date, staffId: { $in: staffDocs.filter(opensDays).map((s) => s._id) } }).toArray(),
+    ]);
     const byStatus = (status: string) => todayDocs.filter((d) => d.status === status).length;
+    // A master in working-days mode works the sessions they take that day; each visit fills whole sessions.
+    const sessionOf = new Map(staffDocs.filter(opensDays).map((s) => [s._id.toHexString(), sessionMinOf(s)]));
     const workingMinutes = staffDocs.reduce((sum, s) => {
+      const session = sessionOf.get(s._id.toHexString());
+      if (session !== undefined) {
+        const day = openDays.find((d) => d.staffId.equals(s._id));
+        return sum + (day ? day.times.length * session : 0);
+      }
       const intervals = s.weekly[isoWeekday(date) - 1] ?? [];
       return sum + intervals.reduce((acc, i) => acc + timeToMinutes(i.end) - timeToMinutes(i.start), 0);
     }, 0);
     const bookedMinutes = todayDocs
       .filter((d) => d.status !== 'no_show')
-      .reduce((sum, d) => sum + d.durationMin, 0);
+      .reduce((sum, d) => {
+        const session = sessionOf.get(d.staffId.toHexString());
+        return sum + (session ? Math.ceil(d.durationMin / session) * session : d.durationMin);
+      }, 0);
     const weekCompleted = weekAgg.find((w) => w._id === 'completed');
 
     return c.json({

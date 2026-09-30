@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 import { NailShapeRow } from '@/components/appointments/NailShapeRow';
+import { PhotoGallery } from '@/components/appointments/PhotoGallery';
 import { NailArt } from '@/components/brand/NailArt';
 import { Alert } from '@/components/common/Alert';
 import { Avatar, Button, ButtonLink, EmptyState, ListGroup, ListRow, Skeleton, Textarea, toast, type ButtonVariant } from '@/components/ui';
@@ -163,6 +164,13 @@ export default function AppointmentPage() {
           {inlineError ? <Alert>{errorMessage(t, inlineError)}</Alert> : null}
 
           <Services appointment={a} />
+          {a.photos?.length ? (
+            <PhotoGallery
+              photos={a.photos}
+              title={t('booking:photos.clientsTitle')}
+              className="rounded-2xl bg-white p-4 ring-1 ring-inset ring-ink-100"
+            />
+          ) : null}
           <Notes key={a.id} appointment={a} />
         </div>
 

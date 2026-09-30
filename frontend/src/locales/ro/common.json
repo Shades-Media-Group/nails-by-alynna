@@ -178,6 +178,19 @@
     "directions": "Cum ajungi",
     "none": "Datele de contact vor fi adăugate în curând."
   },
+  "directions": {
+    "title": "Drumul spre salon",
+    "apps": {
+      "apple": "Apple Maps",
+      "google": "Google Maps",
+      "waze": "Waze",
+      "yandexGo": "Yandex Go"
+    },
+    "hints": {
+      "route": "Traseul de unde te afli",
+      "taxi": "Un taxi până la salon"
+    }
+  },
   "a11y": {
     "skipToContent": "Sari la conținut",
     "loading": "Se încarcă…",

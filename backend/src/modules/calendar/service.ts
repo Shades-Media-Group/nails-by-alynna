@@ -2,6 +2,7 @@ import { ObjectId } from 'bson';
 import type { AppDeps } from '../../context';
 import type { AppointmentDoc, I18nText, StudioSettings } from '../../db/types';
 import { base64UrlEncode, timingSafeEqualStr } from '../../lib/crypto';
+import { icsGeo } from '../../lib/maps';
 import type { Locale } from '../../lib/validation';
 
 /*
@@ -55,12 +56,12 @@ export async function calendarLinks(deps: AppDeps, docs: AppointmentDoc[]): Prom
 
 // ── iCalendar (RFC 5545) ─────────────────────────────────────────────────────
 const pad = (n: number) => String(n).padStart(2, '0');
-const stamp = (d: Date) =>
+export const stamp = (d: Date) =>
   `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
-const escapeText = (value: string) => value.replace(/\\/g, '\\\\').replace(/\r?\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
+export const escapeText = (value: string) => value.replace(/\\/g, '\\\\').replace(/\r?\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
 
 /** Lines longer than 75 octets are folded (continuation lines start with a space). */
-function fold(line: string): string {
+export function fold(line: string): string {
   const bytes = encoder.encode(line);
   if (bytes.length <= 75) return line;
   const parts: string[] = [];
@@ -108,6 +109,7 @@ export function buildIcs(opts: {
     `SUMMARY:${escapeText(`${settings.name}: ${services || TITLE[locale]}`)}`,
     `DESCRIPTION:${escapeText(`${CODE[locale]}: ${a.code}\n${opts.bookingUrl}`)}`,
     location ? `LOCATION:${escapeText(location)}` : '',
+    icsGeo(settings.location),
     `URL:${opts.bookingUrl}`,
     a.status === 'pending' ? 'STATUS:TENTATIVE' : 'STATUS:CONFIRMED',
     'BEGIN:VALARM',

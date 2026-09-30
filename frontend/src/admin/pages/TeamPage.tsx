@@ -10,8 +10,8 @@ import { useI18nText } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
 import { cx } from '@/lib/cx';
 import { errorMessage } from '@/lib/errors';
-import { addDays } from '@/lib/format';
-import { adminApi, adminQueries, type AdminStaff, type TimeOff } from '../api';
+import { addDays, dayParts } from '@/lib/format';
+import { adminApi, adminQueries, type AdminStaff, type TimeOff, type WorkDay } from '../api';
 import { AdminHeader } from '../components/AdminHeader';
 import { ConfirmSheet } from '../components/ConfirmSheet';
 import { useStudioToday } from '../components/hooks';
@@ -19,6 +19,10 @@ import { StaffEditor } from '../components/StaffEditor';
 import { TimeOffEditor } from '../components/TimeOffEditor';
 import { TimeOffRow } from '../components/TimeOffRow';
 import { weekdayName, weekSummary } from '../components/utils';
+import { WorkDaysPanel } from '../components/WorkDays';
+
+/** Days ahead a master card counts, for a master who opens days one by one (it shows the first week). */
+const CARD_DAYS = 14;
 
 /** The masters (who they are, what they do, when they work) and the time off ahead. */
 export default function TeamPage() {
@@ -29,6 +33,10 @@ export default function TeamPage() {
   const queryClient = useQueryClient();
   const staff = useQuery(adminQueries.staff());
   const timeOff = useQuery(adminQueries.timeOff({ from: today, to: addDays(today, 365) }));
+  const workDays = useQuery({
+    ...adminQueries.workDays({ from: today, to: addDays(today, CARD_DAYS - 1) }),
+    enabled: staff.data?.some((m) => m.scheduleMode === 'days') ?? false,
+  });
   const [editing, setEditing] = useState<{ member: AdminStaff | null } | null>(null);
   const [addingOff, setAddingOff] = useState(false);
   const [removing, setRemoving] = useState<TimeOff | null>(null);
@@ -46,6 +54,8 @@ export default function TeamPage() {
 
   const members = [...(staff.data ?? [])].sort((a, b) => Number(b.isActive) - Number(a.isActive) || a.order - b.order);
   const activeMasters = members.filter((m) => m.isActive);
+  // The owner opens days for masters who open them one by one, except their own (My schedule does that).
+  const plannedByOwner = isOwner ? activeMasters.filter((m) => m.scheduleMode === 'days' && m.userId !== user?.id) : [];
   const entries = (timeOff.data ?? []).filter((o) => new Date(o.end).getTime() > now);
 
   return (
@@ -93,7 +103,12 @@ export default function TeamPage() {
               <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 {members.map((member) => (
                   <li key={member.id}>
-                    <MasterCard member={member} onEdit={isOwner ? () => setEditing({ member }) : undefined} />
+                    <MasterCard
+                      member={member}
+                      days={(workDays.data ?? []).filter((d) => d.staffId === member.id)}
+                      today={today}
+                      onEdit={isOwner ? () => setEditing({ member }) : undefined}
+                    />
                   </li>
                 ))}
               </ul>
@@ -101,6 +116,10 @@ export default function TeamPage() {
             </>
           )}
         </section>
+
+        {plannedByOwner.map((member) => (
+          <WorkDaysPanel key={member.id} staff={member} title={t('workDays.titleNamed', { name: member.name })} />
+        ))}
 
         <section aria-labelledby="time-off-title">
           <SectionHeading
@@ -153,11 +172,12 @@ export default function TeamPage() {
   );
 }
 
-function MasterCard({ member, onEdit }: { member: AdminStaff; onEdit?: () => void }) {
+function MasterCard({ member, days, today, onEdit }: { member: AdminStaff; days: WorkDay[]; today: string; onEdit?: () => void }) {
   const { t } = useTranslation('admin');
   const { locale } = useLocale();
   const pick = useI18nText();
-  const summary = weekSummary(member.weekly, locale);
+  const byDays = member.scheduleMode === 'days';
+  const summary = byDays ? t('team.daysSummary', { count: days.length, days: CARD_DAYS }) : weekSummary(member.weekly, locale);
   const body = (
     <>
       <div className="flex items-start gap-3">
@@ -186,16 +206,18 @@ function MasterCard({ member, onEdit }: { member: AdminStaff; onEdit?: () => voi
       </div>
       <div className="mt-4 flex gap-1" aria-hidden="true">
         {Array.from({ length: 7 }, (_, day) => {
-          const works = (member.weekly[day] ?? []).length > 0;
+          // Working days: the next seven dates, dark when open; weekly hours: Monday to Sunday.
+          const date = addDays(today, day);
+          const works = byDays ? days.some((d) => d.date === date) : (member.weekly[day] ?? []).length > 0;
           return (
             <span
               key={day}
               className={cx(
-                'flex h-7 flex-1 items-center justify-center rounded-lg text-[0.6875rem] font-bold',
+                'tabular flex h-7 flex-1 items-center justify-center rounded-lg text-[0.6875rem] font-bold',
                 works ? 'bg-ink-900 text-white' : 'bg-ink-50 text-ink-500',
               )}
             >
-              {weekdayName(day, locale, 'short').slice(0, 2)}
+              {byDays ? dayParts(date, locale).day : weekdayName(day, locale, 'short').slice(0, 2)}
             </span>
           );
         })}

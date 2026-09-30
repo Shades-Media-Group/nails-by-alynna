@@ -2,6 +2,7 @@ import type { Locale } from '@/i18n/config';
 import type {
   Appointment,
   AvailabilityDays,
+  BookingPhoto,
   Catalog,
   DeviceSession,
   NailShape,
@@ -9,6 +10,7 @@ import type {
   Slot,
   StaffMember,
   User,
+  VisitSummary,
 } from '@/types/api';
 import { api, query } from './client';
 
@@ -157,10 +159,17 @@ export const availabilityApi = {
     ),
 };
 
+export const photosApi = {
+  /** A photo made small on this device (lib/photos.ts), as base64; it joins the booking when it is made. */
+  upload: (input: { image: string; thumb: string }) => api.post<{ photo: BookingPhoto }>('/photos', input).then((r) => r.photo),
+  remove: (id: string) => api.delete<{ ok: true }>(`/photos/${id}`),
+};
+
 export const appointmentsApi = {
   list: (scope: 'upcoming' | 'past') =>
     api.get<{ appointments: Appointment[] }>(`/appointments${query({ scope })}`).then((r) => r.appointments),
   get: (id: string) => api.get<{ appointment: Appointment }>(`/appointments/${id}`).then((r) => r.appointment),
+  summary: () => api.get<VisitSummary>('/appointments/summary'),
   /** `promoCode`: a code checked on the confirm step; the API checks it again and holds one use. */
   create: (input: {
     serviceIds: string[];
@@ -170,6 +179,8 @@ export const appointmentsApi = {
     nailShape?: NailShape;
     phone?: string;
     promoCode?: string;
+    /** Photos sent first with photosApi.upload (up to three). */
+    photoIds?: string[];
   }) =>
     api.post<{ appointment: Appointment }>('/appointments', input).then((r) => r.appointment),
   cancel: (id: string, reason: string) =>

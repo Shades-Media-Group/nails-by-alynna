@@ -43,6 +43,7 @@ const config = {
     address: '',
     city: 'Chișinău',
     mapsUrl: '',
+    location: { lat: 47.063205, lng: 28.844794 },
     phone: '',
     whatsapp: '',
     viber: '',

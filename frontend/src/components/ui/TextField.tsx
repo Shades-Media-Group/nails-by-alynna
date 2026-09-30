@@ -22,7 +22,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
   const describedBy = [error ? `${inputId}-error` : null, hint ? `${inputId}-hint` : null].filter(Boolean).join(' ');
 
   return (
-    <div className={cx('flex flex-col gap-1.5', className)}>
+    <div className={cx('flex min-w-0 flex-col gap-1.5', className)}>
       <label htmlFor={inputId} className={cx('text-sm font-medium text-ink-700', hideLabel && 'sr-only')}>
         {label}
       </label>
@@ -43,7 +43,9 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy || undefined}
           className={cx(
-            'h-14 w-full rounded-pill bg-white text-base text-ink-900 outline-none transition-[box-shadow,border-color] duration-150',
+            // min-w-0 and no native look: iOS Safari gives date and time inputs a width of their own,
+            // which would push a two-column row off the screen.
+            'h-14 w-full min-w-0 appearance-none rounded-pill bg-white text-left text-base text-ink-900 outline-none transition-[box-shadow,border-color] duration-150',
             'border placeholder:text-ink-500 disabled:bg-ink-50 disabled:text-ink-500',
             Icon ? 'pl-[3.25rem]' : 'pl-5',
             trailing ? 'pr-14' : 'pr-5',

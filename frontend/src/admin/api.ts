@@ -5,9 +5,11 @@ import { api } from '@/services/api/client';
 import { LIVE } from '@/services/queries';
 import type {
   AppointmentStatus,
+  BookingPhoto,
   Category,
   FeedbackKind,
   FeedbackRating,
+  GeoPoint,
   I18nText,
   NailShape,
   Role,
@@ -168,6 +170,9 @@ export interface StaffInput {
   /** null = does every service. */
   serviceIds: string[] | null;
   weekly: WeeklyHours;
+  /** Missing from an older API: weekly hours, 2-hour sessions. */
+  scheduleMode?: ScheduleMode;
+  sessionMin?: number;
   isActive: boolean;
   isBookable: boolean;
 }
@@ -176,6 +181,68 @@ export interface AdminStaff extends StaffInput {
   order: number;
   /** Minutes kept free after each client (the master sets it in My schedule); missing = 0. */
   bufferMin?: number;
+}
+
+/**
+ * How clients book a master: inside the weekly hours, or only on the days the master opens one
+ * by one (WorkDay), in sessions of `sessionMin`.
+ */
+export type ScheduleMode = 'weekly' | 'days';
+
+/** A day a master opened in working-days mode. */
+export interface WorkDay {
+  id: string;
+  staffId: string;
+  /** YYYY-MM-DD, studio time. */
+  date: string;
+  /** HH:mm, in order: when each booking of the day can start (one client each). */
+  times: string[];
+  /** Bookings on the day, whoever made them (cancelled ones aside). */
+  booked: number;
+}
+
+/** A booking photo in the owner's Photos list: who sent it and the booking it is on. */
+export interface AdminPhoto extends BookingPhoto {
+  client: { id: string; name: string };
+  appointment: { id: string; code: string; start: string; status: AppointmentStatus } | null;
+}
+
+export interface PhotoStorage {
+  /** Bytes of every photo kept (photos and thumbnails), and how many. */
+  bytes: number;
+  count: number;
+  /** Past this the owner is told to delete some. */
+  alertBytes: number;
+  /** What the server has in all. */
+  quotaBytes: number;
+}
+
+export interface PhotosParams {
+  from?: string;
+  to?: string;
+  /** Only photos at least this big (KB). */
+  minKb?: number;
+  sort?: 'newest' | 'oldest' | 'largest';
+  page?: number;
+}
+
+/** A master's private calendar feed, in the forms the calendar apps take (null = sync is off). */
+export interface CalendarFeed {
+  /** https: subscribe by URL anywhere, or copy. */
+  url: string;
+  /** Apple Calendar's "Subscribe" prompt. */
+  webcal: string;
+  /** Google Calendar's "Add calendar" page. */
+  google: string;
+  /** Outlook.com's "Subscribe from web". */
+  outlook: string;
+  createdAt: string;
+}
+
+export interface WorkDaysInput {
+  staffId: string;
+  dates: string[];
+  times: string[];
 }
 
 /** An upcoming booking that the new hours of a master no longer cover (it stays booked). */
@@ -217,6 +284,7 @@ export interface StudioSettings {
   address: string;
   city: string;
   mapsUrl: string;
+  location: GeoPoint;
   phone: string;
   whatsapp: string;
   viber: string;
@@ -411,8 +479,26 @@ export const adminApi = {
   deleteTimeOff: (id: string) => api.delete<{ ok: true }>(`/admin/team/time-off/${id}`),
   /** The master profile of the signed-in staff member (404 when they are not a master). */
   myStaff: () => api.get<{ staff: AdminStaff }>('/admin/team/me').then((r) => r.staff),
-  updateMyStaff: (input: { weekly?: WeeklyHours; bufferMin?: number }) =>
+  updateMyStaff: (input: { weekly?: WeeklyHours; bufferMin?: number; scheduleMode?: ScheduleMode; sessionMin?: number }) =>
     api.patch<{ staff: AdminStaff; outsideHours: OutsideHoursBooking[] }>('/admin/team/me', input),
+  /** Owner only: every booking photo, with filters, and how much room they take. */
+  photos: (params: PhotosParams) =>
+    api.get<Paged & { photos: AdminPhoto[]; storage: PhotoStorage }>(`/admin/photos${query({ ...params })}`),
+  /** Owner only: deletes photos (at most 100 at a time). */
+  deletePhotos: (ids: string[]) => api.post<{ deleted: number }>('/admin/photos/delete', { ids }),
+  /** The signed-in master's calendar feed (null = sync is off). */
+  calendarFeed: () => api.get<{ feed: CalendarFeed | null }>('/admin/team/me/calendar').then((r) => r.feed),
+  /** Turns calendar sync on, or replaces the link (the old one stops working). */
+  createCalendarFeed: () => api.post<{ feed: CalendarFeed }>('/admin/team/me/calendar').then((r) => r.feed),
+  deleteCalendarFeed: () => api.delete<{ feed: null }>('/admin/team/me/calendar'),
+  /** Opened days from `from` to `to` (the 90 days from `from` without it), every master's or one's. */
+  workDays: (params: { from: string; to?: string; staffId?: string }) =>
+    api.get<{ workDays: WorkDay[] }>(`/admin/team/work-days${query(params)}`).then((r) => r.workDays),
+  /** Opens days (or changes open ones) with the same start times. The master or the owner. */
+  saveWorkDays: (input: WorkDaysInput) =>
+    api.put<{ workDays: WorkDay[]; outsideHours: OutsideHoursBooking[] }>('/admin/team/work-days', input),
+  /** Closes a day; its bookings stay booked (listed in `outsideHours`). */
+  deleteWorkDay: (id: string) => api.delete<{ ok: true; outsideHours: OutsideHoursBooking[] }>(`/admin/team/work-days/${id}`),
 
   settings: () => api.get<{ settings: StudioSettings }>('/admin/settings').then((r) => r.settings),
   /** Owner only; send just the fields that changed. */
@@ -460,6 +546,11 @@ export const adminQueries = {
   rebook: () => queryOptions({ queryKey: ['admin', 'settings', 'rebook'], queryFn: adminApi.rebook, staleTime: 60_000 }),
   timeOff: (params: { from: string; to?: string }) =>
     queryOptions({ queryKey: ['admin', 'time-off', params], queryFn: () => adminApi.timeOff(params), staleTime: 60_000 }),
+  photos: (params: PhotosParams) =>
+    queryOptions({ queryKey: ['admin', 'photos', params], queryFn: () => adminApi.photos(params), staleTime: 30_000, placeholderData: keepPreviousData }),
+  calendarFeed: () => queryOptions({ queryKey: ['admin', 'staff', 'me', 'calendar'], queryFn: adminApi.calendarFeed, staleTime: 5 * 60_000 }),
+  workDays: (params: { from: string; to?: string; staffId?: string }) =>
+    queryOptions({ queryKey: ['admin', 'work-days', params], queryFn: () => adminApi.workDays(params), staleTime: 30_000 }),
   users: (params: { q?: string; role?: Role; page?: number }) =>
     queryOptions({
       queryKey: ['admin', 'users', params],

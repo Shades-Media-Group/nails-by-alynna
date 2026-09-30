@@ -1,6 +1,12 @@
 {
   "title": "Pune-ne pe ecranul principal",
   "subtitle": "Aplicația se deschide pe tot ecranul dintr-o atingere, ca orice aplicație. Fără magazin, fără descărcări, mereu la\u00a0zi.",
+  "perksToggle": "Ce îți oferă aplicația",
+  "guideBelow": {
+    "iphone": "Vezi mai jos ghidul pentru\u00a0iPhone",
+    "android": "Vezi mai jos ghidul pentru\u00a0Android",
+    "computer": "Vezi mai jos ghidul pentru\u00a0calculator"
+  },
   "perks": [
     "Se deschide dintr-o atingere",
     "Pe tot ecranul, fără bara browserului",

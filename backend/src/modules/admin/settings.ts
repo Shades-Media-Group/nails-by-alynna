@@ -22,6 +22,15 @@ const optionalUrl = z
   .max(500, 'too_long')
   .refine((v) => v === '' || /^https:\/\/[^\s]+$/i.test(v), 'invalid_url');
 
+/** The studio's pin; six decimals are about 10 cm, as precise as a pin gets. */
+const coordinate = (limit: number) =>
+  z
+    .number()
+    .min(-limit, 'invalid_location')
+    .max(limit, 'invalid_location')
+    .transform((v) => Math.round(v * 1e6) / 1e6);
+const locationSchema = z.object({ lat: coordinate(90), lng: coordinate(180) });
+
 /** One line of a reminder's text: plain text on one line, with only the known placeholders. */
 const rebookLine = (max: number) =>
   z
@@ -72,6 +81,7 @@ const settingsSchema = z
     address: z.string().trim().max(160, 'too_long'),
     city: z.string().trim().max(60, 'too_long'),
     mapsUrl: optionalUrl,
+    location: locationSchema,
     phone: z.string().trim().max(32, 'too_long'),
     whatsapp: z.string().trim().max(32, 'too_long'),
     viber: z.string().trim().max(32, 'too_long'),

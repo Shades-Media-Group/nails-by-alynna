@@ -44,6 +44,7 @@ const adminRoutes: RouteObject = {
           element: <RequireRole roles={['administrator']} />,
           children: [
             { path: 'users', lazy: page(() => import('@/admin/pages/UsersPage')) },
+            { path: 'photos', lazy: page(() => import('@/admin/pages/PhotosPage')) },
             { path: 'audit', lazy: page(() => import('@/admin/pages/AuditPage')) },
           ],
         },

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { i18nOptionalTextSchema, i18nPlainTextSchema, i18nTextSchema, objectIdSchema, timeSchema } from '../../lib/validation';
-import { LENGTH_LEVELS } from '../../db/types';
+import { DEFAULT_SESSION_MIN, LENGTH_LEVELS, SCHEDULE_MODES } from '../../db/types';
 import { timeToMinutes } from '../../lib/time';
 
 export const swatchColorSchema = z.enum(['blush', 'cyan', 'peach', 'mint', 'lilac']);
@@ -100,6 +100,10 @@ const staffFields = {
   weekly: weeklySchema,
   /** Free minutes after every client (see StaffDoc.bufferMin). */
   bufferMin: z.number().int().min(0).max(30).multipleOf(5),
+  /** Weekly hours, or only the days the master opens (see StaffDoc.scheduleMode). */
+  scheduleMode: z.enum(SCHEDULE_MODES),
+  /** Working-days mode: minutes of one booking, 30 minutes to 4 hours in 15-minute steps. */
+  sessionMin: z.number().int().min(30, 'too_short').max(240, 'too_long').multipleOf(15, 'invalid'),
   serviceIds: z.array(objectIdSchema).max(200).nullable(),
   isBookable: z.boolean(),
   isActive: z.boolean(),
@@ -109,6 +113,8 @@ export const staffInputSchema = z.object({
   ...staffFields,
   color: staffFields.color.default('blush'),
   bufferMin: staffFields.bufferMin.default(0),
+  scheduleMode: staffFields.scheduleMode.default('weekly'),
+  sessionMin: staffFields.sessionMin.default(DEFAULT_SESSION_MIN),
   serviceIds: staffFields.serviceIds.default(null),
   isBookable: staffFields.isBookable.default(true),
   isActive: staffFields.isActive.default(true),

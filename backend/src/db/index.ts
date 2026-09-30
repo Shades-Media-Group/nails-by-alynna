@@ -10,6 +10,7 @@ import type {
   NotificationLogDoc,
   OtpCodeDoc,
   PasswordResetDoc,
+  PhotoDoc,
   PromoCodeDoc,
   PushSubscriptionDoc,
   RateLimitDoc,
@@ -20,6 +21,7 @@ import type {
   TimeOffDoc,
   UserDoc,
   WalletPassDoc,
+  WorkDayDoc,
 } from './types';
 
 export interface Collections {
@@ -32,6 +34,8 @@ export interface Collections {
   services: Collection<ServiceDoc>;
   staff: Collection<StaffDoc>;
   timeOff: Collection<TimeOffDoc>;
+  workDays: Collection<WorkDayDoc>;
+  photos: Collection<PhotoDoc>;
   appointments: Collection<AppointmentDoc>;
   settings: Collection<SettingsDoc>;
   auditLogs: Collection<AuditLogDoc>;
@@ -55,6 +59,8 @@ export function collections(db: Database): Collections {
     services: db.collection<ServiceDoc>('services'),
     staff: db.collection<StaffDoc>('staff'),
     timeOff: db.collection<TimeOffDoc>('time_off'),
+    workDays: db.collection<WorkDayDoc>('work_days'),
+    photos: db.collection<PhotoDoc>('photos'),
     appointments: db.collection<AppointmentDoc>('appointments'),
     settings: db.collection<SettingsDoc>('settings'),
     auditLogs: db.collection<AuditLogDoc>('audit_logs'),
@@ -68,8 +74,17 @@ export function collections(db: Database): Collections {
   };
 }
 
+/**
+ * The bytes of booking photos: a plain table beside the collections (bytea, not JSON, so a photo
+ * takes its own size and no more). Keyed by the photo's id.
+ */
+export async function ensurePhotoBlobs(db: Database): Promise<void> {
+  await db.ensureCollection('photos');
+  await db.query(`CREATE TABLE IF NOT EXISTS ${db.table('photo_blobs')} (id text PRIMARY KEY, image bytea NOT NULL, thumb bytea NOT NULL)`);
+}
+
 /** Bump when indexes change; the runtime re-applies them once per version. */
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 8;
 
 export async function ensureIndexes(db: Database): Promise<void> {
   const c = collections(db);
@@ -116,8 +131,21 @@ export async function ensureIndexes(db: Database): Promise<void> {
       { key: { categoryId: 1, order: 1 }, name: 'category_order' },
       { key: { defaultKey: 1 }, unique: true, name: 'default_key', partialFilterExpression: { defaultKey: { $type: 'string' } } },
     ]),
-    c.staff.createIndexes([{ key: { order: 1 }, name: 'order' }]),
+    c.staff.createIndexes([
+      { key: { order: 1 }, name: 'order' },
+      // A master's calendar feed is found by its secret.
+      { key: { 'calendarFeed.token': 1 }, unique: true, name: 'calendar_feed', partialFilterExpression: { 'calendarFeed.token': { $type: 'string' } } },
+    ]),
     c.timeOff.createIndexes([{ key: { staffId: 1, start: 1, end: 1 }, name: 'staff_range' }]),
+    // One working day per master and date, even when two phones save it at the same moment.
+    c.workDays.createIndexes([{ key: { staffId: 1, date: 1 }, unique: true, name: 'staff_date' }]),
+    c.photos.createIndexes([
+      { key: { appointmentId: 1 }, name: 'appointment' },
+      { key: { userId: 1, createdAt: -1 }, name: 'user' },
+      { key: { createdAt: -1 }, name: 'created' },
+      { key: { size: -1 }, name: 'size' },
+    ]),
+    ensurePhotoBlobs(db),
     c.appointments.createIndexes([
       { key: { staffId: 1, start: 1 }, name: 'staff_start' },
       { key: { clientId: 1, start: -1 }, name: 'client_start' },
@@ -149,7 +177,7 @@ export async function ensureIndexes(db: Database): Promise<void> {
 }
 
 /** Indexes of the notification collections; tracked on its own, apart from SCHEMA_VERSION. */
-const NOTIFICATIONS_SCHEMA_VERSION = 1;
+const NOTIFICATIONS_SCHEMA_VERSION = 2;
 const GRANDFATHER_ID = 'emailVerificationGrandfathered';
 
 /** The indexes of the email-code, push and notification-log collections. */
@@ -165,6 +193,8 @@ export async function ensureNotificationIndexes(db: Database): Promise<void> {
     c.pushSubscriptions.createIndexes([{ key: { userId: 1 }, name: 'user' }]),
     c.notificationLog.createIndexes([
       { key: { status: 1, retryAt: 1 }, name: 'retry', partialFilterExpression: { status: 'failed' } },
+      // Sends cut off by a restart, taken over after a while (notifications/deliver.ts).
+      { key: { status: 1, updatedAt: 1 }, name: 'stale_sending', partialFilterExpression: { status: 'sending' } },
       { key: { createdAt: 1 }, expireAfterSeconds: 180 * 86_400, name: 'ttl' },
     ]),
   ]);
@@ -210,6 +240,34 @@ export async function migrateNotifications(db: Database, now: Date = new Date())
 }
 
 /** The PostgreSQL connection pool and its collections (see ./pg); nothing connects until first use. */
+export interface SchemaStatus {
+  version: number | null;
+  notifications: number | null;
+  /** Both at this build's versions: every table and index it needs exists. */
+  current: boolean;
+}
+
+/**
+ * The schema versions the database was last migrated to. The server migrates in the background
+ * after it starts, so a fresh deploy reports `current: false` for its first moments, and for
+ * good if a migration fails (the log then says "database not ready"). /api/health reports it,
+ * and `yarn deploy:verify` waits for it.
+ */
+export async function schemaStatus(db: Database): Promise<SchemaStatus> {
+  const c = collections(db);
+  const [main, notifications] = await Promise.all([
+    c.meta.findOne({ _id: 'schemaVersion' }),
+    c.meta.findOne({ _id: 'notificationsSchema' }),
+  ]);
+  const version = typeof main?.value === 'number' ? main.value : null;
+  const notificationsVersion = typeof notifications?.value === 'number' ? notifications.value : null;
+  return {
+    version,
+    notifications: notificationsVersion,
+    current: version === SCHEMA_VERSION && notificationsVersion === NOTIFICATIONS_SCHEMA_VERSION,
+  };
+}
+
 export function createDatabase(config: AppConfig, overrides?: { poolSize?: number; schema?: string }): Database {
   return new Database({
     url: config.database.url,

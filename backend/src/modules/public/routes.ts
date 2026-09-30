@@ -1,7 +1,13 @@
 import { Hono } from 'hono';
 import { BUILD, STARTED_AT } from '../../build-info';
 import type { AppDeps, AppEnv } from '../../context';
+import { schemaStatus, type SchemaStatus } from '../../db';
+import { addDays, minutesToTime, timeToMinutes, todayIn } from '../../lib/time';
+import { opensDays, sessionMinOf } from '../availability/service';
 import { getSettings } from '../settings';
+
+/** Days ahead the opening hours show for masters who open their days one by one. */
+const OPEN_DAYS_AHEAD = 14;
 
 /** Unauthenticated, cacheable data the app needs before (or without) signing in. */
 export function publicRoutes(deps: AppDeps) {
@@ -14,12 +20,17 @@ export function publicRoutes(deps: AppDeps) {
   app.get('/health', async (c) => {
     const started = performance.now();
     let database: 'ok' | 'error' = 'ok';
+    let schema: SchemaStatus | null = null;
     try {
       await deps.db.ping();
     } catch {
       database = 'error';
     }
     const latencyMs = Math.round(performance.now() - started);
+    // Whether the tables and indexes of this build exist yet (migrated in the background after
+    // a start); reported beside the database, not counted against it, so a restart doesn't
+    // look like an outage to uptime monitors.
+    if (database === 'ok') schema = await schemaStatus(deps.db).catch(() => null);
     const ok = database === 'ok';
     return c.json(
       {
@@ -31,7 +42,7 @@ export function publicRoutes(deps: AppDeps) {
         runtime: 'node',
         environment: deps.config.env,
         uptimeSec: Math.round((Date.now() - STARTED_AT) / 1000),
-        checks: { database: { status: database, latencyMs } },
+        checks: { database: { status: database, latencyMs, schema } },
         changes: BUILD.changes,
         time: new Date().toISOString(),
       },
@@ -57,6 +68,7 @@ export function publicRoutes(deps: AppDeps) {
         address: s.address,
         city: s.city,
         mapsUrl: s.mapsUrl,
+        location: s.location,
         phone: s.phone,
         whatsapp: s.whatsapp,
         viber: s.viber,
@@ -122,6 +134,18 @@ export function publicRoutes(deps: AppDeps) {
       .find({ isActive: true, isBookable: true })
       .sort({ order: 1, _id: 1 })
       .toArray();
+    // Masters in working-days mode: the days they opened in the next two weeks, for the opening hours.
+    const byDays = staff.filter(opensDays);
+    const today = todayIn((await getSettings(deps)).timezone, deps.now());
+    const openDays = byDays.length
+      ? await deps.col.workDays
+          .find(
+            { staffId: { $in: byDays.map((s) => s._id) }, date: { $gte: today, $lte: addDays(today, OPEN_DAYS_AHEAD - 1) } },
+            { projection: { staffId: 1, date: 1, times: 1 } },
+          )
+          .sort({ date: 1 })
+          .toArray()
+      : [];
     c.header('Cache-Control', 'public, max-age=60');
     return c.json({
       staff: staff.map((s) => ({
@@ -132,6 +156,17 @@ export function publicRoutes(deps: AppDeps) {
         serviceIds: s.serviceIds?.map((id) => id.toHexString()) ?? null,
         weekly: s.weekly,
         bufferMin: s.bufferMin ?? 0,
+        scheduleMode: s.scheduleMode ?? 'weekly',
+        /** Working-days mode only: the days open in the next two weeks (`weekly` doesn't apply). */
+        days: opensDays(s)
+          ? openDays
+              .filter((d) => d.staffId.equals(s._id) && d.times.length > 0)
+              .map((d) => ({
+                date: d.date,
+                start: d.times[0]!,
+                end: minutesToTime(Math.min(24 * 60, timeToMinutes(d.times.at(-1)!) + sessionMinOf(s))),
+              }))
+          : [],
       })),
     });
   });

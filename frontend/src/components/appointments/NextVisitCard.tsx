@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { CalendarAddIcon, ChevronRightIcon, DirectionsIcon, HourglassIcon } from '@/components/ui/icons';
@@ -8,8 +7,9 @@ import { dateToInstant, dayParts, formatDuration, formatTime, relativeDayLabel, 
 import type { Locale } from '@/i18n/config';
 import type { TFunction } from 'i18next';
 import type { Appointment } from '@/types/api';
+import { GetDirections } from '@/components/common/Directions';
 import { LoyaltyBadge } from '@/components/loyalty/LoyaltyBits';
-import { AddToCalendarSheet } from './AddToCalendar';
+import { AddToCalendar } from './AddToCalendar';
 import { ServiceLines } from './ServiceLines';
 
 const DAY_MS = 86_400_000;
@@ -34,12 +34,11 @@ function visitDay(t: TFunction, locale: Locale, date: string, today: string): st
 export function NextVisitCard({ appointment }: { appointment: Appointment }) {
   const { t } = useTranslation(['booking', 'common']);
   const { lp, locale } = useLocale();
-  const { timeZone, data: config } = useStudio();
+  const { timeZone } = useStudio();
   const today = zonedDate(new Date(), timeZone);
   const date = zonedDate(new Date(appointment.start), timeZone);
   const leaf = dayParts(date, locale);
   const duration = formatDuration(t, appointment.durationMin);
-  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const action =
     'press inline-flex h-9 items-center gap-1.5 rounded-pill bg-white/10 px-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/18';
@@ -73,22 +72,23 @@ export function NextVisitCard({ appointment }: { appointment: Appointment }) {
         </p>
       ) : null}
       <div className="flex flex-wrap gap-2 px-4 pb-4">
-        <button
-          type="button"
-          className={action}
-          onClick={() => setCalendarOpen(true)}
-        >
-          <CalendarAddIcon fontSize="inherit" className="text-base" />
-          {t('flow.addToCalendar')}
-        </button>
-        {config?.studio.mapsUrl ? (
-          <a href={config.studio.mapsUrl} target="_blank" rel="noopener noreferrer" className={action}>
-            <DirectionsIcon fontSize="inherit" className="text-base" />
-            {t('common:contact.directions')}
-          </a>
-        ) : null}
+        <AddToCalendar appointment={appointment}>
+          {(open) => (
+            <button type="button" className={action} onClick={open}>
+              <CalendarAddIcon fontSize="inherit" className="text-base" />
+              {t('flow.addToCalendar')}
+            </button>
+          )}
+        </AddToCalendar>
+        <GetDirections>
+          {(open) => (
+            <button type="button" className={action} onClick={open}>
+              <DirectionsIcon fontSize="inherit" className="text-base" />
+              {t('common:contact.directions')}
+            </button>
+          )}
+        </GetDirections>
       </div>
-      <AddToCalendarSheet appointment={appointment} open={calendarOpen} onClose={() => setCalendarOpen(false)} />
     </section>
   );
 }

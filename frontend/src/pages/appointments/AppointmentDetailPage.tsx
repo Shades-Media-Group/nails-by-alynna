@@ -5,8 +5,10 @@ import { useParams } from 'react-router';
 import { NailArt } from '@/components/brand/NailArt';
 import { Alert } from '@/components/common/Alert';
 import { ContactSheet } from '@/components/common/ContactSheet';
-import { AddToCalendarSheet } from '@/components/appointments/AddToCalendar';
+import { GetDirections } from '@/components/common/Directions';
+import { AddToCalendar } from '@/components/appointments/AddToCalendar';
 import { NailShapeRow } from '@/components/appointments/NailShapeRow';
+import { PhotoGallery } from '@/components/appointments/PhotoGallery';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { LoyaltyLine } from '@/components/loyalty/LoyaltyBits';
 import { PromoLine, PromoRemovedNote, ToPayLine } from '@/components/promo/PromoBits';
@@ -31,12 +33,11 @@ export default function AppointmentDetailPage() {
   const { lp, locale } = useLocale();
   const pick = useI18nText();
   const catalog = useCatalog();
-  const { timeZone, currency, data: config } = useStudio();
+  const { timeZone, currency } = useStudio();
   const queryClient = useQueryClient();
   const appointment = useQuery(queries.appointment(id));
   const [cancelOpen, setCancelOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
-  const [calendarOpen, setCalendarOpen] = useState(false);
   const [reason, setReason] = useState('');
   // Read the clock once per visit to this screen, not on every render.
   const [now] = useState(() => Date.now());
@@ -120,25 +121,30 @@ export default function AppointmentDetailPage() {
           ) : null}
           {upcoming ? (
             <div className="mt-4 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setCalendarOpen(true)}
-                className="press inline-flex h-9 items-center gap-1.5 rounded-pill bg-white/10 px-3.5 text-sm font-semibold hover:bg-white/18"
-              >
-                <CalendarAddIcon fontSize="inherit" className="text-base" />
-                {t('booking:flow.addToCalendar')}
-              </button>
-              {config?.studio.mapsUrl ? (
-                <a
-                  href={config.studio.mapsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="press inline-flex h-9 items-center gap-1.5 rounded-pill bg-white/10 px-3.5 text-sm font-semibold hover:bg-white/18"
-                >
-                  <DirectionsIcon fontSize="inherit" className="text-base" />
-                  {t('common:contact.directions')}
-                </a>
-              ) : null}
+              <AddToCalendar appointment={a}>
+                {(open) => (
+                  <button
+                    type="button"
+                    onClick={open}
+                    className="press inline-flex h-9 items-center gap-1.5 rounded-pill bg-white/10 px-3.5 text-sm font-semibold hover:bg-white/18"
+                  >
+                    <CalendarAddIcon fontSize="inherit" className="text-base" />
+                    {t('booking:flow.addToCalendar')}
+                  </button>
+                )}
+              </AddToCalendar>
+              <GetDirections>
+                {(open) => (
+                  <button
+                    type="button"
+                    onClick={open}
+                    className="press inline-flex h-9 items-center gap-1.5 rounded-pill bg-white/10 px-3.5 text-sm font-semibold hover:bg-white/18"
+                  >
+                    <DirectionsIcon fontSize="inherit" className="text-base" />
+                    {t('common:contact.directions')}
+                  </button>
+                )}
+              </GetDirections>
             </div>
           ) : null}
         </section>
@@ -176,6 +182,8 @@ export default function AppointmentDetailPage() {
         </section>
 
         {a.promoRemoved ? <PromoRemovedNote removed={a.promoRemoved} /> : null}
+
+        {a.photos?.length ? <PhotoGallery photos={a.photos} title={t('booking:photos.yoursTitle')} /> : null}
 
         {a.notes ? (
           <section className="rounded-2xl bg-ink-50 p-4">
@@ -245,7 +253,6 @@ export default function AppointmentDetailPage() {
         </div>
       </Sheet>
       <ContactSheet open={contactOpen} onClose={() => setContactOpen(false)} />
-      {a ? <AddToCalendarSheet appointment={a} open={calendarOpen} onClose={() => setCalendarOpen(false)} /> : null}
     </div>
   );
 }

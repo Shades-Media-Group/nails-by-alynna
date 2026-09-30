@@ -31,6 +31,8 @@ const client = {
 };
 
 let pending: unknown = null;
+let past: unknown[] = [];
+let summary = { visits: 0, firstVisitAt: null as string | null };
 const posts: Array<{ path: string; body: unknown }> = [];
 
 function json(body: unknown, status = 200) {
@@ -58,6 +60,7 @@ function respond(url: URL, init?: RequestInit): Response {
           address: '',
           city: 'Chișinău',
           mapsUrl: '',
+          location: { lat: 47.063205, lng: 28.844794 },
         },
         booking: {
           requireApproval: false,
@@ -71,7 +74,9 @@ function respond(url: URL, init?: RequestInit): Response {
         loyalty: { enabled: false, cycle: 8, rewards: [] },
       });
     case '/api/appointments':
-      return json({ appointments: [] });
+      return json({ appointments: url.searchParams.get('scope') === 'past' ? past : [] });
+    case '/api/appointments/summary':
+      return json(summary);
     case '/api/staff':
       return json({ staff: [] });
     case '/api/catalog':
@@ -117,6 +122,8 @@ function renderHome() {
 
 beforeEach(() => {
   pending = null;
+  past = [];
+  summary = { visits: 0, firstVisitAt: null };
   posts.length = 0;
   vi.stubGlobal(
     'fetch',
@@ -173,5 +180,87 @@ describe('the feedback card on Home', () => {
       ).toBe(true),
     );
     expect(screen.queryByRole('heading', { name: /How was your visit/ })).not.toBeInTheDocument();
+  });
+});
+
+/** A past visit as the API lists it. */
+const pastVisit = (id: string, start: string, service: string, status = 'completed', totalPrice = 370) => ({
+  id,
+  code: id.toUpperCase(),
+  start,
+  end: start,
+  durationMin: 90,
+  status,
+  services: [{ serviceId: 's1', name: text(service), durationMin: 90, price: totalPrice, priceFrom: false }],
+  totalPrice,
+  priceFrom: false,
+  staff: null,
+  notes: '',
+  nailShape: null,
+});
+
+describe('the visit history on Home', () => {
+  it('shows the last three visits done, how many there have been and since when', async () => {
+    past = [
+      pastVisit('v5', '2026-09-20T11:00:00.000Z', 'Refill, size 1', 'cancelled'),
+      pastVisit('v4', '2026-09-16T11:00:00.000Z', 'Gel polish'),
+      pastVisit('v3', '2026-08-22T08:30:00.000Z', 'Extensions, size 1', 'completed', 400),
+      pastVisit('v2', '2026-07-28T13:00:00.000Z', 'Refill, size 1'),
+      pastVisit('v1', '2025-12-10T13:00:00.000Z', 'Gel polish'),
+    ];
+    summary = { visits: 7, firstVisitAt: '2025-03-04T10:00:00.000Z' };
+    renderHome();
+
+    const section = (await screen.findByRole('heading', { name: 'Your visits' })).closest('section')!;
+    expect(within(section).getByText('7 visits · with us since March 2025')).toBeInTheDocument();
+    expect(within(section).getByRole('link', { name: /All visits/ })).toHaveAttribute('href', '/en/bookings?tab=past');
+    // The cancelled visit isn't one; the fourth one done waits in My bookings.
+    const rows = within(section).getAllByRole('listitem').map((row) => within(row).getByRole('link'));
+    expect(rows.map((row) => row.getAttribute('href'))).toEqual(['/en/bookings/v4', '/en/bookings/v3', '/en/bookings/v2']);
+    expect(rows[0]).toHaveTextContent(/Wednesday, 14:00/);
+    expect(rows[0]).toHaveTextContent(/Gel polish/);
+    expect(rows[1]).toHaveTextContent(/400\sMDL/);
+  });
+
+  it('counts a confirmed visit that is over, even if nobody marked it done', async () => {
+    past = [pastVisit('v2', '2026-09-16T11:00:00.000Z', 'Gel polish', 'confirmed'), pastVisit('v1', '2026-09-01T11:00:00.000Z', 'French', 'no_show')];
+    summary = { visits: 1, firstVisitAt: '2026-09-16T11:00:00.000Z' };
+    renderHome();
+    const section = (await screen.findByRole('heading', { name: 'Your visits' })).closest('section')!;
+    expect(within(section).getByText('1 visit · with us since September 2026')).toBeInTheDocument();
+    expect(within(section).getAllByRole('listitem')).toHaveLength(1);
+  });
+
+  it('says where the visits will be before the first one', async () => {
+    past = [pastVisit('v1', '2026-09-16T11:00:00.000Z', 'Gel polish', 'cancelled')];
+    renderHome();
+    const section = (await screen.findByRole('heading', { name: 'Your visits' })).closest('section')!;
+    expect(within(section).getByText(/Your visits will show here after the first/)).toBeInTheDocument();
+    expect(within(section).queryByRole('link', { name: /All visits/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('getting to the studio from Home', () => {
+  it('"Getting here" opens the choice of maps apps, each with the route to the pin', async () => {
+    const user = userEvent.setup();
+    renderHome();
+    await user.click(await screen.findByRole('button', { name: 'Getting here' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Directions to the studio' });
+    // A computer (the test browser): the maps, no taxi.
+    const apps = within(sheet).getAllByRole('link');
+    expect(apps.map((a) => [a.textContent, a.getAttribute('href')])).toEqual([
+      ['Google MapsA route from where you are', 'https://www.google.com/maps/dir/?api=1&destination=47.063205,28.844794'],
+      ['Apple MapsA route from where you are', 'https://maps.apple.com/directions?destination=47.063205,28.844794'],
+      ['WazeA route from where you are', 'https://waze.com/ul?ll=47.063205,28.844794&navigate=yes'],
+    ]);
+    for (const app of apps) expect(app).toHaveAttribute('target', '_blank');
+  });
+
+  it('keeps directions out of "Write to us"', async () => {
+    const user = userEvent.setup();
+    renderHome();
+    await user.click(await screen.findByRole('button', { name: 'Write to us' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Contact the studio' });
+    expect(within(sheet).queryByRole('link', { name: /Directions/ })).not.toBeInTheDocument();
   });
 });

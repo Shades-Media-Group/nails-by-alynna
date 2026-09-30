@@ -1,10 +1,10 @@
 import { ObjectId } from 'bson';
 import type { AppDeps } from '../../context';
-import { ACTIVE_STATUSES, type ServiceDoc, type StaffDoc, type StudioSettings } from '../../db/types';
+import { ACTIVE_STATUSES, DEFAULT_SESSION_MIN, type ServiceDoc, type StaffDoc, type StudioSettings } from '../../db/types';
 import { AppError } from '../../lib/errors';
 import { MINUTE, addDays, todayIn, zonedTimeToUtc } from '../../lib/time';
 import { getSettings } from '../settings';
-import { computeDaySlots, type Interval, type Slot } from './engine';
+import { computeDaySlots, type EngineDays, type Interval, type Slot } from './engine';
 
 export interface AvailabilityContext {
   settings: StudioSettings;
@@ -16,7 +16,13 @@ export interface AvailabilityContext {
   appointments: Map<string, Interval[]>;
   timeOff: Map<string, Interval[]>;
   closures: Interval[];
+  /** Masters in working-days mode, by staff id: the days they opened, with their start times. */
+  workDays: Map<string, EngineDays>;
 }
+
+/** Clients can book this master only on the days they open (StaffDoc.scheduleMode). */
+export const opensDays = (staff: Pick<StaffDoc, 'scheduleMode'>): boolean => staff.scheduleMode === 'days';
+export const sessionMinOf = (staff: Pick<StaffDoc, 'sessionMin'>): number => staff.sessionMin ?? DEFAULT_SESSION_MIN;
 
 const MAX_TOTAL_DURATION_MIN = 8 * 60;
 
@@ -85,7 +91,7 @@ export async function loadAvailabilityContext(
   const rangeEnd = zonedTimeToUtc(addDays(opts.to, 1), '00:00', settings.timezone);
   const staffIds = staff.map((s) => s._id);
 
-  const [appointmentDocs, timeOffDocs, shortestServiceMin] = await Promise.all([
+  const [appointmentDocs, timeOffDocs, shortestServiceMin, workDays] = await Promise.all([
     deps.col.appointments
       .find(
         {
@@ -105,6 +111,7 @@ export async function loadAvailabilityContext(
       )
       .toArray(),
     settings.smartSlots ? shortestServices(deps, staff) : new Map<string, number>(),
+    openedDays(deps, staff.filter(opensDays), opts),
   ]);
 
   const appointments = new Map<string, Interval[]>();
@@ -128,7 +135,19 @@ export async function loadAvailabilityContext(
     timeOff.set(key, list);
   }
 
-  return { settings, services, durationMin, staff, shortestServiceMin, appointments, timeOff, closures };
+  return { settings, services, durationMin, staff, shortestServiceMin, appointments, timeOff, closures, workDays };
+}
+
+/** Per master in working-days mode: the days they opened from `from` to `to`, with their start times. */
+async function openedDays(deps: AppDeps, staff: StaffDoc[], range: { from: string; to: string }): Promise<Map<string, EngineDays>> {
+  const plans = new Map<string, EngineDays>();
+  if (staff.length === 0) return plans;
+  const days = await deps.col.workDays
+    .find({ staffId: { $in: staff.map((s) => s._id) }, date: { $gte: range.from, $lte: range.to } }, { projection: { staffId: 1, date: 1, times: 1 } })
+    .toArray();
+  for (const member of staff) plans.set(member._id.toHexString(), { sessionMin: sessionMinOf(member), open: new Map() });
+  for (const day of days) plans.get(day.staffId.toHexString())?.open.set(day.date, day.times);
+  return plans;
 }
 
 /** Per master: the shortest active service they do, in an active category — no visit fits a shorter gap. */
@@ -175,7 +194,13 @@ export function slotsForDate(ctx: AvailabilityContext, date: string, now: Date, 
     earliestStart: now.getTime() + (opts.staff ? 0 : settings.leadTimeMin) * MINUTE,
     staff: ctx.staff.map((s) => {
       const id = s._id.toHexString();
-      return { id, weekly: s.weekly, bufferMin: s.bufferMin ?? 0, shortestServiceMin: ctx.shortestServiceMin.get(id) };
+      return {
+        id,
+        weekly: s.weekly,
+        bufferMin: s.bufferMin ?? 0,
+        shortestServiceMin: ctx.shortestServiceMin.get(id),
+        days: ctx.workDays.get(id) ?? null,
+      };
     }),
     appointments: ctx.appointments,
     timeOff: ctx.timeOff,

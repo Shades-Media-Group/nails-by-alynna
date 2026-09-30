@@ -326,6 +326,42 @@ const hostOf = (endpoint: string) => {
   }
 };
 
+/**
+ * Waits before trying a push again after a passing problem, while the news is still fresh: the
+ * network, or the push service busy (429) or failing (5xx). Refusals (4xx) are final at once.
+ */
+const RETRY_DELAYS_MS = [1_000, 3_000];
+const retryDelays = new WeakMap<AppDeps, readonly number[]>();
+
+/** Replaces the waits between tries for one runtime (tests: none). */
+export function setPushRetryDelays(deps: AppDeps, delays: readonly number[]): void {
+  retryDelays.set(deps, delays);
+}
+
+const passingProblem = (status: number) => status === 429 || status >= 500;
+
+/** One delivery, tried again after a passing problem; rejects only when the last try could not reach the service. */
+async function sendWithRetries(
+  deps: AppDeps,
+  transport: PushTransport,
+  sub: PushSubscriptionDoc,
+  message: string,
+  options: PushSendOptions,
+): Promise<PushResponse> {
+  const delays = retryDelays.get(deps) ?? RETRY_DELAYS_MS;
+  for (let attempt = 0; ; attempt++) {
+    const last = attempt >= delays.length;
+    try {
+      const answer = await transport.send({ endpoint: sub.endpoint, keys: sub.keys }, message, options);
+      const response: PushResponse = typeof answer === 'number' ? { status: answer } : answer;
+      if (last || !passingProblem(response.status)) return response;
+    } catch (error) {
+      if (last) throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, delays[attempt]));
+  }
+}
+
 async function deliverOne(
   deps: AppDeps,
   transport: PushTransport,
@@ -339,8 +375,7 @@ async function deliverOne(
   result.deliveries.push(report);
   const host = hostOf(sub.endpoint);
   try {
-    const answer = await transport.send({ endpoint: sub.endpoint, keys: sub.keys }, message, options);
-    const response: PushResponse = typeof answer === 'number' ? { status: answer } : answer;
+    const response = await sendWithRetries(deps, transport, sub, message, options);
     report.status = response.status;
     if (response.status >= 200 && response.status < 300) {
       report.outcome = 'sent';

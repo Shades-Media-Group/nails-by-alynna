@@ -178,6 +178,19 @@
     "directions": "Directions",
     "none": "Contact details will be added soon."
   },
+  "directions": {
+    "title": "Directions to the studio",
+    "apps": {
+      "apple": "Apple Maps",
+      "google": "Google Maps",
+      "waze": "Waze",
+      "yandexGo": "Yandex Go"
+    },
+    "hints": {
+      "route": "A route from where you are",
+      "taxi": "A taxi to the studio"
+    }
+  },
   "a11y": {
     "skipToContent": "Skip to content",
     "loading": "Loading…",

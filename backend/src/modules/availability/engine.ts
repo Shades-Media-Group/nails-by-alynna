@@ -1,5 +1,5 @@
 import type { WeeklyHours } from '../../db/types';
-import { MINUTE, isoWeekday, toZonedParts, zonedTimeToUtc } from '../../lib/time';
+import { MINUTE, addDays, isoWeekday, toZonedParts, zonedTimeToUtc } from '../../lib/time';
 
 /** Pure slot computation — no I/O, fully unit-tested. Times are epoch milliseconds. */
 
@@ -18,6 +18,15 @@ export interface EngineStaff {
   bufferMin?: number;
   /** Shortest active service this master performs, in minutes: no visit fits a shorter gap. */
   shortestServiceMin?: number;
+  /** Working-days mode (see sessionSlots): `weekly`, `bufferMin` and smart slots don't apply. */
+  days?: EngineDays | null;
+}
+
+export interface EngineDays {
+  /** Minutes one booking takes at least. */
+  sessionMin: number;
+  /** The days the master opened, by date (YYYY-MM-DD): the times (HH:mm) a booking can start. */
+  open: Map<string, string[]>;
 }
 
 /** Smart slots: only offer start times that keep each master's day compact (see smartDaySlots). */
@@ -55,7 +64,40 @@ export interface Slot {
 }
 
 export function computeDaySlots(input: EngineInput): Slot[] {
-  return input.smart ? smartDaySlots(input, input.smart) : everyFreeSlot(input);
+  const weekly = input.staff.filter((member) => !member.days);
+  const byDays = input.staff.filter((member) => member.days);
+  const slots = weekly.length === 0 ? [] : input.smart ? smartDaySlots({ ...input, staff: weekly }, input.smart) : everyFreeSlot({ ...input, staff: weekly });
+  if (byDays.length === 0) return slots;
+  // Masters on weekly hours first (in their fit order), then those who opened the day.
+  const byStart = new Map(slots.map((slot) => [Date.parse(slot.start), slot.staffIds]));
+  for (const [start, ids] of sessionSlots(input, byDays)) byStart.set(start, [...(byStart.get(start) ?? []), ...ids]);
+  return [...byStart.entries()].sort(([a], [b]) => a - b).map(([start, staffIds]) => toSlot(start, staffIds, input.timeZone));
+}
+
+/**
+ * Working-days mode: a master can be booked only on a day they opened, at one of the start times
+ * they set for it. A booking takes a session (or the visit's own length, when longer), which
+ * holds the master's break too; a time is free when no booking, time off or closure touches that
+ * stretch, so a longer visit may take the next time as well. Each time takes one client.
+ */
+function sessionSlots(input: EngineInput, staff: EngineStaff[]): Map<number, string[]> {
+  const byStart = new Map<number, string[]>();
+  const midnight = zonedTimeToUtc(addDays(input.date, 1), '00:00', input.timeZone).getTime();
+  for (const member of staff) {
+    const plan = member.days!;
+    const times = plan.open.get(input.date);
+    if (!times) continue;
+    const length = Math.max(input.durationMin, plan.sessionMin) * MINUTE;
+    const busy = [...(input.appointments.get(member.id) ?? []), ...(input.timeOff.get(member.id) ?? []), ...input.closures];
+    for (const time of times) {
+      const start = zonedTimeToUtc(input.date, time, input.timeZone).getTime();
+      if (start < input.earliestStart || start + length > midnight || overlapsAny(start, start + length, busy)) continue;
+      const list = byStart.get(start);
+      if (list) list.push(member.id);
+      else byStart.set(start, [member.id]);
+    }
+  }
+  return byStart;
 }
 
 /**

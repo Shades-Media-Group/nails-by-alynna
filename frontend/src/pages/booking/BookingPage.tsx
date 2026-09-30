@@ -8,6 +8,8 @@ import { ConfirmStep } from '@/components/booking/ConfirmStep';
 import { DoneStep } from '@/components/booking/DoneStep';
 import { MasterStep } from '@/components/booking/MasterStep';
 import { NailShapePicker } from '@/components/booking/NailShapePicker';
+import { PhotoPicker } from '@/components/booking/PhotoPicker';
+import { clearBookingPhotos, useBookingPhotos } from '@/components/booking/useBookingPhotos';
 import { preloadClockItHand } from '@/components/brand/nails/clockItHand';
 import { usePromoQuote } from '@/components/promo/usePromoQuote';
 import { SelectionBar } from '@/components/booking/SelectionBar';
@@ -81,6 +83,8 @@ export default function BookingPage() {
   const [phoneTouched, setPhoneTouched] = useState(false);
   const [done, setDone] = useState<Appointment | null>(null);
   const [promoCode, setPromoCode] = useState<string | null>(null);
+  // Photos of the nails the client wants (optional): made small and sent as soon as they are picked.
+  const photos = useBookingPhotos(user?.id ?? null);
 
   // Where we are: the URL step when it makes sense, otherwise the first step still missing.
   const requested = params.get('step') as Step | null;
@@ -180,9 +184,12 @@ export default function BookingPage() {
             ...(nailShape ? { nailShape } : {}),
             ...(needsPhone && normalizedPhone ? { phone: normalizedPhone } : {}),
             ...(promo.quote ? { promoCode: promo.quote.code } : {}),
+            ...(photos.ids.length ? { photoIds: photos.ids } : {}),
           }),
     onSuccess: (appointment) => {
       if (!demo) {
+        // The photos are on this booking now; the next one starts without them.
+        if (!rescheduleId) clearBookingPhotos(user?.id ?? null);
         if (needsPhone && user && normalizedPhone) setUser({ ...user, phone: normalizedPhone });
         queryClient.setQueryData(queries.appointment(appointment.id).queryKey, appointment);
         void queryClient.invalidateQueries({ queryKey: ['appointments'] });
@@ -212,6 +219,7 @@ export default function BookingPage() {
   const onSubmit = () => {
     setPhoneTouched(true);
     if (needsPhone && !normalizedPhone) return;
+    if (photos.busy) return;
     submit.mutate();
   };
 
@@ -279,6 +287,7 @@ export default function BookingPage() {
           ) : step === 'services' ? (
             <>
               <NailShapePicker ref={shapePicker} value={nailShape} onChange={setShape} invalid={shapeAsked && shapeMissing} />
+              {demo ? null : <PhotoPicker className="mt-8" photos={photos.photos} onAdd={photos.add} onRemove={photos.remove} />}
               <div className="-mx-3 mt-8">
                 <ServiceList selected={serviceIds} onToggle={(service) => setServices(toggleService(serviceIds, service, catalog))} />
               </div>
@@ -326,6 +335,10 @@ export default function BookingPage() {
               onSubmit={onSubmit}
               promo={promo}
               onPromoCode={rescheduleId ? undefined : setPromoCode}
+              photos={
+                rescheduleId || demo ? undefined : <PhotoPicker photos={photos.photos} onAdd={photos.add} onRemove={photos.remove} />
+              }
+              photosBusy={photos.busy}
             />
           ) : null}
         </div>

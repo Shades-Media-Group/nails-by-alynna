@@ -14,15 +14,18 @@ import { bookingCode } from '../../lib/crypto';
 import { AppError, isDuplicateKey } from '../../lib/errors';
 import { HOUR, MINUTE, toZonedParts } from '../../lib/time';
 import { getSettings } from '../settings';
-import { canPerform, loadAvailabilityContext, loadServices, slotsForDate } from '../availability/service';
+import { canPerform, loadAvailabilityContext, loadServices, opensDays, slotsForDate } from '../availability/service';
 import type { LoyaltyTag } from '../loyalty/service';
+import type { PhotoView } from '../photos/service';
 import { claimPromo, givePromoUseBack, promoView, recheckPromoAfterMove, removedPromoView } from '../promo/service';
 
 /**
  * Minutes kept free between two visits of a master: the studio's break or the master's own
- * (StaffDoc.bufferMin), whichever is longer.
+ * (StaffDoc.bufferMin), whichever is longer. None for a master in working-days mode: their
+ * sessions already hold the break, and back-to-back sessions must both stay bookable.
  */
-export function breakBetween(settings: StudioSettings, master: Pick<StaffDoc, 'bufferMin'> | null | undefined): number {
+export function breakBetween(settings: StudioSettings, master: Pick<StaffDoc, 'bufferMin' | 'scheduleMode'> | null | undefined): number {
+  if (master && opensDays(master)) return 0;
   return Math.max(settings.bufferMin, master?.bufferMin ?? 0);
 }
 
@@ -266,7 +269,7 @@ export async function rescheduleAppointment(
   const now = deps.now();
   const serviceIds = appointment.services.map((s) => s.serviceId);
   let staffId = opts.staffId ?? appointment.staffId;
-  let master: Pick<StaffDoc, 'bufferMin'> | null | undefined;
+  let master: Pick<StaffDoc, 'bufferMin' | 'scheduleMode'> | null | undefined;
 
   if (opts.enforceSlots) {
     const date = toZonedParts(opts.start, settings.timezone).date;
@@ -301,7 +304,7 @@ export async function rescheduleAppointment(
   if (opts.force) {
     await deps.col.appointments.updateOne({ _id: appointment._id }, { $set: next });
   } else {
-    master ??= await deps.col.staff.findOne({ _id: staffId }, { projection: { bufferMin: 1 } });
+    master ??= await deps.col.staff.findOne({ _id: staffId }, { projection: { bufferMin: 1, scheduleMode: 1 } });
     const buffer = breakBetween(settings, master);
     await withMasterLock(deps, staffId, async () => {
       await deps.col.appointments.updateOne({ _id: appointment._id }, { $set: next });
@@ -346,11 +349,13 @@ export async function staffSummaries(deps: AppDeps, ids: ObjectId[]): Promise<Ma
   );
 }
 
-/** Per-appointment extras computed in bulk by the route: loyalty stamps and calendar links. */
+/** Per-appointment extras computed in bulk by the route: loyalty stamps, calendar links and photos. */
 export interface AppointmentExtras {
   /** Loyalty stamps (earned or expected) by appointment id, from loyalty/service loyaltyTags. */
   loyalty?: Map<string, LoyaltyTag>;
   calendar?: Map<string, string>;
+  /** The photos the client added (booking detail only; lists leave them out). */
+  photos?: Map<string, PhotoView[]>;
 }
 
 export function toClientAppointment(
@@ -393,6 +398,7 @@ export function toClientAppointment(
     promoRemoved: removedPromoView(a),
     /** Signed "Add to calendar" link, for visits still to come. */
     calendarUrl: extras.calendar?.get(id) ?? null,
+    ...(extras.photos ? { photos: extras.photos.get(id) ?? [] } : {}),
     createdAt: a.createdAt.toISOString(),
   };
 }

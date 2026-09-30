@@ -1,5 +1,6 @@
 import type { AppointmentDoc, StudioSettings } from '../../db/types';
 import { describeVisitTime, visitTime, type BookingChange, type StaffBookingEvent, type VisitInfo, type VisitTime } from '../../lib/emails';
+import { googleDirectionsUrl } from '../../lib/maps';
 import type { PushPayload } from '../../lib/push';
 import { HOUR } from '../../lib/time';
 import type { Locale } from '../../lib/validation';
@@ -25,9 +26,8 @@ export function visitInfo(
 ): VisitInfo {
   const { settings, locale, appUrl } = opts;
   const address = [settings.address, settings.city].map((part) => part?.trim()).filter(Boolean).join(', ') || null;
-  const directionsUrl =
-    settings.mapsUrl ||
-    (settings.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address ?? settings.address)}` : null);
+  // The studio's own map link (its place card), else directions to its pin.
+  const directionsUrl = settings.mapsUrl || googleDirectionsUrl(settings.location);
   return {
     code: appointment.code,
     start: appointment.start,

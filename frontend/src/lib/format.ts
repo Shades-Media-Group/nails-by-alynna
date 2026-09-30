@@ -116,6 +116,20 @@ export function dayParts(date: string, locale: Locale) {
   };
 }
 
+/**
+ * Month and year to follow "since": "March 2026", "martie 2026", and in Russian the genitive
+ * "марта 2026" (Intl's month alone is the nominative "март", wrong after "с").
+ */
+export function monthYearSince(iso: string | Date, locale: Locale, timeZone: string): string {
+  const instant = new Date(iso);
+  const year = dtf(locale, timeZone, { year: 'numeric' }).format(instant).replace(/\D/g, '');
+  const month =
+    dtf(locale, timeZone, { day: 'numeric', month: 'long' })
+      .formatToParts(instant)
+      .find((part) => part.type === 'month')?.value ?? '';
+  return `${month}${NBSP}${year}`;
+}
+
 export function fullName(person: { name: string; surname?: string }): string {
   return [person.name, person.surname].filter(Boolean).join(' ');
 }

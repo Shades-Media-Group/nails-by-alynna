@@ -5,6 +5,7 @@ import i18next from 'i18next';
 import { I18nextProvider, initReactI18next } from 'react-i18next';
 import { MemoryRouter, useLocation } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { AuthProvider } from '@/app/auth';
 import booking from '@/locales/en/booking.json';
 import common from '@/locales/en/common.json';
 import ServicesPage from './ServicesPage';
@@ -15,6 +16,21 @@ import ServicesPage from './ServicesPage';
  */
 
 const text = (en: string) => ({ ro: en, ru: en, en });
+const client = {
+  id: 'u1',
+  email: 'ana@example.com',
+  name: 'Ana',
+  surname: 'Rusu',
+  phone: '+37369123456',
+  role: 'client',
+  locale: 'en',
+  hasPassword: true,
+  hasGoogle: false,
+  bookingBlocked: false,
+  isDemo: false,
+  onboarded: true,
+  createdAt: '2026-01-01T09:00:00.000Z',
+};
 
 function respond(url: URL): Response {
   const json = (body: unknown) =>
@@ -93,13 +109,16 @@ function renderServices() {
     initAsync: false,
   });
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  queryClient.setQueryData(['me'], client);
   return render(
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={['/en/services']}>
-          <ServicesPage />
-          <LocationProbe />
-        </MemoryRouter>
+        <AuthProvider>
+          <MemoryRouter initialEntries={['/en/services']}>
+            <ServicesPage />
+            <LocationProbe />
+          </MemoryRouter>
+        </AuthProvider>
       </QueryClientProvider>
     </I18nextProvider>,
   );
@@ -138,6 +157,8 @@ describe('services → booking', () => {
 
     const shapes = await screen.findByRole('radiogroup', { name: 'Nail shape' });
     expect(within(shapes).getAllByRole('radio')).toHaveLength(4);
+    // Photos of the nails she wants can be added here too, as on the booking.
+    expect(screen.getByRole('heading', { name: 'Photos of the nails you like' })).toBeInTheDocument();
     await user.click(await screen.findByRole('button', { name: 'Add Gel polish' }));
 
     // Without a shape: a warning, focus on the shapes, and no booking yet.

@@ -5,7 +5,7 @@ import { useAuth } from '@/app/auth';
 import { Logo } from '@/components/brand/Logo';
 import { QrCode } from '@/components/common/QrCode';
 import { Button, ButtonLink, IconButton, SegmentedControl, toast } from '@/components/ui';
-import { ArrowBackIcon, CheckCircleIcon, CheckIcon, ContentCopyIcon, InstallIcon } from '@/components/ui/icons';
+import { ArrowBackIcon, CheckCircleIcon, CheckIcon, ContentCopyIcon, ExpandMoreIcon, InfoIcon, InstallIcon } from '@/components/ui/icons';
 import { useLocale } from '@/i18n/useLocale';
 import { cx } from '@/lib/cx';
 import { currentPlatform } from '@/lib/platform';
@@ -35,6 +35,8 @@ export default function InstallPage() {
   const { canPrompt, installed, prompt } = useInstallPrompt();
   const detected: Device = platform.os === 'ios' || platform.os === 'ipados' ? 'iphone' : platform.os === 'android' ? 'android' : 'computer';
   const [device, setDevice] = useState<Device>(detected);
+  // What the app gives, behind the ⓘ for now; the guide below comes first.
+  const [perksOpen, setPerksOpen] = useState(false);
   const appUrl = typeof window === 'undefined' ? '' : `${window.location.origin}${lp('/app')}`;
   const home = lp(user ? '/home' : '/login');
 
@@ -75,16 +77,41 @@ export default function InstallPage() {
             <Logo variant="mark" className="w-16" />
           </span>
           <h1 className="mt-5 text-h1 font-extrabold lg:text-[2.25rem]">{inside ? t('installed') : t('title')}</h1>
-          <p className="mt-2 max-w-md text-[0.9375rem] text-ink-600">{inside ? t('installedText') : t('subtitle')}</p>
+          <p className="mt-2 max-w-md text-[0.9375rem] text-ink-600">
+            {inside ? t('installedText') : t('subtitle')}
+            {!inside ? (
+              <button
+                type="button"
+                aria-expanded={perksOpen}
+                aria-controls="install-perks"
+                aria-label={t('perksToggle')}
+                title={t('perksToggle')}
+                onClick={() => setPerksOpen((open) => !open)}
+                className={cx(
+                  'press -my-2 ml-0.5 inline-flex size-9 items-center justify-center rounded-pill align-middle text-lg transition-colors duration-150',
+                  perksOpen ? 'bg-ink-100 text-ink-900' : 'text-ink-500 hover:bg-ink-50 hover:text-ink-900',
+                )}
+              >
+                <InfoIcon fontSize="inherit" />
+              </button>
+            ) : null}
+          </p>
           {!inside ? (
-            <ul className="mt-4 flex flex-wrap justify-center gap-2">
-              {(t('perks', { returnObjects: true }) as string[]).map((perk) => (
-                <li key={perk} className="inline-flex items-center gap-1.5 rounded-pill bg-ink-50 px-3 py-1.5 text-sm font-medium text-ink-700">
-                  <CheckIcon fontSize="inherit" className="text-base text-mint-700" />
-                  {perk}
-                </li>
-              ))}
-            </ul>
+            perksOpen ? (
+              <ul id="install-perks" className="mt-4 flex flex-wrap justify-center gap-2 animate-rise">
+                {(t('perks', { returnObjects: true }) as string[]).map((perk) => (
+                  <li key={perk} className="inline-flex items-center gap-1.5 rounded-pill bg-ink-50 px-3 py-1.5 text-sm font-medium text-ink-700">
+                    <CheckIcon fontSize="inherit" className="text-base text-mint-700" />
+                    {perk}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p id="install-perks" className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-ink-700">
+                {t(`guideBelow.${device}`)}
+                <ExpandMoreIcon aria-hidden="true" fontSize="inherit" className="text-lg" />
+              </p>
+            )
           ) : null}
         </div>
 

@@ -33,6 +33,7 @@ import { placeholderEmail } from '../../lib/placeholder-email';
 import { loyaltyStatus, loyaltyTags, stampOnCompletion } from '../loyalty/service';
 import { notifyBookingChange, notifyLoyaltyNext } from '../notifications';
 import { findPromo, promoError, promoOnStatusChange, type PromoStatusChange } from '../promo/service';
+import { photosByAppointment } from '../photos/service';
 
 export { placeholderEmail };
 
@@ -87,14 +88,16 @@ export function adminAppointmentRoutes(deps: AppDeps) {
 
   async function respond(docs: AppointmentDoc[]) {
     const settings = await getSettings(deps);
-    const [staff, badges, loyalty] = await Promise.all([
+    const [staff, badges, loyalty, photos] = await Promise.all([
       staffSummaries(deps, docs.map((d) => d.staffId)),
       clientBadges(deps, docs.map((d) => d.clientId)),
       loyaltyTags(deps, docs, settings),
+      // One booking at a time (its page): the photos the client added.
+      docs.length === 1 ? photosByAppointment(deps, [docs[0]!._id]) : Promise.resolve(undefined),
     ]);
     const now = deps.now();
     return docs.map((d) => ({
-      ...toStaffAppointment(d, staff, settings, now, { loyalty }),
+      ...toStaffAppointment(d, staff, settings, now, { loyalty, photos }),
       clientStats: badges.get(d.clientId.toHexString()) ?? { visits: 0, noShows: 0 },
     }));
   }
@@ -294,7 +297,7 @@ export function adminAppointmentRoutes(deps: AppDeps) {
         if (!input.force) {
           const [settings, master] = await Promise.all([
             getSettings(deps),
-            deps.col.staff.findOne({ _id: doc.staffId }, { projection: { bufferMin: 1 } }),
+            deps.col.staff.findOne({ _id: doc.staffId }, { projection: { bufferMin: 1, scheduleMode: 1 } }),
           ]);
           const gap = breakBetween(settings, master) * MINUTE;
           const clash = await deps.col.appointments.findOne({

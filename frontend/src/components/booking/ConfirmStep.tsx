@@ -1,4 +1,4 @@
-import type { FormEvent } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RealisticNailArt } from '@/components/brand/nails/RealisticNailArt';
 import { LoyaltyConfirmNote } from '@/components/loyalty/LoyaltyBits';
@@ -37,11 +37,15 @@ interface ConfirmStepProps {
   promo?: PromoState;
   /** New bookings: apply a code, or remove it with null. */
   onPromoCode?: (code: string | null) => void;
+  /** New bookings: the photos of the nails the client wants (PhotoPicker), to look over or change. */
+  photos?: ReactNode;
+  /** Photos still being made small or sent: the booking waits for them. */
+  photosBusy?: boolean;
 }
 
 /** Everything the client agrees to, in one place: what, when, who, how much, and the rules. */
 export function ConfirmStep(props: ConfirmStepProps) {
-  const { mode, services, nailShape, slot, masterName, needsPhone, phone, onPhone, phoneError, notes, onNotes, submitting, error, onEdit, onSubmit, promo, onPromoCode } = props;
+  const { mode, services, nailShape, slot, masterName, needsPhone, phone, onPhone, phoneError, notes, onNotes, submitting, error, onEdit, onSubmit, promo, onPromoCode, photos, photosBusy } = props;
   const { t } = useTranslation(['booking', 'common']);
   const { locale } = useLocale();
   const pick = useI18nText();
@@ -169,6 +173,8 @@ export function ConfirmStep(props: ConfirmStepProps) {
         </section>
       ) : null}
 
+      {photos}
+
       {mode === 'new' ? (
         <Textarea
           label={t('flow.notes')}
@@ -189,8 +195,8 @@ export function ConfirmStep(props: ConfirmStepProps) {
       {approval ? <Alert tone="info">{t('flow.approvalNotice')}</Alert> : null}
       {error ? <Alert>{error}</Alert> : null}
 
-      <Button type="submit" size="lg" fullWidth loading={submitting}>
-        {mode === 'reschedule' ? t('flow.confirmReschedule') : approval ? t('flow.confirmRequest') : t('flow.confirm')}
+      <Button type="submit" size="lg" fullWidth loading={submitting || photosBusy} disabled={photosBusy}>
+        {photosBusy ? t('photos.waiting') : mode === 'reschedule' ? t('flow.confirmReschedule') : approval ? t('flow.confirmRequest') : t('flow.confirm')}
       </Button>
     </form>
   );

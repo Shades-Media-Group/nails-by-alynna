@@ -27,6 +27,7 @@ import {
 } from './service';
 import { calendarLinks } from '../calendar/service';
 import { notifyBookingChange, notifyStaffOfBooking } from '../notifications';
+import { attachPhotos, photosByAppointment, photosToAttach } from '../photos/service';
 import { loyaltyTags } from '../loyalty/service';
 import { findPromo, givePromoUseBack, promoError } from '../promo/service';
 
@@ -69,13 +70,35 @@ export function appointmentRoutes(deps: AppDeps) {
     return c.json({ appointments: docs.map((d) => toClientAppointment(d, staff, settings, now, { loyalty, calendar })) });
   });
 
+  /**
+   * The client's history at a glance (Home): the visits that took place, and when the first one
+   * was. A visit counts once it is marked done, or once a confirmed visit's time is over (few are
+   * marked by hand); cancelled ones and no-shows never do.
+   */
+  app.get('/summary', async (c) => {
+    const user = c.get('user');
+    const done = {
+      clientId: user._id,
+      $or: [{ status: 'completed' as const }, { status: 'confirmed' as const, end: { $lte: deps.now() } }],
+    };
+    const [visits, first] = await Promise.all([
+      deps.col.appointments.countDocuments(done),
+      deps.col.appointments.find(done).sort({ start: 1 }).limit(1).toArray(),
+    ]);
+    return c.json({ visits, firstVisitAt: first[0]?.start ?? null });
+  });
+
   app.get('/:id', async (c) => {
     const user = c.get('user');
     const doc = await deps.col.appointments.findOne({ _id: paramId(c), clientId: user._id });
     if (!doc) throw notFound('Appointment');
     const [settings, staff] = await Promise.all([getSettings(deps), staffSummaries(deps, [doc.staffId])]);
-    const [loyalty, calendar] = await Promise.all([loyaltyTags(deps, [doc], settings), calendarLinks(deps, [doc])]);
-    return c.json({ appointment: toClientAppointment(doc, staff, settings, deps.now(), { loyalty, calendar }) });
+    const [loyalty, calendar, photos] = await Promise.all([
+      loyaltyTags(deps, [doc], settings),
+      calendarLinks(deps, [doc]),
+      photosByAppointment(deps, [doc._id]),
+    ]);
+    return c.json({ appointment: toClientAppointment(doc, staff, settings, deps.now(), { loyalty, calendar, photos }) });
   });
 
   const createSchema = z.object({
@@ -91,6 +114,8 @@ export function appointmentRoutes(deps: AppDeps) {
      * it optional: an installed app that hasn't updated yet books without one.
      */
     nailShape: nailShapeSchema.optional(),
+    /** Photos of the nails the client wants (optional, up to three), sent first to /api/photos. */
+    photoIds: z.array(objectIdSchema).max(3, 'too_many').default([]),
   });
 
   app.post('/', async (c) => {
@@ -132,6 +157,7 @@ export function appointmentRoutes(deps: AppDeps) {
     }
     const promo = input.promoCode ? await findPromo(deps, input.promoCode) : null;
     if (input.promoCode && !promo) throw promoError('unknown');
+    const photoIds = await photosToAttach(deps, user._id, input.photoIds);
 
     const doc = await placeAppointment(deps, {
       client,
@@ -145,6 +171,7 @@ export function appointmentRoutes(deps: AppDeps) {
       enforceSlots: true,
       promo,
     });
+    await attachPhotos(deps, photoIds, doc._id);
     await audit(deps, {
       actorId: user._id,
       action: 'appointment.create',
@@ -156,12 +183,13 @@ export function appointmentRoutes(deps: AppDeps) {
     const event = doc.status === 'pending' ? 'requested' : 'booked';
     deps.defer(notifyBookingChange(deps, doc._id, event));
     deps.defer(notifyStaffOfBooking(deps, doc._id, event));
-    const [staff, loyalty, calendar] = await Promise.all([
+    const [staff, loyalty, calendar, photos] = await Promise.all([
       staffSummaries(deps, [doc.staffId]),
       loyaltyTags(deps, [doc], settings),
       calendarLinks(deps, [doc]),
+      photosByAppointment(deps, [doc._id]),
     ]);
-    return c.json({ appointment: toClientAppointment(doc, staff, settings, now, { loyalty, calendar }) }, 201);
+    return c.json({ appointment: toClientAppointment(doc, staff, settings, now, { loyalty, calendar, photos }) }, 201);
   });
 
   app.post('/:id/cancel', async (c) => {
