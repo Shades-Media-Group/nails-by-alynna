@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { PushSubscribeError, enablePush, softAskFor, type DeviceState } from './push';
+import { notificationsApi } from '@/services/api/endpoints';
+import { PushSubscribeError, enablePush, resyncPush, softAskFor, type DeviceState, urlBase64ToUint8Array } from './push';
+import { storage } from './storage';
 
 /*
  * The gentle asks (after booking, top of Profile → Notifications) show a button only while a tap
@@ -68,5 +70,62 @@ describe('enablePush when the system refuses the subscription', () => {
     const failure = enablePush('u1', { publicKey: 'BPUBLICKEY' });
     await expect(failure).rejects.toBeInstanceOf(PushSubscribeError);
     await expect(failure).rejects.toThrow('AbortError: Registration failed - push service error');
+  });
+});
+
+describe('resyncPush on every start', () => {
+  const SERVER_KEY = 'BPUBLICKEY';
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+    Reflect.deleteProperty(navigator, 'serviceWorker');
+    storage.remove('nba:push-owner');
+  });
+
+  /** A phone that allowed notifications, holding a subscription made with `key`. */
+  function phoneSubscribedWith(key: string) {
+    vi.stubEnv('DEV', false);
+    vi.stubGlobal('Notification', { permission: 'granted', requestPermission: vi.fn() });
+    vi.stubGlobal('PushManager', class {});
+    const subscription = (endpoint: string, withKey: string) => ({
+      endpoint,
+      expirationTime: null,
+      options: { applicationServerKey: urlBase64ToUint8Array(withKey).buffer },
+      toJSON: () => ({ keys: { p256dh: 'p', auth: 'a' } }),
+      unsubscribe: vi.fn(async () => true),
+    });
+    const current = subscription('https://web.push.apple.com/old', key);
+    const registration = {
+      pushManager: {
+        getSubscription: vi.fn(async () => current),
+        subscribe: vi.fn(async () => subscription('https://web.push.apple.com/new', SERVER_KEY)),
+      },
+    };
+    Object.defineProperty(navigator, 'serviceWorker', { configurable: true, value: { ready: Promise.resolve(registration) } });
+    vi.spyOn(notificationsApi, 'publicKey').mockResolvedValue(SERVER_KEY);
+    const posted = vi.spyOn(notificationsApi, 'subscribe').mockResolvedValue({ ok: true });
+    return { registration, current, posted };
+  }
+
+  it("gives a staff member back their phone's notifications, after someone else used it", async () => {
+    const { posted } = phoneSubscribedWith(SERVER_KEY);
+    storage.set('nba:push-owner', 'test-client');
+    // A client account is not moved over silently…
+    await resyncPush('another-client');
+    expect(posted).not.toHaveBeenCalled();
+    // …the master opening the staff app is.
+    await resyncPush('master', { staff: true });
+    expect(posted).toHaveBeenCalledWith(expect.objectContaining({ endpoint: 'https://web.push.apple.com/old' }));
+    expect(storage.get('nba:push-owner')).toBe('master');
+  });
+
+  it('replaces a subscription made with an older server key, which could receive nothing', async () => {
+    const { registration, current, posted } = phoneSubscribedWith('BOLDERKEYX');
+    storage.set('nba:push-owner', 'master');
+    await resyncPush('master', { staff: true });
+    expect(current.unsubscribe).toHaveBeenCalled();
+    expect(registration.pushManager.subscribe).toHaveBeenCalled();
+    expect(posted).toHaveBeenCalledWith(expect.objectContaining({ endpoint: 'https://web.push.apple.com/new' }));
   });
 });

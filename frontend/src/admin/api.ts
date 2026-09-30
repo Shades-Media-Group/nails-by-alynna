@@ -370,6 +370,16 @@ export interface AuditEntry {
   meta: Record<string, unknown>;
 }
 
+/** Who hears about a master's new requests (owner): their account, its phones, and whether it wants them. */
+export interface StaffReach {
+  staffId: string;
+  account: { id: string; name: string; email: string | null } | null;
+  /** Phones signed in to that account with notifications on. */
+  phones: number;
+  /** The account wants new-request notifications on its phones. */
+  bookingAlerts: boolean;
+}
+
 export interface NewAppointmentInput {
   clientId?: string;
   newClient?: { name: string; surname: string; phone: string; email?: string };
@@ -385,6 +395,8 @@ export interface NewAppointmentInput {
   promoCode?: string;
   /** Optional at the desk: the client may not have decided yet. */
   nailShape?: NailShape;
+  /** Photos of the nails the client wants, sent first with photosApi.upload (up to three). */
+  photoIds?: string[];
 }
 
 export interface Paged {
@@ -469,6 +481,7 @@ export const adminApi = {
   reorder: (type: 'category' | 'service', ids: string[]) => api.post<{ ok: true }>('/admin/catalog/reorder', { type, ids }),
 
   staff: () => api.get<{ staff: AdminStaff[] }>('/admin/team/staff').then((r) => r.staff),
+  staffReach: () => api.get<{ reach: StaffReach[] }>('/admin/team/staff/reach').then((r) => r.reach),
   /** Owner only. */
   updateStaff: (id: string, input: Partial<StaffInput>) => api.patch<{ staff: AdminStaff }>(`/admin/team/staff/${id}`, input).then((r) => r.staff),
   /** Owner only. */
@@ -526,6 +539,7 @@ export const adminQueries = {
   stats: (date?: string) => queryOptions({ queryKey: ['admin', 'stats', date ?? 'today'], queryFn: () => adminApi.stats(date), staleTime: 30_000 }),
   catalog: () => queryOptions({ queryKey: ['admin', 'catalog'], queryFn: adminApi.catalog, staleTime: 60_000 }),
   staff: () => queryOptions({ queryKey: ['admin', 'staff'], queryFn: adminApi.staff, staleTime: 60_000 }),
+  staffReach: () => queryOptions({ queryKey: ['admin', 'staff', 'reach'], queryFn: adminApi.staffReach, staleTime: 30_000 }),
   myStaff: () => queryOptions({ queryKey: ['admin', 'staff', 'me'], queryFn: adminApi.myStaff, staleTime: 60_000, retry: false }),
   appointments: (params: AppointmentsParams) =>
     queryOptions({ queryKey: ['admin', 'appointments', params], queryFn: () => adminApi.appointments(params), staleTime: 15_000, ...LIVE }),

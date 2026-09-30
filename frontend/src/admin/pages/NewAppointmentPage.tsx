@@ -2,17 +2,20 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useCallback, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router';
+import { useAuth } from '@/app/auth';
+import { NailShapePicker } from '@/components/booking/NailShapePicker';
+import { PhotoPicker } from '@/components/booking/PhotoPicker';
 import { StepProgress } from '@/components/booking/StepProgress';
+import { clearBookingPhotos, useBookingPhotos } from '@/components/booking/useBookingPhotos';
 import { Alert } from '@/components/common/Alert';
 import { PromoCodeField } from '@/components/promo/PromoCodeField';
-import { Button, ButtonLink, IconButton, SegmentedControl, Select, Textarea, toast } from '@/components/ui';
+import { Button, ButtonLink, IconButton, SegmentedControl, Textarea, toast } from '@/components/ui';
 import { AddIcon, ArrowBackIcon, ArrowForwardIcon, QrCodeIcon } from '@/components/ui/icons';
 import { useStudio } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
 import { cx } from '@/lib/cx';
 import { errorMessage, fieldErrors } from '@/lib/errors';
 import { formatDateTime, formatDuration, formatPrice, formatTime, fullName } from '@/lib/format';
-import { NAIL_SHAPES, parseNailShape } from '@/lib/nailShape';
 import { promoAmountText, promoProblemText, promoRefusal } from '@/lib/promo';
 import { scrollPageTo } from '@/lib/scroll';
 import { isApiError } from '@/services/api/client';
@@ -81,6 +84,11 @@ export default function NewAppointmentPage() {
   const [created, setCreated] = useState<Created | null>(null);
   const [inviting, setInviting] = useState(false);
   const [promoCode, setPromoCode] = useState<string | null>(null);
+  // Photos of the nails the client wants (sent by message, or taken at the desk): a draft of this
+  // staff member's own, apart from any booking they make as a client.
+  const { user } = useAuth();
+  const photosOwner = user ? `${user.id}:desk` : null;
+  const photos = useBookingPhotos(photosOwner);
 
   const client = picked ? picked.value : prefill.data ? fromDetail(prefill.data) : null;
   // "Any master" with a free time books the master who is actually free then.
@@ -118,6 +126,7 @@ export default function NewAppointmentPage() {
     mutationFn: (input: NewAppointmentInput) => adminApi.createAppointment(input),
     onSuccess: (appointment) => {
       refresh(appointment.client.id);
+      clearBookingPhotos(photosOwner);
       toast.success(appointment.status === 'pending' ? t('booking.createdRequest') : t('booking.created'));
       const hasAccount = client?.kind === 'existing' ? client.hasAccount : false;
       setCreated({ appointment, hasAccount });
@@ -170,12 +179,14 @@ export default function NewAppointmentPage() {
       force: time.force,
       ...(promo.quote ? { promoCode: promo.quote.code } : {}),
       ...(nailShape ? { nailShape } : {}),
+      ...(photos.ids.length ? { photoIds: photos.ids } : {}),
     });
   };
   const restart = () => {
     setPicked({ value: null });
     setServiceIds([]);
     setNailShape(null);
+    clearBookingPhotos(photosOwner);
     setStaffId(null);
     setTime(null);
     setNotes('');
@@ -246,16 +257,19 @@ export default function NewAppointmentPage() {
             'services',
             t('booking.whatServices'),
             <>
-              {/* First, as in the client's booking; optional here. */}
-              <Select
-                label={`${t('booking:shape.title')} (${t('common.optional')})`}
-                value={nailShape ?? ''}
-                onChange={(e) => setNailShape(parseNailShape(e.target.value))}
-                options={[
-                  { value: '', label: t('booking.notChosen') },
-                  ...NAIL_SHAPES.map((shape) => ({ value: shape, label: t(`booking:shape.${shape}`) })),
-                ]}
-                className="sm:max-w-xs"
+              {/* First, as in the client's booking (the same tiles); optional here. */}
+              <NailShapePicker
+                value={nailShape}
+                onChange={(shape) => setNailShape((current) => (current === shape ? null : shape))}
+                optional
+                hint={t('booking.shapeHint')}
+              />
+              <PhotoPicker
+                photos={photos.photos}
+                onAdd={photos.add}
+                onRemove={photos.remove}
+                title={t('booking.photosTitle')}
+                text={t('booking.photosText')}
               />
               <ServicePicker selected={serviceIds} onChange={chooseServices} />
               {checked.services && !valid.services ? (
@@ -329,7 +343,7 @@ export default function NewAppointmentPage() {
           <div className="sticky top-8 flex flex-col gap-3">
             <Summary client={client} serviceIds={serviceIds} nailShape={nailShape} staffId={staffId} time={time} catalog={catalog} teamSize={teamSize} promo={promo.quote} onRemovePromo={() => setPromoCode(null)} />
             {submitError}
-            <Button size="lg" fullWidth loading={create.isPending} onClick={submit}>
+            <Button size="lg" fullWidth loading={create.isPending || photos.busy} onClick={submit}>
               {t('booking.create')}
             </Button>
           </div>
@@ -344,7 +358,7 @@ export default function NewAppointmentPage() {
             <SelectionLine client={client} serviceIds={serviceIds} catalog={catalog} />
           </p>
           {current.key === 'details' ? (
-            <Button size="md" loading={create.isPending} onClick={submit}>
+            <Button size="md" loading={create.isPending || photos.busy} onClick={submit}>
               {t('booking.createShort')}
             </Button>
           ) : (

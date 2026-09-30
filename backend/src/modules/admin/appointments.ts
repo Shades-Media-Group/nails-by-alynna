@@ -33,7 +33,7 @@ import { placeholderEmail } from '../../lib/placeholder-email';
 import { loyaltyStatus, loyaltyTags, stampOnCompletion } from '../loyalty/service';
 import { notifyBookingChange, notifyLoyaltyNext } from '../notifications';
 import { findPromo, promoError, promoOnStatusChange, type PromoStatusChange } from '../promo/service';
-import { photosByAppointment } from '../photos/service';
+import { attachPhotos, photosByAppointment, photosToAttach } from '../photos/service';
 
 export { placeholderEmail };
 
@@ -173,6 +173,8 @@ export function adminAppointmentRoutes(deps: AppDeps) {
       promoCode: z.string().trim().max(40, 'too_long').optional(),
       /** Optional at the desk: the client may not have decided yet (the master asks at the visit). */
       nailShape: nailShapeSchema.optional(),
+      /** Photos of the nails the client wants (shown or sent to the master), uploaded by this staff member. */
+      photoIds: z.array(objectIdSchema).max(3, 'too_many').default([]),
     })
     .refine((v) => Boolean(v.clientId) !== Boolean(v.newClient), { message: 'client_required', path: ['clientId'] });
 
@@ -220,6 +222,7 @@ export function adminAppointmentRoutes(deps: AppDeps) {
       await audit(deps, { actorId: actor._id, action: 'client.create', targetType: 'user', targetId: _id });
     }
     if (!client) throw new AppError(422, 'VALIDATION_ERROR', 'Client required', { fields: { clientId: 'required' } });
+    const photoIds = await photosToAttach(deps, actor._id, input.photoIds);
 
     const doc = await placeAppointment(deps, {
       client,
@@ -235,6 +238,7 @@ export function adminAppointmentRoutes(deps: AppDeps) {
       force: input.force,
       promo,
     });
+    await attachPhotos(deps, photoIds, doc._id);
     await audit(deps, {
       actorId: actor._id,
       action: 'appointment.create_staff',

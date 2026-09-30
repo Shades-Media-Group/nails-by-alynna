@@ -5,13 +5,13 @@ import { useAuth } from '@/app/auth';
 import { Alert } from '@/components/common/Alert';
 import { SectionHeading } from '@/components/layout/PageHeader';
 import { Avatar, Badge, Button, EmptyState, Skeleton, toast } from '@/components/ui';
-import { AddIcon, EditIcon, EventBusyIcon } from '@/components/ui/icons';
+import { AddIcon, EditIcon, EventBusyIcon, NotificationsIcon, WarningIcon } from '@/components/ui/icons';
 import { useI18nText } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
 import { cx } from '@/lib/cx';
 import { errorMessage } from '@/lib/errors';
 import { addDays, dayParts } from '@/lib/format';
-import { adminApi, adminQueries, type AdminStaff, type TimeOff, type WorkDay } from '../api';
+import { adminApi, adminQueries, type AdminStaff, type StaffReach, type TimeOff, type WorkDay } from '../api';
 import { AdminHeader } from '../components/AdminHeader';
 import { ConfirmSheet } from '../components/ConfirmSheet';
 import { useStudioToday } from '../components/hooks';
@@ -32,6 +32,8 @@ export default function TeamPage() {
   const { today, now } = useStudioToday();
   const queryClient = useQueryClient();
   const staff = useQuery(adminQueries.staff());
+  // Owner: whether each master's phone hears about new requests.
+  const reach = useQuery({ ...adminQueries.staffReach(), enabled: isOwner });
   const timeOff = useQuery(adminQueries.timeOff({ from: today, to: addDays(today, 365) }));
   const workDays = useQuery({
     ...adminQueries.workDays({ from: today, to: addDays(today, CARD_DAYS - 1) }),
@@ -106,6 +108,7 @@ export default function TeamPage() {
                     <MasterCard
                       member={member}
                       days={(workDays.data ?? []).filter((d) => d.staffId === member.id)}
+                      reach={reach.data?.find((r) => r.staffId === member.id)}
                       today={today}
                       onEdit={isOwner ? () => setEditing({ member }) : undefined}
                     />
@@ -172,7 +175,19 @@ export default function TeamPage() {
   );
 }
 
-function MasterCard({ member, days, today, onEdit }: { member: AdminStaff; days: WorkDay[]; today: string; onEdit?: () => void }) {
+function MasterCard({
+  member,
+  days,
+  reach,
+  today,
+  onEdit,
+}: {
+  member: AdminStaff;
+  days: WorkDay[];
+  reach?: StaffReach;
+  today: string;
+  onEdit?: () => void;
+}) {
   const { t } = useTranslation('admin');
   const { locale } = useLocale();
   const pick = useI18nText();
@@ -223,6 +238,7 @@ function MasterCard({ member, days, today, onEdit }: { member: AdminStaff; days:
         })}
       </div>
       <p className="tabular mt-2 text-sm text-ink-700">{summary || t('team.noHours')}</p>
+      {reach && member.isActive ? <ReachLine reach={reach} /> : null}
     </>
   );
 
@@ -236,5 +252,24 @@ function MasterCard({ member, days, today, onEdit }: { member: AdminStaff; days:
     >
       {body}
     </button>
+  );
+}
+
+/** Whether the master hears about new requests on their phone, and what to do when not. */
+function ReachLine({ reach }: { reach: StaffReach }) {
+  const { t } = useTranslation('admin');
+  const problem = !reach.account
+    ? t('team.reach.noAccount')
+    : !reach.bookingAlerts
+      ? t('team.reach.off', { name: reach.account.name })
+      : reach.phones === 0
+        ? t('team.reach.noPhone', { name: reach.account.name })
+        : null;
+  const Icon = problem ? WarningIcon : NotificationsIcon;
+  return (
+    <p className={cx('mt-3 flex items-start gap-2 rounded-lg px-2.5 py-2 text-sm', problem ? 'bg-peach-50 text-peach-800' : 'bg-mint-50 text-mint-700')}>
+      <Icon fontSize="inherit" className="mt-0.5 shrink-0 text-base" />
+      <span>{problem ?? t('team.reach.ok', { name: reach.account!.name, count: reach.phones })}</span>
+    </p>
   );
 }

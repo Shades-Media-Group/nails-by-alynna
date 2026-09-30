@@ -59,9 +59,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Signed in on this device again: its notifications (if this person had them on) resume,
   // whichever screen the app opens on.
   const userId = me.data?.id;
+  const staff = me.data?.role === 'admin' || me.data?.role === 'administrator';
   useEffect(() => {
-    if (userId) void resyncPush(userId);
-  }, [userId]);
+    if (userId) void resyncPush(userId, { staff });
+  }, [userId, staff]);
 
   useEffect(
     () =>

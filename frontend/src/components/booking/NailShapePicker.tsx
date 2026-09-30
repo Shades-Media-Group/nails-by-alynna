@@ -18,6 +18,9 @@ interface NailShapePickerProps {
   invalid?: boolean;
   /** The section, so the page can bring it into view when the shape is missing. */
   ref?: Ref<HTMLElement>;
+  /** At the desk: may stay unchosen (tapping the chosen shape clears it), with the staff's own hint. */
+  optional?: boolean;
+  hint?: string;
 }
 
 /**
@@ -25,7 +28,7 @@ interface NailShapePickerProps {
  * outlines, so the shape is the only thing that differs. A chosen tile looks like a chosen
  * service card (dark ring, check). One radio group: Tab stops once, arrow keys change the shape.
  */
-export function NailShapePicker({ value, onChange, invalid = false, ref }: NailShapePickerProps) {
+export function NailShapePicker({ value, onChange, invalid = false, ref, optional = false, hint }: NailShapePickerProps) {
   const { t } = useTranslation('booking');
   const id = useId();
   const radios = useRef<Array<HTMLButtonElement | null>>([]);
@@ -47,13 +50,13 @@ export function NailShapePicker({ value, onChange, invalid = false, ref }: NailS
         {t('shape.title')}
       </h2>
       <p id={`${id}-hint`} className="mt-1 text-sm text-ink-600">
-        {t('shape.hint')}
+        {hint ?? t('shape.hint')}
       </p>
       <div
         role="radiogroup"
         aria-labelledby={`${id}-title`}
         aria-describedby={invalid ? `${id}-hint ${id}-error` : `${id}-hint`}
-        aria-required="true"
+        aria-required={!optional}
         aria-invalid={invalid || undefined}
         className="mt-3 grid grid-cols-4 gap-2 sm:max-w-md"
       >

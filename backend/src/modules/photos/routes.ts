@@ -47,13 +47,17 @@ export function photoRoutes(deps: AppDeps) {
     return c.json({ photo: photoView(photo) }, 201);
   });
 
-  const mayView = (photo: PhotoDoc, user: { _id: ObjectId; role: string }) =>
-    STAFF_ROLES.includes(user.role as (typeof STAFF_ROLES)[number]) || photo.userId.equals(user._id);
+  /** Staff, whoever sent it, and the client whose booking it is on (a master may add them at the desk). */
+  const mayView = async (photo: PhotoDoc, user: { _id: ObjectId; role: string }) => {
+    if (STAFF_ROLES.includes(user.role as (typeof STAFF_ROLES)[number]) || photo.userId.equals(user._id)) return true;
+    if (!photo.appointmentId) return false;
+    return (await deps.col.appointments.countDocuments({ _id: photo.appointmentId, clientId: user._id })) > 0;
+  };
 
   const serve = (which: 'image' | 'thumb') => async (c: Context<AppEnv>) => {
     const id = paramId(c);
     const photo = await deps.col.photos.findOne({ _id: id });
-    if (!photo || !mayView(photo, c.get('user'))) throw notFound('Photo');
+    if (!photo || !(await mayView(photo, c.get('user')))) throw notFound('Photo');
     const bytes = await readPhotoBytes(deps, id, which);
     if (!bytes) throw notFound('Photo');
     return c.body(new Uint8Array(bytes), 200, {
@@ -74,7 +78,7 @@ export function photoRoutes(deps: AppDeps) {
     const user = c.get('user');
     const id = paramId(c);
     const photo = await deps.col.photos.findOne({ _id: id });
-    if (!photo || !mayView(photo, user)) throw notFound('Photo');
+    if (!photo || !(await mayView(photo, user))) throw notFound('Photo');
     const staff = STAFF_ROLES.includes(user.role);
     if (!staff && photo.appointmentId) {
       const upcoming = await deps.col.appointments.countDocuments({

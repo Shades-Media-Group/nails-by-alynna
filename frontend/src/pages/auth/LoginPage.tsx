@@ -40,7 +40,7 @@ export default function LoginPage() {
   const signedIn = (user: User) => {
     clearPendingCode();
     setUser(user);
-    void resyncPush(user.id);
+    void resyncPush(user.id, { staff: user.role === 'admin' || user.role === 'administrator' });
     // In the account's language, whichever language this screen is in.
     navigate(signedInPath(next ?? homePathFor(user), user.locale), { replace: true });
   };

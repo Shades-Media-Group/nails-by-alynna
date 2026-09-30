@@ -255,8 +255,9 @@ export default defineConfig(({ mode }) => {
         includeAssets: ['favicon.svg', 'favicon.ico', 'robots.txt', 'icons/apple-touch-icon-180x180.png'],
         manifest: MANIFEST,
         workbox: {
-          // Web Push: push / notificationclick handlers (public/push-sw.js; production builds only).
-          importScripts: ['push-sw.js'],
+          // A new version takes over at once, also in apps installed before (public/update-sw.js);
+          // Web Push: push / notificationclick handlers (public/push-sw.js). Production builds only.
+          importScripts: ['update-sw.js', 'push-sw.js'],
           // The photo encoder (.wasm) loads only when a client adds a photo, so it is not precached.
           globPatterns: ['**/*.{js,css,html,svg,png,webp,ico,woff2,webmanifest}'],
           // Admin code, launch screens and the version probe stay out of the install.
@@ -274,9 +275,10 @@ export default defineConfig(({ mode }) => {
             '**/onest-{math,symbols,vietnamese}-*.woff2',
           ],
           navigateFallback: '/index.html',
-          navigateFallbackDenylist: [/^\/api\//, /^\/version\.json$/],
+          navigateFallbackDenylist: [/^\/api\//, /^\/version\.json$/, /^\/health$/],
           cleanupOutdatedCaches: true,
-          clientsClaim: true,
+          // update-sw.js claims open windows itself, after telling the older ones apart.
+          clientsClaim: false,
           maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
           runtimeCaching: [
             {

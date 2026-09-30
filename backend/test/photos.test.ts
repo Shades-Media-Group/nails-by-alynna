@@ -152,6 +152,32 @@ describe('booking photos', () => {
     expect(await checkPhotoStorage(ctx.deps)).toBe(false);
   });
 
+  it('can be added by the master booking a client at the desk, and go with that client', async () => {
+    const ana = await registerClient(ctx);
+    const ids = [(await upload(owner)).body.photo.id as string, (await upload(owner)).body.photo.id as string];
+    const theirs = (await upload(ana.client)).body.photo.id as string;
+    const slots = (await ana.client.get(`/api/availability/slots?serviceIds=${gelId}&date=2026-06-04`)).body.slots as Array<{ start: string }>;
+    const book = (photoIds: string[]) =>
+      owner.post('/api/admin/appointments', { clientId: ana.user.id, serviceIds: [gelId], start: slots[0]!.start, nailShape: 'almond', photoIds });
+
+    // Only photos this staff member sent.
+    expect((await book([theirs])).body.error.fields).toEqual({ photoIds: 'invalid' });
+    const booked = await book(ids);
+    expect(booked.status).toBe(201);
+    expect(booked.body.appointment.nailShape).toBe('almond');
+    const id = booked.body.appointment.id as string;
+    expect((await owner.get(`/api/admin/appointments/${id}`)).body.appointment.photos).toHaveLength(2);
+    // The client sees them on their booking too, and can open them; another client can't.
+    expect((await ana.client.get(`/api/appointments/${id}`)).body.appointment.photos).toHaveLength(2);
+    expect((await ana.client.get(`/api/photos/${ids[0]}/thumb`)).status).toBe(200);
+    const stranger = await registerClient(ctx);
+    expect((await stranger.client.get(`/api/photos/${ids[0]}`)).status).toBe(404);
+
+    // They were about the client's nails: they go with the client's account.
+    expect((await ana.client.delete('/api/me', { password: strongPassword })).status).toBe(200);
+    expect(await ctx.deps.col.photos.countDocuments({ _id: { $in: ids.map((i) => new ObjectId(i)) } })).toBe(0);
+  });
+
   it('go when the client deletes their account', async () => {
     const { client } = await registerClient(ctx);
     const id = (await upload(client)).body.photo.id as string;

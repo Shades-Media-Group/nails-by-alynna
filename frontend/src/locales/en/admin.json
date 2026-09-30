@@ -163,6 +163,9 @@
     "notesHint": "The client sees it in the\u00a0app.",
     "summary": "Summary",
     "notChosen": "Not chosen yet",
+    "shapeHint": "Optional: the client can decide at the visit. Tap the chosen shape again to clear it.",
+    "photosTitle": "Photos of the nails the client wants",
+    "photosText": "Up to 3: ones the client sent you, or taken now. The client sees them on the booking\u00a0too.",
     "continue": "Continue",
     "createShort": "Book",
     "createdRequest": "Request saved",
@@ -596,6 +599,13 @@
     "bookableHint": "Off: stays in the team, but not in online booking.",
     "active": "Active profile",
     "activeHint": "Off: hidden everywhere; past bookings keep the name.",
+    "account": "Signs in as",
+    "accountNone": "No account yet",
+    "accountHint": "New requests reach this account’s phone, and it sees My\u00a0schedule. Give the master a staff role in Staff & roles first.",
+    "accountIssues": {
+      "not_staff": "Only a staff account can be linked (Staff & roles).",
+      "taken": "This account already belongs to another master."
+    },
     "services": "Services",
     "allServices": "Does every service",
     "allServicesHint": "Off: choose which ones below.",
@@ -614,6 +624,13 @@
     "servicesCount_one": "{{count}}\u00a0service",
     "servicesCount_other": "{{count}}\u00a0services",
     "noHours": "No working hours\u00a0set",
+    "reach": {
+      "noAccount": "No account linked: new requests reach no phone. Choose one under Edit → Signs in as.",
+      "off": "{{name}} turned off notifications about new requests (Profile → Notifications).",
+      "noPhone": "{{name}}: no phone gets new requests yet. Open the app on the phone and turn notifications on.",
+      "ok_one": "New requests reach {{name}} on {{count}}\u00a0phone.",
+      "ok_other": "New requests reach {{name}} on {{count}}\u00a0phones."
+    },
     "ownerOnly": "Only the owner can add or edit masters.",
     "empty": "No masters yet",
     "emptyOwner": "Add the first master so clients can book.",

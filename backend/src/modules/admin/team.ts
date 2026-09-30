@@ -17,6 +17,7 @@ import { dateSchema, objectIdSchema, paramId, parseJson, parseQuery, timeSchema 
 import { requireRole } from '../../middleware/auth';
 import { feedLinks, newFeedToken } from '../calendar/feed';
 import { opensDays, sessionMinOf } from '../availability/service';
+import { channelsFor, resolvePrefs } from '../notifications/prefs';
 import { getSettings } from '../settings';
 import { staffInputSchema, staffPatchSchema } from './schemas';
 
@@ -159,8 +160,52 @@ export function adminTeamRoutes(deps: AppDeps) {
     return c.json({ staff: staff.map(toStaff) });
   });
 
+  /**
+   * Who hears about new requests, per master (owner): the account they sign in with, how many of
+   * its phones are signed in with notifications on, and whether it wants booking notifications.
+   * A master with no account, or no phone, is told nothing: the Team page says so.
+   */
+  app.get('/staff/reach', owner, async (c) => {
+    const staff = await deps.col.staff.find({}, { projection: { _id: 1, userId: 1 } }).toArray();
+    const userIds = staff.flatMap((s) => (s.userId ? [s.userId] : []));
+    const now = deps.now();
+    const [users, subscriptions, sessions] = await Promise.all([
+      deps.col.users.find({ _id: { $in: userIds } }, { projection: { name: 1, surname: 1, email: 1, isActive: 1, deletedAt: 1, notificationPrefs: 1 } }).toArray(),
+      deps.col.pushSubscriptions.find({ userId: { $in: userIds } }, { projection: { userId: 1, sessionId: 1 } }).toArray(),
+      deps.col.sessions.find({ userId: { $in: userIds }, revokedAt: null, expiresAt: { $gt: now } }, { projection: { _id: 1 } }).toArray(),
+    ]);
+    const live = new Set(sessions.map((s) => s._id.toHexString()));
+    const reach = staff.map((s) => {
+      const user = s.userId ? users.find((u) => u._id.equals(s.userId!)) : undefined;
+      if (!user || !user.isActive || user.deletedAt) return { staffId: s._id.toHexString(), account: null, phones: 0, bookingAlerts: false };
+      const phones = subscriptions.filter((sub) => sub.userId.equals(user._id) && sub.sessionId && live.has(sub.sessionId.toHexString())).length;
+      return {
+        staffId: s._id.toHexString(),
+        account: { id: user._id.toHexString(), name: `${user.name} ${user.surname ?? ''}`.trim(), email: user.email },
+        phones,
+        bookingAlerts: channelsFor(resolvePrefs(user.notificationPrefs), 'staffBookings').push,
+      };
+    });
+    return c.json({ reach });
+  });
+
+  /**
+   * The account a master signs in with (My schedule, and new requests on their phone): an active
+   * staff account, and one master's at most.
+   */
+  const checkLinkedUser = async (userId: ObjectId | null | undefined, staffId: ObjectId | null) => {
+    if (!userId) return;
+    const user = await deps.col.users.findOne({ _id: userId, isActive: true, deletedAt: null }, { projection: { role: 1 } });
+    if (!user || (user.role !== 'admin' && user.role !== 'administrator')) {
+      throw new AppError(422, 'VALIDATION_ERROR', 'Not a staff account', { fields: { userId: 'not_staff' } });
+    }
+    const other = await deps.col.staff.findOne({ userId, ...(staffId ? { _id: { $ne: staffId } } : {}) }, { projection: { _id: 1 } });
+    if (other) throw new AppError(422, 'VALIDATION_ERROR', 'Account already linked', { fields: { userId: 'taken' } });
+  };
+
   app.post('/staff', owner, async (c) => {
     const input = await parseJson(c, staffInputSchema);
+    await checkLinkedUser(input.userId, null);
     const now = deps.now();
     const last = await deps.col.staff.find().sort({ order: -1 }).limit(1).next();
     const doc: StaffDoc = { _id: new ObjectId(), ...input, order: (last?.order ?? 0) + 1, createdAt: now, updatedAt: now };
@@ -172,6 +217,7 @@ export function adminTeamRoutes(deps: AppDeps) {
   app.patch('/staff/:id', owner, async (c) => {
     const id = paramId(c);
     const input = await parseJson(c, staffPatchSchema);
+    await checkLinkedUser(input.userId, id);
     const updated = await deps.col.staff.findOneAndUpdate(
       { _id: id },
       { $set: { ...input, updatedAt: deps.now() } },

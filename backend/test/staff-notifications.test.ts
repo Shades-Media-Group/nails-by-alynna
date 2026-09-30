@@ -264,6 +264,42 @@ describe('a new request reaches the master\'s phone at once', () => {
     }
   });
 
+  it('tries the push again when only the email went out, and never sends that email twice', async () => {
+    let answer = 500;
+    const delivered: string[] = [];
+    setPushTransport(ctx.deps, {
+      async send(target) {
+        if (answer === 201) delivered.push(target.endpoint);
+        return answer;
+      },
+    });
+    try {
+      await subscribeMaster();
+      const emailsBefore = mailsTo(master.email).length;
+      const { appointment } = await clientWithBooking();
+      await ctx.flush();
+      const first = await ctx.deps.col.notificationLog.findOne({ kind: 'staff_booking', appointmentId: new ObjectId(appointment.id), status: 'failed' });
+      // The email reached the master; the push service refused, and says so in the log.
+      expect(first?.channels).toEqual({ email: 'sent', push: 'failed' });
+      expect(first?.error).toMatch(/push refused \(apple 500\)/);
+      expect(first?.retryAt).not.toBeNull();
+      const emailsAfterFirst = mailsTo(master.email).length;
+      expect(emailsAfterFirst).toBe(emailsBefore + 1);
+
+      answer = 201;
+      ctx.advance(6 * 60_000);
+      const { runDueNotifications } = await import('../src/modules/notifications/scheduler');
+      await runDueNotifications(ctx.deps);
+      await ctx.flush();
+      expect(delivered).toContain('https://web.push.apple.com/master-iphone');
+      expect(mailsTo(master.email).length).toBe(emailsAfterFirst);
+      const retried = await ctx.deps.col.notificationLog.findOne({ _id: first!._id });
+      expect(retried).toMatchObject({ status: 'sent', channels: { email: 'sent', push: 'sent' } });
+    } finally {
+      await afterEach();
+    }
+  });
+
   it('takes over a send cut off by a restart', async () => {
     const delivered: string[] = [];
     setPushTransport(ctx.deps, {
@@ -279,10 +315,10 @@ describe('a new request reaches the master\'s phone at once', () => {
       const log = await ctx.deps.col.notificationLog.findOne({ kind: 'staff_booking', appointmentId: new ObjectId(appointment.id) });
       expect(log?.status).toBe('sent');
       delivered.length = 0;
-      // As if the server stopped right after claiming it.
+      // As if the server stopped right after claiming it (nothing recorded as sent yet).
       await ctx.deps.col.notificationLog.updateMany(
         { kind: 'staff_booking', appointmentId: new ObjectId(appointment.id) },
-        { $set: { status: 'sending', updatedAt: ctx.now() } },
+        { $set: { status: 'sending', channels: {}, updatedAt: ctx.now() } },
       );
       const { runDueNotifications } = await import('../src/modules/notifications/scheduler');
       await runDueNotifications(ctx.deps);

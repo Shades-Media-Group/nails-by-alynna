@@ -3,19 +3,27 @@ import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { toast } from '@/components/ui';
-import { newBuildOnServer } from '@/lib/appUpdate';
+import { BUSY_PATHS, UPDATE_MESSAGE, newBuildOnServer, reloadsAtOnce } from '@/lib/appUpdate';
 
 /** How often an open app asks whether a new build is out (/version.json: a few hundred bytes, never cached). */
 const CHECK_EVERY_MS = 60_000;
-/** Screens where a reload could lose what the user is typing. */
-const BUSY_PATHS = /\/(book|login|signup|forgot-password|reset-password|profile|admin\/(services|team|settings|appointments\/new))/;
+
+/** When the app was last opened or brought back on screen. */
+let shownAt = typeof performance === 'undefined' ? 0 : performance.now();
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') shownAt = performance.now();
+  });
+}
 
 /**
  * Keeps the app current after every deploy, without signing anyone out (the session lives in
  * cookies, a reload keeps it). While the app is on screen it asks every minute (and on launch,
  * on coming back to the foreground, on focus and when the connection returns) whether a new build
- * is out; the new version downloads at once and "Update" shows as soon as it is ready. If
- * ignored, it applies itself the next time the app is hidden (unless a form is open).
+ * is out, and the new version downloads and takes over at once (public/update-sw.js). Just
+ * opened, the app reloads into it straight away; in use, it offers "Update" and applies it the
+ * next time the app is hidden (unless a form is open). Apps installed before this reload anyway,
+ * from the service worker.
  */
 export function UpdatePrompt() {
   const [ready, setReady] = useState(false);
@@ -65,6 +73,19 @@ function ServiceWorkerWatch({ onReady }: { onReady: (update: () => void) => void
   useEffect(() => {
     if (needRefresh) onReady(() => void updateServiceWorker(true));
   }, [needRefresh, onReady, updateServiceWorker]);
+
+  // The new version took over: say this window updates itself (else the worker reloads it).
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    const onMessage = (event: MessageEvent<unknown>) => {
+      if ((event.data as { type?: unknown } | null)?.type !== UPDATE_MESSAGE) return;
+      event.ports[0]?.postMessage('ok');
+      if (reloadsAtOnce(window.location.pathname, performance.now() - shownAt)) window.location.reload();
+      else onReady(() => window.location.reload());
+    };
+    navigator.serviceWorker.addEventListener('message', onMessage);
+    return () => navigator.serviceWorker.removeEventListener('message', onMessage);
+  }, [onReady]);
   return null;
 }
 

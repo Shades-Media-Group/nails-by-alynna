@@ -163,6 +163,9 @@
     "notesHint": "Clientul o vede în aplicație.",
     "summary": "Rezumat",
     "notChosen": "Încă nimic",
+    "shapeHint": "Opțional: clientul poate alege la vizită. Atinge din nou forma aleasă ca să anulezi.",
+    "photosTitle": "Poze cu unghiile dorite de client",
+    "photosText": "Până la 3: primite de la client sau făcute acum. Clientul le vede și el în\u00a0programare.",
     "continue": "Continuă",
     "createShort": "Programează",
     "createdRequest": "Cererea a fost salvată",
@@ -620,6 +623,13 @@
     "bookableHint": "Oprit: rămâne în echipă, dar nu apare la programarea online.",
     "active": "Profil activ",
     "activeHint": "Oprit: ascuns peste tot; programările trecute păstrează numele.",
+    "account": "Se conectează ca",
+    "accountNone": "Niciun cont încă",
+    "accountHint": "Cererile noi ajung pe telefonul acestui cont, care vede și Programul\u00a0meu. Dă-i întâi maestrului un rol de personal în Personal și roluri.",
+    "accountIssues": {
+      "not_staff": "Se poate lega doar un cont de personal (Personal și roluri).",
+      "taken": "Contul acesta aparține deja altui maestru."
+    },
     "services": "Servicii",
     "allServices": "Face toate serviciile",
     "allServicesHint": "Oprit: alege mai jos care anume.",
@@ -640,6 +650,14 @@
     "servicesCount_few": "{{count}}\u00a0servicii",
     "servicesCount_other": "{{count}}\u00a0de\u00a0servicii",
     "noHours": "Fără program de lucru",
+    "reach": {
+      "noAccount": "Niciun cont legat: cererile noi nu ajung pe niciun telefon. Alege unul la Editează → Se conectează ca.",
+      "off": "{{name}} a oprit notificările despre cererile noi (Profil → Notificări).",
+      "noPhone": "{{name}}: încă niciun telefon nu primește cererile noi. Deschide aplicația pe telefon și pornește notificările.",
+      "ok_one": "Cererile noi ajung la {{name}} pe {{count}}\u00a0telefon.",
+      "ok_few": "Cererile noi ajung la {{name}} pe {{count}}\u00a0telefoane.",
+      "ok_other": "Cererile noi ajung la {{name}} pe {{count}}\u00a0de\u00a0telefoane."
+    },
     "ownerOnly": "Doar proprietarul poate adăuga sau edita maeștri.",
     "empty": "Încă nu sunt maeștri",
     "emptyOwner": "Adaugă primul maestru ca să se poată face programări.",

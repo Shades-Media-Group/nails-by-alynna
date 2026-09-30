@@ -8,6 +8,7 @@ import { cx } from '@/lib/cx';
 import { errorMessage, fieldErrors } from '@/lib/errors';
 import { formatDuration } from '@/lib/format';
 import { SWATCH, SWATCH_ORDER } from '@/lib/swatch';
+import { ApiError } from '@/services/api/client';
 import { adminApi, adminQueries, type AdminStaff, type StaffInput, type WeeklyHours } from '../api';
 import { HoursEditor } from './HoursEditor';
 import { I18nFields } from './I18nFields';
@@ -45,7 +46,10 @@ function initialForm(member: AdminStaff | null): StaffInput {
   };
 }
 
-/** Add or edit a master (owner only): name, title, colour, what they do and when they work. */
+/**
+ * Add or edit a master (owner only): name, title, colour, the account they sign in with (new
+ * requests reach that phone), what they do and when they work.
+ */
 export function StaffEditor({ member, onClose }: { member: AdminStaff | null; onClose: () => void }) {
   const { t } = useTranslation(['admin', 'common']);
   const { locale } = useLocale();
@@ -55,6 +59,11 @@ export function StaffEditor({ member, onClose }: { member: AdminStaff | null; on
   const [touched, setTouched] = useState(false);
   const set = <K extends keyof StaffInput>(key: K, value: StaffInput[K]) => setForm((f) => ({ ...f, [key]: value }));
   const name = (text: { ro: string; ru: string; en: string }) => text[locale] || text.ro;
+
+  // Staff accounts a master can sign in with (owners first).
+  const owners = useQuery(adminQueries.users({ role: 'administrator' }));
+  const admins = useQuery(adminQueries.users({ role: 'admin' }));
+  const accounts = [...(owners.data?.users ?? []), ...(admins.data?.users ?? [])].filter((user) => user.isActive || user.id === form.userId);
 
   const categories = [...(catalog.data?.categories ?? [])].sort((a, b) => Number(b.isActive) - Number(a.isActive) || a.order - b.order);
   const services = catalog.data?.services ?? [];
@@ -83,6 +92,8 @@ export function StaffEditor({ member, onClose }: { member: AdminStaff | null; on
   });
 
   const server = fieldErrors(t, save.error);
+  const accountCode = save.error instanceof ApiError ? save.error.fields.userId : undefined;
+  const accountError = accountCode ? t(`team.accountIssues.${accountCode}`, { defaultValue: server.userId }) : undefined;
   const nameError = touched && !form.name.trim() ? t('common:validation.required') : server.name;
   const byDays = form.scheduleMode === 'days';
   const hoursInvalid = !byDays && form.weekly.some((day) => dayIssue(day) !== null);
@@ -156,6 +167,23 @@ export function StaffEditor({ member, onClose }: { member: AdminStaff | null; on
         <div className="flex flex-col gap-4 rounded-2xl bg-ink-50 p-4">
           <Switch checked={form.isBookable} onChange={(v) => set('isBookable', v)} label={t('team.bookable')} description={t('team.bookableHint')} />
           <Switch checked={form.isActive} onChange={(v) => set('isActive', v)} label={t('team.active')} description={t('team.activeHint')} />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Select
+            label={t('team.account')}
+            value={form.userId ?? ''}
+            onChange={(e) => set('userId', e.target.value || null)}
+            options={[
+              { value: '', label: t('team.accountNone') },
+              ...accounts.map((user) => ({
+                value: user.id,
+                label: [`${user.name} ${user.surname}`.trim(), user.email].filter(Boolean).join(' · '),
+              })),
+            ]}
+            error={accountError}
+          />
+          <p className="pl-1 text-sm text-ink-600">{t('team.accountHint')}</p>
         </div>
 
         <section aria-labelledby="staff-services" className="flex flex-col gap-3">

@@ -16,11 +16,16 @@ export function PhotoPicker({
   onAdd,
   onRemove,
   className,
+  title,
+  text,
 }: {
   photos: PickedPhoto[];
   onAdd: (files: FileList) => void;
   onRemove: (key: string) => void;
   className?: string;
+  /** The staff's own words at the desk (the client's otherwise). */
+  title?: string;
+  text?: string;
 }) {
   const { t } = useTranslation('booking');
   const input = useRef<HTMLInputElement>(null);
@@ -34,11 +39,11 @@ export function PhotoPicker({
     <section aria-labelledby={`${id}-title`} className={className}>
       <div className="flex items-baseline justify-between gap-3">
         <h2 id={`${id}-title`} className="text-h3 font-bold">
-          {t('photos.title')}
+          {title ?? t('photos.title')}
         </h2>
         <span className="shrink-0 text-sm text-ink-500">{t('photos.optional')}</span>
       </div>
-      <p className="mt-0.5 text-sm text-ink-600">{t('photos.text', { count: MAX_BOOKING_PHOTOS })}</p>
+      <p className="mt-0.5 text-sm text-ink-600">{text ?? t('photos.text', { count: MAX_BOOKING_PHOTOS })}</p>
 
       <ul className="mt-3 grid grid-cols-3 gap-2 sm:max-w-sm">
         {photos.map((photo, index) => (

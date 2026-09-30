@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calendarChoices, googleAppIntent, googleEventUrl, outlookEventUrl } from './calendarLinks';
+import { calendarChoices, fileAction, googleAppIntent, googleEventUrl, opensSafariLinks, outlookEventUrl } from './calendarLinks';
 import type { CalendarEvent } from './ics';
 
 const event: CalendarEvent = {
@@ -50,5 +50,30 @@ describe('add to calendar, per device', () => {
     expect(url.searchParams.get('subject')).toBe(event.title);
     expect(url.searchParams.get('startdt')).toBe(event.start);
     expect(url.searchParams.get('rru')).toBe('addevent');
+  });
+});
+
+describe('the calendar file, per device', () => {
+  const url = 'https://app.example/api/calendar/abc.ics';
+  const iphone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1';
+  const oldIphone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1';
+
+  it('lets Safari show its "Add to Calendar" sheet, from a tab or from the Home Screen app', () => {
+    expect(fileAction(url, { os: 'ios', standalone: false, ua: iphone })).toEqual({ kind: 'navigate', href: url });
+    // The app on the Home Screen can't show the file (a blank page): Safari can.
+    expect(fileAction(url, { os: 'ios', standalone: true, ua: iphone })).toEqual({ kind: 'safari', href: `x-safari-${url}` });
+    expect(fileAction(url, { os: 'ipados', standalone: true, ua: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)' })).toEqual({
+      kind: 'safari',
+      href: `x-safari-${url}`,
+    });
+    // Before iOS 17 there is no such link: the in-app browser, with its Safari button.
+    expect(fileAction(url, { os: 'ios', standalone: true, ua: oldIphone })).toEqual({ kind: 'open', href: url });
+    expect(opensSafariLinks(oldIphone)).toBe(false);
+  });
+
+  it('downloads it everywhere else, never leaving a blank page', () => {
+    expect(fileAction(url, { os: 'android', standalone: true, ua: 'Android' })).toEqual({ kind: 'download', href: url });
+    expect(fileAction(url, { os: 'android', standalone: false, ua: 'Android' })).toEqual({ kind: 'download', href: url });
+    expect(fileAction(url, { os: 'desktop', standalone: false, ua: 'Mac' })).toEqual({ kind: 'download', href: url });
   });
 });

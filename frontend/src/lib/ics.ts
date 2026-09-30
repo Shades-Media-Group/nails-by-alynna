@@ -50,11 +50,16 @@ export function buildIcs(event: CalendarEvent): string {
 export function downloadIcs(event: CalendarEvent, filename = 'nails-by-alynna.ics'): void {
   const blob = new Blob([buildIcs(event)], { type: 'text/calendar;charset=utf-8' });
   const url = URL.createObjectURL(blob);
+  downloadFile(url, filename);
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** Saves `url` as a file, the page staying where it is (same-origin links honour `download`). */
+export function downloadFile(url: string, filename: string): void {
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
   document.body.appendChild(link);
   link.click();
   link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

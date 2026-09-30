@@ -6,9 +6,9 @@ import { CalendarAddIcon, ChevronRightIcon, EventIcon, type IconComponent } from
 import { useI18nText, useStudio } from '@/hooks/useStudio';
 import { useLocale } from '@/i18n/useLocale';
 import { calendarEventFor } from '@/lib/appointment';
-import { calendarChoices, googleAppIntent, googleEventUrl, outlookEventUrl, type CalendarChoice } from '@/lib/calendarLinks';
-import { downloadIcs } from '@/lib/ics';
-import { isStandalone } from '@/lib/platform';
+import { calendarChoices, fileAction, googleAppIntent, googleEventUrl, outlookEventUrl, type CalendarChoice } from '@/lib/calendarLinks';
+import { downloadFile, downloadIcs } from '@/lib/ics';
+import { currentPlatform, isStandalone } from '@/lib/platform';
 import type { Appointment } from '@/types/api';
 
 /**
@@ -35,15 +35,21 @@ function useAddToCalendar(appointment: Appointment): { open: () => void; sheet: 
       window.open(choice === 'outlook' ? outlookEventUrl(event) : googleEventUrl(event, timeZone), '_blank', 'noopener,noreferrer');
       return;
     }
-    // The server's .ics link: iPhone and Mac show their "Add to Calendar" sheet; Android hands the
-    // file to the calendar app. Inside the installed iPhone app it opens over the app, which stays put.
+    // The server's .ics link (lib/calendarLinks.ts fileAction says how, per device).
+    const filename = `nails-by-alynna-${appointment.code}.ics`;
     const url = appointment.calendarUrl;
     if (!url) {
-      downloadIcs(event, `nails-by-alynna-${appointment.code}.ics`);
+      downloadIcs(event, filename);
       return;
     }
-    if (isStandalone()) window.open(url, '_blank', 'noopener');
-    else window.location.assign(url);
+    const action = fileAction(new URL(url, window.location.origin).href, {
+      os: currentPlatform().os,
+      standalone: isStandalone(),
+      ua: navigator.userAgent,
+    });
+    if (action.kind === 'open') window.open(action.href, '_blank', 'noopener');
+    else if (action.kind === 'download') downloadFile(action.href, filename);
+    else window.location.assign(action.href);
   };
 
   const open = () => {

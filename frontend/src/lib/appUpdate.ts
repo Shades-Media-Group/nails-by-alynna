@@ -15,3 +15,20 @@ export async function newBuildOnServer(): Promise<boolean> {
     return false;
   }
 }
+
+/** What the new service worker asks every open window (public/update-sw.js); answering means "I update myself". */
+export const UPDATE_MESSAGE = 'nba:update-ready';
+
+/** Screens where a reload could lose what the user is typing. */
+export const BUSY_PATHS = /\/(book|login|signup|forgot-password|reset-password|profile|admin\/(services|team|settings|appointments\/new))/;
+
+/** Just opened or back on screen this long ago: nothing started yet, so a reload goes unnoticed. */
+const FRESH_MS = 8_000;
+
+/**
+ * A new version is ready: reload now when the app was just opened (and no form is open), else
+ * offer "Update" and apply it the next time the app is hidden.
+ */
+export function reloadsAtOnce(path: string, msSinceShown: number): boolean {
+  return msSinceShown < FRESH_MS && !BUSY_PATHS.test(path);
+}

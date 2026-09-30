@@ -638,7 +638,14 @@ describe('new booking flow', () => {
     const user = userEvent.setup();
     renderScreen(<NewAppointmentPage />, '/en/admin/appointments/new', '/en/admin/appointments/new');
     await user.click(await screen.findByRole('button', { name: /Maria Popescu/ }));
-    await user.selectOptions(screen.getByLabelText('Nail shape (optional)'), 'Almond');
+    // The same tiles as the client's booking; tapping the chosen one again clears it (optional).
+    const shapes = screen.getByRole('radiogroup', { name: 'Nail shape' });
+    await user.click(within(shapes).getByRole('radio', { name: 'Round' }));
+    await user.click(within(shapes).getByRole('radio', { name: 'Round' }));
+    expect(within(shapes).getByRole('radio', { name: 'Round' })).toHaveAttribute('aria-checked', 'false');
+    await user.click(within(shapes).getByRole('radio', { name: 'Almond' }));
+    // Photos of the nails the client wants can go with it too.
+    expect(screen.getByRole('heading', { name: 'Photos of the nails the client wants' })).toBeInTheDocument();
     await user.click(await screen.findByRole('button', { name: /Gel polish/ }));
     await user.click(await screen.findByRole('button', { name: '10:00' }));
     // The summary lists it once chosen.

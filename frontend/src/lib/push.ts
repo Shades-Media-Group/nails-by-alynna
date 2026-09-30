@@ -196,16 +196,33 @@ export async function disablePush(): Promise<void> {
 }
 
 /**
- * After signing in again on this device: re-attaches the existing subscription to the new
- * session, if it was switched on by this same person. Best effort, never throws.
+ * On every start and after signing in: re-attaches this device's subscription to the session, if
+ * this person switched it on here, or (staff) whoever did: a master's phone that was also used to
+ * try the client app gets the studio's notifications back as soon as the master opens the staff
+ * app. A subscription made with an older server key can't receive anything (the push service
+ * refuses it): it is replaced, or dropped so the app asks again. Best effort, never throws.
  */
-export async function resyncPush(userId: string): Promise<void> {
+export async function resyncPush(userId: string, { staff = false }: { staff?: boolean } = {}): Promise<void> {
   try {
-    if (storage.get(OWNER_KEY) !== userId) return;
+    if (!staff && storage.get(OWNER_KEY) !== userId) return;
     if (pushCapability() !== 'ok' || Notification.permission !== 'granted') return;
     const reg = await registration();
-    const subscription = await reg?.pushManager.getSubscription();
-    if (subscription) await notificationsApi.subscribe(toInput(subscription));
+    let subscription = await reg?.pushManager.getSubscription();
+    if (!reg || !subscription) return;
+    const publicKey = await notificationsApi.publicKey();
+    if (!publicKey) return;
+    const key = urlBase64ToUint8Array(publicKey);
+    if (!sameKey(subscription.options.applicationServerKey, key)) {
+      await subscription.unsubscribe().catch(() => undefined);
+      // Allowed already, so no prompt; where the system still wants a tap, the app asks again.
+      subscription = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }).catch(() => null);
+      if (!subscription) {
+        storage.remove(OWNER_KEY);
+        return;
+      }
+    }
+    await notificationsApi.subscribe(toInput(subscription));
+    storage.set(OWNER_KEY, userId);
   } catch (error) {
     // Offline or signed out meanwhile: the next start or the Notifications screen tries again.
     console.warn('[push] could not re-attach this device', error);

@@ -297,10 +297,15 @@ export function meRoutes(deps: AppDeps) {
       deps.col.pushSubscriptions.deleteMany({ userId: user._id }),
       deps.col.otpCodes.deleteMany({ userId: user._id }),
       deps.col.walletPasses.deleteOne({ _id: user._id }),
-      // The photos of the nails they wanted were theirs.
-      deps.col.photos
-        .find({ userId: user._id }, { projection: { _id: 1 } })
+      // The photos of the nails they wanted were theirs, also those a master added to their bookings.
+      deps.col.appointments
+        .find({ clientId: user._id }, { projection: { _id: 1 } })
         .toArray()
+        .then((visits) =>
+          deps.col.photos
+            .find({ $or: [{ userId: user._id }, { appointmentId: { $in: visits.map((v) => v._id) } }] }, { projection: { _id: 1 } })
+            .toArray(),
+        )
         .then((photos) => deletePhotos(deps, photos.map((p) => p._id))),
       // Feedback loses its words (they were the client's own); stars stay in the studio's numbers
       // under the anonymised name, and feedback that was only words goes.

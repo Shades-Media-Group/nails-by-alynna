@@ -58,3 +58,35 @@ export function calendarChoices(os: OS = currentPlatform().os): CalendarChoice[]
   if (os === 'android') return ['googleApp', 'file'];
   return ['googleWeb', 'outlook', 'file'];
 }
+
+/** How the visit's calendar file is handed over on this device (see `fileAction`). */
+export type FileAction =
+  | { kind: 'navigate'; href: string }
+  | { kind: 'safari'; href: string }
+  | { kind: 'open'; href: string }
+  | { kind: 'download'; href: string };
+
+/** iOS 17 and later open `x-safari-https://` links in Safari; an iPad asking for desktop sites shows no version. */
+export function opensSafariLinks(ua: string): boolean {
+  const version = /OS (\d+)_\d+/.exec(ua);
+  return !version || Number(version[1]) >= 17;
+}
+
+/**
+ * Where the server's .ics goes, per device (tested on an iPhone):
+ *  - iPhone/iPad in Safari: the page itself goes to the file, and Safari shows its "Add to Calendar" sheet.
+ *  - iPhone/iPad app on the Home Screen: its window can't show a calendar file (a blank page with no
+ *    way back), nor can the browser it opens links in. Safari can: `x-safari-https://` hands the file to
+ *    Safari, which shows the same sheet; "◀ Nails by Alynna" at the top returns to the app.
+ *  - Android and computers: a download, never a page change (a browser that can't show the file would
+ *    leave a blank page); the phone then opens it with its calendar app.
+ */
+export function fileAction(url: string, device: { os: OS; standalone: boolean; ua: string }): FileAction {
+  if (device.os === 'ios' || device.os === 'ipados') {
+    if (!device.standalone) return { kind: 'navigate', href: url };
+    if (url.startsWith('https://') && opensSafariLinks(device.ua)) return { kind: 'safari', href: `x-safari-${url}` };
+    // Older iOS: the in-app browser, whose Safari button opens the file.
+    return { kind: 'open', href: url };
+  }
+  return { kind: 'download', href: url };
+}

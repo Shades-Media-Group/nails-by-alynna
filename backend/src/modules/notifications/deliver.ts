@@ -93,38 +93,51 @@ export async function deliver(deps: AppDeps, req: DeliveryRequest): Promise<Deli
   const now = deps.now();
   if (!(await claim(deps, req, now))) return 'duplicate';
 
-  const channels: NotificationLogDoc['channels'] = { email: 'off', push: 'off' };
+  // A retry sends again only what did not go out: an email that went stays sent, and the push
+  // that failed alone is tried again (not skipped because the email made it).
+  const before = (await deps.col.notificationLog.findOne({ _id: req.key }, { projection: { channels: 1 } }))?.channels ?? {};
+  const channels: NotificationLogDoc['channels'] = {
+    email: before.email === 'sent' ? 'sent' : 'off',
+    push: before.push === 'sent' ? 'sent' : 'off',
+  };
   const errors: string[] = [];
-  let transient = false;
+  let retryEmail = false;
+  let retryPush = false;
 
   const sendEmail = async () => {
-    if (!useEmail || !req.email) return;
+    if (!useEmail || !req.email || channels.email === 'sent') return;
     try {
       await deps.mailer.send(await req.email());
       channels.email = 'sent';
     } catch (error) {
       channels.email = 'failed';
       errors.push((error as Error).message);
-      if (!(error instanceof MailError) || error.transient) transient = true;
+      if (!(error instanceof MailError) || error.transient) retryEmail = true;
     }
   };
   const sendPush = async () => {
-    if (!usePush || !req.push) return;
+    if (!usePush || !req.push || channels.push === 'sent') return;
     try {
       const result = await sendPushToUser(deps, req.user._id, req.push.payload, req.push.options);
       channels.push = result.sent > 0 ? 'sent' : result.devices === 0 ? 'no_device' : 'failed';
-      if (channels.push === 'failed') errors.push('push delivery failed');
+      if (channels.push === 'failed') {
+        // Which push service refused it, and how: the reason to look at, kept with the message.
+        const refused = result.deliveries.filter((d) => d.outcome === 'failed').map((d) => `${d.service} ${d.status ?? 'unreachable'}`);
+        errors.push(`push refused (${refused.join(', ') || 'no answer'})`);
+      }
     } catch (error) {
       channels.push = 'failed';
       errors.push((error as Error).message);
     }
-    if (channels.push === 'failed') transient = true;
+    if (channels.push === 'failed') retryPush = true;
   };
   await Promise.all([sendPush(), sendEmail()]);
 
   const delivered = channels.email === 'sent' || channels.push === 'sent';
-  const failed = !delivered && (channels.email === 'failed' || channels.push === 'failed');
-  const status: NotificationLogDoc['status'] = delivered ? 'sent' : failed ? 'failed' : 'skipped';
+  const anyFailed = channels.email === 'failed' || channels.push === 'failed';
+  const retry = retryEmail || retryPush;
+  // "failed" while something can still be retried, even when the other channel went out.
+  const status: NotificationLogDoc['status'] = retry || (anyFailed && !delivered) ? 'failed' : delivered ? 'sent' : 'skipped';
   const error = errors.length > 0 ? errors.join('; ').slice(0, 500) : null;
   await deps.col.notificationLog.updateOne(
     { _id: req.key },
@@ -134,10 +147,10 @@ export async function deliver(deps: AppDeps, req: DeliveryRequest): Promise<Deli
         channels,
         error,
         updatedAt: deps.now(),
-        retryAt: failed && transient ? new Date(now.getTime() + RETRY_AFTER_MS) : null,
+        retryAt: retry ? new Date(now.getTime() + RETRY_AFTER_MS) : null,
       },
     },
   );
   if (error) console.error(`[notify] ${req.key}: ${error}`);
-  return status === 'sent' ? 'sent' : status === 'failed' ? 'failed' : 'skipped';
+  return delivered ? 'sent' : status === 'failed' ? 'failed' : 'skipped';
 }
