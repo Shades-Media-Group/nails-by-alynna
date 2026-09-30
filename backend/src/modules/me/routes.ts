@@ -19,6 +19,7 @@ import {
 } from '../../lib/validation';
 import { requireAuth } from '../../middleware/auth';
 import { clearSessionCookies } from '../auth/cookies';
+import { syncBookingsToCalendars } from '../calendar/sync';
 import { OTP_RESEND_COOLDOWN_MS, OTP_TTL_MS, emailNotSent, otpCodeSchema, sendEmailCode, verifyOtp } from '../auth/otp';
 import { revokeAllSessions, toPublicUser } from '../auth/session';
 import { publicPrefs, resolvePrefs } from '../notifications/prefs';
@@ -307,6 +308,9 @@ export function meRoutes(deps: AppDeps) {
       deps.col.feedback.deleteMany({ userId: user._id, rating: null }),
       deps.col.feedback.updateMany({ userId: user._id }, { $set: { comment: '', updatedAt: now } }),
     ]);
+    // Masters' connected calendars: the upcoming visits go, and the name comes off the others.
+    const visits = await deps.col.appointments.find({ clientId: user._id }, { projection: { _id: 1 } }).toArray();
+    deps.defer(syncBookingsToCalendars(deps, visits.map((a) => a._id)));
     await revokeAllSessions(deps, user._id);
     clearSessionCookies(c, deps.config);
     await audit(deps, { actorId: user._id, action: 'user.delete_self', targetType: 'user', targetId: user._id });

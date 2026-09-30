@@ -54,7 +54,7 @@ describe('calendar sync for masters', () => {
 
   it('gives the master a private feed of their bookings that Apple, Google and Outlook subscribe to', async () => {
     const owner = await loginAs(ctx, 'owner@example.com', strongPassword);
-    expect((await owner.get('/api/admin/team/me/calendar')).body).toEqual({ feed: null });
+    expect((await owner.get('/api/admin/team/me/calendar')).body).toMatchObject({ feed: null });
 
     const on = await owner.post('/api/admin/team/me/calendar');
     expect(on.status).toBe(201);
@@ -108,7 +108,7 @@ describe('calendar sync for masters', () => {
     expect(reset.body.feed.url).not.toBe(feed.url);
     expect((await ctx.app.request(path)).status).toBe(404);
     expect((await ctx.app.request(new URL(reset.body.feed.url as string).pathname)).status).toBe(200);
-    expect((await owner.delete('/api/admin/team/me/calendar')).body).toEqual({ feed: null });
+    expect((await owner.delete('/api/admin/team/me/calendar')).body).toMatchObject({ feed: null });
     expect((await ctx.app.request(new URL(reset.body.feed.url as string).pathname)).status).toBe(404);
   });
 

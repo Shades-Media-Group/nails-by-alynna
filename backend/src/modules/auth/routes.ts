@@ -33,6 +33,7 @@ import {
   readRefreshToken,
   setSessionCookies,
 } from './cookies';
+import { CALENDAR_STATE_PREFIX, finishGoogleConnect } from '../calendar/connect';
 import { signInWithGoogle } from './google';
 import { consumeInvite, findInvite } from './invites';
 import { isPlaceholderEmail } from '../../lib/placeholder-email';
@@ -589,6 +590,10 @@ export function authRoutes(deps: AppDeps) {
     const sealed = getCookie(c, names.oauth);
     deleteCookie(c, names.oauth, { path: OAUTH_PATH, secure: config.cookieSecure });
     const saved = sealed ? await openState(config, sealed) : null;
+    // Connecting a master's Google Calendar comes back here too, to the same redirect URI.
+    if (saved?.flow === 'calendar' || c.req.query('state')?.startsWith(CALENDAR_STATE_PREFIX)) {
+      return finishGoogleConnect(deps, c, saved);
+    }
     const lang: Locale = LOCALES.includes(saved?.lang as Locale) ? (saved?.lang as Locale) : 'ro';
     const fail = (reason: string) =>
       c.redirect(`${config.appUrl}${localePrefix(lang)}/login?error=${reason}`, 302);

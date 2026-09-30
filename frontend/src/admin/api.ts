@@ -239,6 +239,34 @@ export interface CalendarFeed {
   createdAt: string;
 }
 
+/**
+ * The master's own calendars connected directly (instant sync): each booking is written there the
+ * moment it changes. `needsReconnect`: the account stopped letting the app in (connect again).
+ */
+export interface DirectCalendars {
+  google: {
+    /** Google sign-in is set up on the server (the same Google client connects calendars). */
+    available: boolean;
+    connected: boolean;
+    needsReconnect: boolean;
+    /** The Google account connected. */
+    email: string | null;
+    lastSyncAt: string | null;
+  };
+  apple: {
+    connected: boolean;
+    needsReconnect: boolean;
+    /** Masked by the server ("al•••@icloud.com"). */
+    appleId: string | null;
+    lastSyncAt: string | null;
+  };
+}
+
+/** My schedule → Calendar sync: the subscription link (null = off) and the calendars connected directly. */
+export interface CalendarSyncState extends DirectCalendars {
+  feed: CalendarFeed | null;
+}
+
 export interface WorkDaysInput {
   staffId: string;
   dates: string[];
@@ -486,11 +514,20 @@ export const adminApi = {
     api.get<Paged & { photos: AdminPhoto[]; storage: PhotoStorage }>(`/admin/photos${query({ ...params })}`),
   /** Owner only: deletes photos (at most 100 at a time). */
   deletePhotos: (ids: string[]) => api.post<{ deleted: number }>('/admin/photos/delete', { ids }),
-  /** The signed-in master's calendar feed (null = sync is off). */
-  calendarFeed: () => api.get<{ feed: CalendarFeed | null }>('/admin/team/me/calendar').then((r) => r.feed),
-  /** Turns calendar sync on, or replaces the link (the old one stops working). */
-  createCalendarFeed: () => api.post<{ feed: CalendarFeed }>('/admin/team/me/calendar').then((r) => r.feed),
-  deleteCalendarFeed: () => api.delete<{ feed: null }>('/admin/team/me/calendar'),
+  /** The signed-in master's calendar sync: the subscription link and the calendars connected directly. */
+  calendarSync: () => api.get<CalendarSyncState>('/admin/team/me/calendar'),
+  /** Turns the subscription link on, or replaces it (the old one stops working). */
+  createCalendarFeed: () => api.post<CalendarSyncState>('/admin/team/me/calendar'),
+  deleteCalendarFeed: () => api.delete<CalendarSyncState>('/admin/team/me/calendar'),
+  /** Google Calendar: the address of Google's consent screen; Google then comes back to My schedule (?calendar=…). */
+  connectGoogleCalendar: () => api.post<{ url: string }>('/admin/team/me/calendar/google').then((r) => r.url),
+  /** Deletes the app's calendar in the Google account and forgets the account. */
+  disconnectGoogleCalendar: () => api.delete<CalendarSyncState>('/admin/team/me/calendar/google'),
+  /** Apple Calendar (iCloud), checked with Apple at once: CALENDAR_AUTH = Apple refused them, CALENDAR_UNREACHABLE = try again. */
+  connectAppleCalendar: (input: { appleId: string; password: string }) => api.post<CalendarSyncState>('/admin/team/me/calendar/apple', input),
+  disconnectAppleCalendar: () => api.delete<CalendarSyncState>('/admin/team/me/calendar/apple'),
+  /** Writes every booking to the connected calendars again (in the background). */
+  syncCalendarsNow: () => api.post<CalendarSyncState>('/admin/team/me/calendar/sync'),
   /** Opened days from `from` to `to` (the 90 days from `from` without it), every master's or one's. */
   workDays: (params: { from: string; to?: string; staffId?: string }) =>
     api.get<{ workDays: WorkDay[] }>(`/admin/team/work-days${query(params)}`).then((r) => r.workDays),
@@ -548,7 +585,7 @@ export const adminQueries = {
     queryOptions({ queryKey: ['admin', 'time-off', params], queryFn: () => adminApi.timeOff(params), staleTime: 60_000 }),
   photos: (params: PhotosParams) =>
     queryOptions({ queryKey: ['admin', 'photos', params], queryFn: () => adminApi.photos(params), staleTime: 30_000, placeholderData: keepPreviousData }),
-  calendarFeed: () => queryOptions({ queryKey: ['admin', 'staff', 'me', 'calendar'], queryFn: adminApi.calendarFeed, staleTime: 5 * 60_000 }),
+  calendarSync: () => queryOptions({ queryKey: ['admin', 'staff', 'me', 'calendar'], queryFn: adminApi.calendarSync, staleTime: 5 * 60_000 }),
   workDays: (params: { from: string; to?: string; staffId?: string }) =>
     queryOptions({ queryKey: ['admin', 'work-days', params], queryFn: () => adminApi.workDays(params), staleTime: 30_000 }),
   users: (params: { q?: string; role?: Role; page?: number }) =>

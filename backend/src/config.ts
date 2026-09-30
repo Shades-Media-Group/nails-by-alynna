@@ -24,6 +24,11 @@ const schema = z.object({
   DATABASE_POOL_SIZE: z.coerce.number().int().min(1).max(100).optional(),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   JWT_SECRET_PREVIOUS: optionalString,
+  /**
+   * Seals what masters' connected calendars need (a Google refresh token, an Apple app-specific
+   * password). Empty = derived from JWT_SECRET; set it so that rotating JWT_SECRET keeps them.
+   */
+  CALENDAR_SYNC_KEY: z.string().min(32, 'CALENDAR_SYNC_KEY must be at least 32 characters').optional(),
   ACCESS_TOKEN_TTL_MIN: z.coerce.number().int().min(1).max(60).default(15),
   REMEMBER_ME_DAYS: z.coerce.number().int().min(1).max(400).default(365),
   SESSION_TTL_HOURS: z.coerce.number().int().min(1).max(72).default(12),
@@ -131,6 +136,11 @@ export interface AppConfig {
     issuer: string;
     audience: string;
   };
+  /**
+   * Keys that seal stored calendar credentials (lib/secret-box.ts), newest first: CALENDAR_SYNC_KEY
+   * when set, then JWT_SECRET and JWT_SECRET_PREVIOUS (so values sealed before a rotation still open).
+   */
+  credentialSecrets: Uint8Array[];
   session: { rememberDays: number; sessionHours: number };
   passwordHashCost: 'standard' | 'fast';
   google?: { clientId: string; clientSecret: string; redirectUri: string };
@@ -229,6 +239,9 @@ export function loadConfig(source: Record<string, unknown>): AppConfig {
       issuer: 'nails-by-alynna',
       audience: 'nails-by-alynna:app',
     },
+    credentialSecrets: [e.CALENDAR_SYNC_KEY, e.JWT_SECRET, e.JWT_SECRET_PREVIOUS]
+      .filter((value): value is string => Boolean(value))
+      .map((value) => encoder.encode(value)),
     session: { rememberDays: e.REMEMBER_ME_DAYS, sessionHours: e.SESSION_TTL_HOURS },
     passwordHashCost: e.PASSWORD_HASH_COST,
     google:
