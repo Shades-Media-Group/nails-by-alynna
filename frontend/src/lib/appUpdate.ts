@@ -22,13 +22,11 @@ export const UPDATE_MESSAGE = 'nba:update-ready';
 /** Screens where a reload could lose what the user is typing. */
 export const BUSY_PATHS = /\/(book|login|signup|forgot-password|reset-password|profile|admin\/(services|team|settings|appointments\/new))/;
 
-/** Just opened or back on screen this long ago: nothing started yet, so a reload goes unnoticed. */
-const FRESH_MS = 8_000;
-
 /**
- * A new version is ready: reload now when the app was just opened (and no form is open), else
- * offer "Update" and apply it the next time the app is hidden.
+ * A new version is ready: everyone moves to it straight away (the page reloads where it is, on
+ * screen or in the background), except in the middle of a form, where "Update" waits for a tap
+ * and nothing typed is lost.
  */
-export function reloadsAtOnce(path: string, msSinceShown: number): boolean {
-  return msSinceShown < FRESH_MS && !BUSY_PATHS.test(path);
+export function reloadsAtOnce(path: string): boolean {
+  return !BUSY_PATHS.test(path);
 }

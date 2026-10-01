@@ -8,22 +8,14 @@ import { BUSY_PATHS, UPDATE_MESSAGE, newBuildOnServer, reloadsAtOnce } from '@/l
 /** How often an open app asks whether a new build is out (/version.json: a few hundred bytes, never cached). */
 const CHECK_EVERY_MS = 60_000;
 
-/** When the app was last opened or brought back on screen. */
-let shownAt = typeof performance === 'undefined' ? 0 : performance.now();
-if (typeof document !== 'undefined') {
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') shownAt = performance.now();
-  });
-}
-
 /**
  * Keeps the app current after every deploy, without signing anyone out (the session lives in
  * cookies, a reload keeps it). While the app is on screen it asks every minute (and on launch,
  * on coming back to the foreground, on focus and when the connection returns) whether a new build
- * is out, and the new version downloads and takes over at once (public/update-sw.js). Just
- * opened, the app reloads into it straight away; in use, it offers "Update" and applies it the
- * next time the app is hidden (unless a form is open). Apps installed before this reload anyway,
- * from the service worker.
+ * is out, and the new version downloads and takes over at once (public/update-sw.js). The app
+ * then reloads into it straight away, on screen or in the background; only in the middle of a
+ * form does it offer "Update" instead, applied with a tap or the next time the app is hidden. Apps
+ * installed before this reload anyway, from the service worker.
  */
 export function UpdatePrompt() {
   const [ready, setReady] = useState(false);
@@ -80,7 +72,7 @@ function ServiceWorkerWatch({ onReady }: { onReady: (update: () => void) => void
     const onMessage = (event: MessageEvent<unknown>) => {
       if ((event.data as { type?: unknown } | null)?.type !== UPDATE_MESSAGE) return;
       event.ports[0]?.postMessage('ok');
-      if (reloadsAtOnce(window.location.pathname, performance.now() - shownAt)) window.location.reload();
+      if (reloadsAtOnce(window.location.pathname)) window.location.reload();
       else onReady(() => window.location.reload());
     };
     navigator.serviceWorker.addEventListener('message', onMessage);
@@ -136,7 +128,9 @@ function UpdateToast({ apply }: { apply: () => void }) {
   const pathRef = useRef(location.pathname);
   useEffect(() => {
     pathRef.current = location.pathname;
-  }, [location.pathname]);
+    // Out of the form (or never in one): nothing typed can be lost, so the new version goes on now.
+    if (!BUSY_PATHS.test(location.pathname)) apply();
+  }, [location.pathname, apply]);
 
   useEffect(() => {
     const id = toast(t('update.title'), {

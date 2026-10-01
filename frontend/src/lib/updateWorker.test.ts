@@ -86,15 +86,15 @@ describe('a new version takes over every open app', () => {
 });
 
 describe('the app itself, when a new version is ready', () => {
-  it('reloads at once when just opened and no form is open', () => {
-    expect(reloadsAtOnce('/en/home', 2_000)).toBe(true);
-    expect(reloadsAtOnce('/admin', 500)).toBe(true);
+  it('reloads at once wherever no form is open', () => {
+    expect(reloadsAtOnce('/en/home')).toBe(true);
+    expect(reloadsAtOnce('/en/app')).toBe(true);
+    expect(reloadsAtOnce('/admin')).toBe(true);
   });
 
-  it('waits when in use or in the middle of a form', () => {
-    expect(reloadsAtOnce('/en/home', 60_000)).toBe(false);
-    expect(reloadsAtOnce('/en/book', 1_000)).toBe(false);
-    expect(reloadsAtOnce('/login', 1_000)).toBe(false);
-    expect(reloadsAtOnce('/admin/appointments/new', 1_000)).toBe(false);
+  it('waits for a tap in the middle of a form', () => {
+    expect(reloadsAtOnce('/en/book')).toBe(false);
+    expect(reloadsAtOnce('/login')).toBe(false);
+    expect(reloadsAtOnce('/admin/appointments/new')).toBe(false);
   });
 });
