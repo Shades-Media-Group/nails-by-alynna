@@ -5,7 +5,7 @@
   "description": "Nails by Alynna — mobile-first booking PWA (React + Vite frontend, Node.js + PostgreSQL API, Cloudflare Workers)",
   "license": "MIT",
   "engines": {
-    "node": ">=22.22.0"
+    "node": ">=22.23.4"
   },
   "scripts": {
     "setup": "yarn install && yarn --cwd backend install && yarn --cwd frontend install",
